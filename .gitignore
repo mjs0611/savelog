@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.env
+*.zip
+tsconfig.tsbuildinfo
+.DS_Store
+.granite/
+.ait
+*.ait
+venv/
+.venv/
+__pycache__/
