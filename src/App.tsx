@@ -266,7 +266,6 @@ export default function App() {
 
     // 펜딩 포인트 적립 (max 50원, 광고 보고 수령)
     const dailyEarn = 3;
-    const streakEarn = 0; // 아래서 계산
     let totalEarn = dailyEarn;
     if (missionCleared) totalEarn += 5;
 
@@ -284,12 +283,12 @@ export default function App() {
     if (newPending > 0) preloadReward();
 
     // 토스트 조합
-    let toastMsg = `✅ 오늘 기록 완료! +${totalEarn}원 적립`;
+    let toastMsg = `✅ 기록 완료! +${totalEarn}원 대기 중 (광고 보고 받기)`;
     if (missionCleared) {
-      toastMsg = `🎯 미션 달성! +${totalEarn}원 적립`;
+      toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중`;
     }
     if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-      toastMsg = `🔥 7일 완주! +${totalEarn}원 적립`;
+      toastMsg = `🔥 7일 완주 보너스! +${totalEarn}원 대기 중`;
     }
 
     showToast(toastMsg);

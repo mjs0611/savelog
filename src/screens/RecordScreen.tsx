@@ -251,7 +251,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
               onClick={handleSubmit}
               loading={submitting}
             >
-              {submitting ? '저장 중...' : `오늘 기록 완료 (+10원)`}
+              {submitting ? '저장 중...' : `오늘 기록 완료 🌿`}
             </Button>
           )}
         </div>
