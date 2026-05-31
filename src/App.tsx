@@ -15,11 +15,16 @@ import {
   getDailyMission,
   completeDailyMission,
   setRecordedDate,
+  getPendingPoints,
+  addPendingPoints,
+  clearPendingPoints,
+  getClaimedRankReward,
+  setClaimedRankReward,
   type StreakData,
   type DailyState,
 } from './lib/storage';
-import { initAit, grantDailyPoint, grantStreakBonus } from './lib/tosspoint';
-import { preloadInterstitial, showInterstitial } from './lib/ads';
+import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
+import { preloadInterstitial, showInterstitial, preloadReward, showReward } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey } from './lib/utils';
 import HomeScreen from './screens/HomeScreen';
@@ -67,11 +72,13 @@ export default function App() {
   const [submitting, setSubmitting] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
+  const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [pendingSubmit, setPendingSubmit] = useState<{ items: SpendingItem[], image?: string } | null>(null);
 
   useEffect(() => {
     initAit();
     preloadInterstitial();
+    if (getPendingPoints() > 0) preloadReward();
     loadRank();
     if (termsAgreed && !anonymousKey && import.meta.env.PROD) {
       fetchAnonymousKey();
@@ -257,23 +264,32 @@ export default function App() {
       completeDailyMission(today);
     }
 
-    // 토스포인트 지급
-    await grantDailyPoint();
+    // 펜딩 포인트 적립 (max 50원, 광고 보고 수령)
+    const dailyEarn = 3;
+    const streakEarn = 0; // 아래서 계산
+    let totalEarn = dailyEarn;
+    if (missionCleared) totalEarn += 5;
 
     // 스트릭 업데이트
     const newStreak = updateStreak(today);
     setRecordedDate(today);
     setStreak(newStreak);
 
-    // 토스트 조합
-    let toastMsg = '✅ 오늘 기록 완료! 피드에 공유됐어요';
-    if (missionCleared) {
-      toastMsg = `🎯 미션 달성! & 오늘 기록 완료`;
+    if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
+      totalEarn += 20;
     }
 
+    const newPending = addPendingPoints(totalEarn);
+    setPendingPoints(newPending);
+    if (newPending > 0) preloadReward();
+
+    // 토스트 조합
+    let toastMsg = `✅ 오늘 기록 완료! +${totalEarn}원 적립`;
+    if (missionCleared) {
+      toastMsg = `🎯 미션 달성! +${totalEarn}원 적립`;
+    }
     if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-      await grantStreakBonus();
-      toastMsg = `🔥 7일 완주 달성! ${toastMsg}`;
+      toastMsg = `🔥 7일 완주! +${totalEarn}원 적립`;
     }
 
     showToast(toastMsg);
@@ -285,6 +301,27 @@ export default function App() {
     setShowRecord(false);
     setPendingSubmit(null);
     loadRank();
+  }
+
+  function handleClaimPending() {
+    if (pendingPoints <= 0) return;
+    const amount = pendingPoints;
+    showReward(async () => {
+      await grantPendingReward(amount);
+      clearPendingPoints();
+      setPendingPoints(0);
+      showToast(`🎁 ${amount}원 지급 완료!`);
+    }, () => {
+      showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
+    });
+  }
+
+  async function handleClaimRankReward(amount: number) {
+    const weekKey = getWeekKey();
+    if (getClaimedRankReward(weekKey)) return;
+    await grantRankReward(amount);
+    setClaimedRankReward(weekKey);
+    showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
   }
 
   function showToast(msg: string) {
@@ -314,8 +351,10 @@ export default function App() {
             streak={streak}
             weekRank={weekRank}
             userId={userId}
+            pendingPoints={pendingPoints}
             onRecord={() => !daily.recorded && setShowRecord(true)}
             onQuickZeroSpend={() => handleCloseAdAndSubmit({ items: [], image: undefined })}
+            onClaimPending={handleClaimPending}
           />
         )}
         {tab === 'feed' && <FeedScreen userId={userId} />}

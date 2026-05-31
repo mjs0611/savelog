@@ -12,7 +12,7 @@ export default defineConfig({
     port: 5180,
     commands: {
       dev: 'vite',
-      build: 'vite build',
+      build: 'node scripts/build.mjs',
     },
   },
   navigationBar: {

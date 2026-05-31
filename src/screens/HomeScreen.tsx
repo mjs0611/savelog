@@ -11,8 +11,10 @@ interface Props {
   streak: StreakData;
   weekRank: WeekRankRow[];
   userId: string;
+  pendingPoints: number;
   onRecord: () => void;
   onQuickZeroSpend: () => void;
+  onClaimPending: () => void;
 }
 
 const WEEK_DAYS = 7;
@@ -24,7 +26,7 @@ const MOCK_ONLINE_USERS = [
   { id: 'user-4', nickname: '장바구니 키퍼', spentAmount: 0, personaKey: 'cart', isOnline: true, hasPoked: false }
 ];
 
-export default function HomeScreen({ daily, streak, weekRank, userId, onRecord, onQuickZeroSpend }: Props) {
+export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
   const myRank = weekRank.findIndex((r) => r.user_id === userId);
@@ -219,6 +221,40 @@ export default function HomeScreen({ daily, streak, weekRank, userId, onRecord, 
           </div>
         );
       })()}
+
+      {/* 펜딩 포인트 (광고 보고 받기) */}
+      {pendingPoints > 0 && (
+        <div className="glass-card" style={{ marginTop: 12, padding: '12px 14px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.04) 0%, rgba(255,255,255,0) 100%)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#FFC800' }}>🎁 적립된 토스포인트</p>
+              <p style={{ margin: '3px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.4 }}>
+                리워드 광고를 시청하면 지급됩니다 · 최대 50원
+              </p>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
+              <span style={{ fontSize: 18, fontWeight: 900, color: '#FFC800' }}>{pendingPoints}원</span>
+              <button
+                onClick={onClaimPending}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: 100,
+                  border: 'none',
+                  background: 'linear-gradient(135deg, #FFC800 0%, #FF9500 100%)',
+                  color: '#090A10',
+                  fontSize: 11,
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  boxShadow: '0 3px 10px rgba(255, 200, 0, 0.25)',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                광고 보고 받기
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 스트릭 로드맵 */}
       <div className="glass-card streak-card" style={{ marginTop: 12 }}>

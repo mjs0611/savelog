@@ -56,3 +56,8 @@ export async function grantStreakBonus(): Promise<boolean> {
 export async function grantRankReward(amount: number): Promise<boolean> {
   return grant(RANK_PROMO, amount);
 }
+
+// 펜딩 포인트 일괄 지급 (광고 시청 후)
+export async function grantPendingReward(amount: number): Promise<boolean> {
+  return grant(DAILY_PROMO, amount);
+}

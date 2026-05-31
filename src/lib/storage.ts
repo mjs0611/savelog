@@ -289,3 +289,35 @@ export function sendPokeNotification(recipientNickname: string, senderNickname: 
     console.error('[sendPokeNotification]', e);
   }
 }
+
+// ── Pending Points (max 50원, 광고 보고 수령) ────────────────────────────────
+
+const PENDING_KEY = 'savelog_pending_points';
+export const MAX_PENDING_POINTS = 50;
+
+export function getPendingPoints(): number {
+  try { return Math.min(Number(localStorage.getItem(PENDING_KEY) ?? '0'), MAX_PENDING_POINTS); }
+  catch { return 0; }
+}
+
+export function addPendingPoints(amount: number): number {
+  const current = getPendingPoints();
+  const next = Math.min(current + amount, MAX_PENDING_POINTS);
+  try { localStorage.setItem(PENDING_KEY, String(next)); } catch {}
+  return next;
+}
+
+export function clearPendingPoints(): void {
+  try { localStorage.setItem(PENDING_KEY, '0'); } catch {}
+}
+
+// ── Rank Reward Claimed ──────────────────────────────────────────────────────
+
+export function getClaimedRankReward(weekKey: string): boolean {
+  try { return localStorage.getItem(`savelog_rank_claimed_${weekKey}`) === 'true'; }
+  catch { return false; }
+}
+
+export function setClaimedRankReward(weekKey: string): void {
+  try { localStorage.setItem(`savelog_rank_claimed_${weekKey}`, 'true'); } catch {}
+}
