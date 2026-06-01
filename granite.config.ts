@@ -5,7 +5,7 @@ export default defineConfig({
   brand: {
     displayName: 'savelog',
     primaryColor: '#3182F6',
-    icon: '/images/app_icon.png',
+    icon: 'https://static.toss.im/appsintoss/27829/dd14fbbc-eb70-4715-bade-ebb7c65d87d2.png',
   },
   web: {
     host: 'localhost',
