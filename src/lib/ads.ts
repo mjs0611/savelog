@@ -78,6 +78,7 @@ export function showReward(onEarned: () => void, onSkipped?: () => void) {
     onError: (e) => {
       console.warn('[Ad] reward show error', e);
       onSkipped?.();
+      preloadReward();
     },
   });
 }

@@ -239,6 +239,12 @@ export default function App() {
       image,
     });
 
+    if (!entryId && isSupabaseConfigured) {
+      showToast('기록 저장에 실패했어요. 다시 시도해 주세요.');
+      setSubmitting(false);
+      return;
+    }
+
     // 미션 확인
     const mission = getDailyMission(today);
     let missionCleared = false;
