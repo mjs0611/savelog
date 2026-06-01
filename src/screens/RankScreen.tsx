@@ -48,7 +48,7 @@ export default function RankScreen({ userId, weekRank, loading, onClaimRankRewar
 
       {/* 도발 카드: 바로 위 순위 */}
       {myIdx > 0 && (
-        <div className="glass-card" style={{ padding: '12px 16px', marginBottom: 12, border: '1px solid rgba(255, 77, 79, 0.2)', background: 'rgba(255, 77, 79, 0.04)' }}>
+        <div className="glass-card" style={{ padding: '12px 16px', border: '1px solid rgba(255, 77, 79, 0.2)', background: 'rgba(255, 77, 79, 0.04)' }}>
           <p style={{ margin: 0, fontSize: 11, color: '#FF4D4F', fontWeight: 800, marginBottom: 6 }}>🔥 지금 역전 가능해요</p>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <div>

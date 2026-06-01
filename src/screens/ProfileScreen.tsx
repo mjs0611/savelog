@@ -61,7 +61,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   return (
     <div className="screen screen-profile">
       {/* 닉네임 */}
-      <div className="glass-card profile-card" style={{ marginBottom: 12 }}>
+      <div className="glass-card profile-card">
         {editing ? (
           <div className="nickname-edit">
             <input
@@ -88,7 +88,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 소비 성향 배너 */}
       {p ? (
-        <div className="profile-persona-banner" onClick={onStartTest} style={{ marginBottom: 20 }}>
+        <div className="profile-persona-banner" onClick={onStartTest}>
           <div className="profile-persona-left">
             <span className="profile-persona-emoji">
               <img src={p.icon} alt="" className="custom-icon--lg" style={{ verticalAlign: 'middle', width: 36, height: 36, objectFit: 'contain' }} />
@@ -101,7 +101,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <span className="profile-persona-btn">다시 분석</span>
         </div>
       ) : (
-        <div className="profile-persona-banner profile-persona-banner--empty" onClick={onStartTest} style={{ marginBottom: 20 }}>
+        <div className="profile-persona-banner profile-persona-banner--empty" onClick={onStartTest}>
           <span className="profile-persona-emoji">
             <img src="/images/savelog_main_character.png" className="custom-icon--lg" style={{ verticalAlign: 'middle' }} />
           </span>
@@ -151,7 +151,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         ] as const;
 
         return (
-          <div className="glass-card radar-chart-card" style={{ marginBottom: 20, padding: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="glass-card radar-chart-card" style={{ padding: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
               <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-main)' }}>소비 오각형 스탯 📊</span>
               <button
@@ -288,7 +288,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       </div>
 
       {/* 내 쪽지함 📬 */}
-      <div className="glass-card mailbox-card" style={{ marginBottom: 12 }}>
+      <div className="glass-card mailbox-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
           <p style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 5 }}>
             내 쪽지함
