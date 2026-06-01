@@ -75,6 +75,7 @@ export default function App() {
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
+  const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -89,6 +90,7 @@ export default function App() {
 
   function navigateTo(next: Tab) {
     setTab(next);
+    if (next === 'profile') setProfileRefreshToken(t => t + 1);
     const path = next === 'home' ? '/' : '/' + next;
     window.history.replaceState(null, '', path);
   }
@@ -311,6 +313,7 @@ export default function App() {
       saveDailyState(newDaily);
       setDaily(newDaily);
       setFeedRefreshToken(t => t + 1);
+      setProfileRefreshToken(t => t + 1);
       setShowRecord(false);
       loadRank();
     } finally {
@@ -414,7 +417,7 @@ export default function App() {
             userId={userId}
             nickname={nickname}
             streak={streak}
-            refreshToken={feedRefreshToken}
+            refreshToken={profileRefreshToken}
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
           />
