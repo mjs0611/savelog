@@ -71,7 +71,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       </div>
 
       {/* ✍️ 핵심 소비/무지출 기록 콘솔 (최상단 전면 배치) */}
-      <div className="glass-card primary-record-card" id="tutorial-step-1" style={{ margin: '0 0 12px 0', padding: 14, border: '1.5px solid var(--primary)', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.04) 0%, rgba(255,255,255,0.01) 100%)', boxShadow: '0 8px 24px rgba(0, 245, 160, 0.05)' }}>
+      <div className="glass-card primary-record-card" id="tutorial-step-1" style={{ padding: 14, border: '1.5px solid var(--primary)', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.04) 0%, rgba(255,255,255,0.01) 100%)', boxShadow: '0 8px 24px rgba(0, 245, 160, 0.05)' }}>
         {daily.recorded ? (
           <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
             <span style={{ fontSize: 20 }}>🌿</span>
@@ -182,7 +182,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const petLevel = Math.min(5, 1 + Math.floor(streak.totalDays / 3));
 
         return (
-          <div className="glass-card pet-card" id="tutorial-step-3" style={{ marginTop: 12, padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)' }}>
+          <div className="glass-card pet-card" id="tutorial-step-3" style={{ padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)' }}>
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               {/* 캐릭터 바디 및 장착된 악세사리 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
@@ -223,7 +223,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 펜딩 포인트 (광고 보고 받기) */}
       {pendingPoints > 0 && (
-        <div className="glass-card" style={{ marginTop: 12, padding: '12px 14px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.04) 0%, rgba(255,255,255,0) 100%)' }}>
+        <div className="glass-card" style={{ padding: '12px 14px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.04) 0%, rgba(255,255,255,0) 100%)' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <div>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#FFC800' }}>🎁 적립된 토스포인트</p>
@@ -256,7 +256,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       )}
 
       {/* 스트릭 로드맵 */}
-      <div className="glass-card streak-card" style={{ marginTop: 12 }}>
+      <div className="glass-card streak-card">
         <div className="streak-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span className="streak-title" style={{ fontSize: 13, fontWeight: 800 }}>연속 기록</span>
           {streak.streak > 0 && (
@@ -301,7 +301,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {(() => {
         const mission = getDailyMission(daily.date);
         return (
-          <div className="glass-card daily-mission-card" style={{ marginTop: 12 }}>
+          <div className="glass-card daily-mission-card">
             <div className="mission-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span className="mission-title" style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center' }}>
                 오늘의 짠물 미션
@@ -330,7 +330,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       })()}
 
       {/* ⚡ 실시간 절약 배틀 콕 찌르기 (Social Loop Widget) */}
-      <div className="glass-card battle-card" style={{ marginTop: 12, padding: '12px 14px' }}>
+      <div className="glass-card battle-card" style={{ padding: '12px 14px' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
             실시간 절약 배틀
@@ -410,7 +410,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 이번 주 내 현황 */}
       {myRow && (
-        <div className="glass-card week-summary-card" style={{ marginTop: 12, padding: '12px 14px' }}>
+        <div className="glass-card week-summary-card" style={{ padding: '12px 14px' }}>
           <p className="week-summary-label" style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>이번 주 내 소비</p>
           <p className="week-summary-amount" style={{ margin: '4px 0 8px 0', fontSize: 18, fontWeight: 900, color: 'var(--text-main)' }}>{formatAmount(myRow.total)}</p>
           <div className="week-summary-meta" style={{ display: 'flex', gap: 6 }}>
@@ -426,7 +426,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 순위 미리보기 (상위 3명) */}
       {weekRank.length > 0 && (
-        <div className="glass-card rank-preview-card" style={{ marginTop: 12, padding: '12px 14px' }}>
+        <div className="glass-card rank-preview-card" style={{ padding: '12px 14px' }}>
           <p className="rank-preview-title" style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 800 }}>이번 주 절약왕 🏆</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {weekRank.slice(0, 3).map((row, i) => (
@@ -446,7 +446,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       <div
         className="mock-bottom-banner glass-card"
         style={{
-          marginTop: 12,
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
