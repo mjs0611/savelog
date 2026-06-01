@@ -56,7 +56,7 @@ export default function RankScreen({ userId, weekRank, loading, onClaimRankRewar
               <span style={{ fontSize: 11, color: 'var(--text-mute)', marginLeft: 6 }}>({myIdx}위)</span>
             </div>
             <span style={{ fontSize: 12, fontWeight: 800, color: '#FF4D4F' }}>
-              차이 {formatAmount(weekRank[myIdx - 1].total - weekRank[myIdx].total)}
+              차이 {formatAmount(weekRank[myIdx].total - weekRank[myIdx - 1].total)}
             </span>
           </div>
           <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>오늘 기록하면 이 사람을 추월할 수 있어요</p>
