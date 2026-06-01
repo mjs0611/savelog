@@ -416,6 +416,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           className="setting-menu-item"
           onClick={() => {
             localStorage.removeItem('savelog_tutorial_completed');
+            window.location.reload();
           }}
         >
           <span style={{ color: 'var(--primary)', fontWeight: 800 }}>🎓 가이드 튜토리얼 다시 보기</span>

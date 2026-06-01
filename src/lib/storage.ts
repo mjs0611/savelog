@@ -270,9 +270,9 @@ export function sendPokeNotification(recipientNickname: string, senderNickname: 
   try {
     const currentMessages = getCheeringMessages();
     const p = senderPersonaKey ? PERSONAS[senderPersonaKey] : null;
-    const text = isPraise 
-      ? `오늘 무지출 기록에 칭찬 콕! 찌르기를 보냈습니다. 🎉 (+5원 적립)`
-      : `오늘 지출에 깜짝 일침 콕! 찌르기를 날렸습니다. "우리 절약합시다!" ⚡ (+5원 적립)`;
+    const text = isPraise
+      ? `오늘 무지출 기록에 칭찬 콕! 찌르기를 보냈습니다. 🎉`
+      : `오늘 지출에 깜짝 일침 콕! 찌르기를 날렸습니다. "우리 절약합시다!" ⚡`;
       
     const newMessage: CheeringMessage = {
       id: Math.random().toString(),

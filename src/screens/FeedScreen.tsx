@@ -830,7 +830,7 @@ export default function FeedScreen({ userId }: Props) {
                     }}
                     style={{ flex: 2, padding: 12, background: '#fff', border: 'none', color: '#C13584', borderRadius: 100, fontSize: 11, fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
                   >
-                    🚀 스토리 게시 (+15P)
+                    🚀 스토리 공유하기
                   </button>
                 </div>
               </div>

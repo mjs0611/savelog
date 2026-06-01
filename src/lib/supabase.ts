@@ -169,7 +169,7 @@ function buildMockFeed(userId: string): EntryWithReactions[] {
       trust_count: 142, doubt_count: 3,
       my_reaction: userId === 'mock-a' ? null : null,
       persona: 'keeper',
-      image: 'https://images.unsplash.com/photo-154118811-1e0d58224f24?w=800&q=80',
+      image: undefined,
     },
     {
       id: 'mock-2', user_id: 'mock-b', nickname: '짠돌이홍길동',
