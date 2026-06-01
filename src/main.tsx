@@ -13,7 +13,7 @@ class ErrorBoundary extends React.Component<
   render() {
     if (this.state.error) {
       return (
-        <div style={{ padding: 24, fontFamily: 'sans-serif', color: '#191F28' }}>
+        <div style={{ padding: 24, fontFamily: 'sans-serif', color: '#191F28', background: '#ffffff', minHeight: '100dvh' }}>
           <h2 style={{ fontSize: 18, marginBottom: 12 }}>앱 오류</h2>
           <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: '#FF4D4F' }}>
             {this.state.error.message}
