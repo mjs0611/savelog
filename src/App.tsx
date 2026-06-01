@@ -357,7 +357,7 @@ export default function App() {
       )}
 
       {/* 탭 콘텐츠 */}
-      <div className="tab-content" key={persona || 'none'}>
+      <div className="tab-content">
         {tab === 'home' && (
           <HomeScreen
             daily={daily}
