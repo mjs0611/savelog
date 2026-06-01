@@ -156,8 +156,11 @@ export default function FeedScreen({ userId }: Props) {
       }),
     );
 
-    await toggleReaction(entry.id, userId, type);
-    setToggling(null);
+    try {
+      await toggleReaction(entry.id, userId, type);
+    } finally {
+      setToggling(null);
+    }
   }
 
   // 더블 탭 시 인스타그램 하트 애니메이션 및 짠내난다(trust) 반응 자동 활성화
