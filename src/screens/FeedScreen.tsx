@@ -210,10 +210,9 @@ export default function FeedScreen({ userId }: Props) {
 
   function addComment(entryId: string, text: string) {
     setLocalComments((prev) => {
-      const updated = {
-        ...prev,
-        [entryId]: [...(prev[entryId] || []), { sender: '나', text }],
-      };
+      const existing = prev[entryId] || [];
+      if (existing.some((c) => c.sender === '나' && c.text === text)) return prev;
+      const updated = { ...prev, [entryId]: [...existing, { sender: '나', text }] };
       localStorage.setItem('feed_comments', JSON.stringify(updated));
       return updated;
     });
