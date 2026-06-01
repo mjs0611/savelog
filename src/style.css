@@ -124,13 +124,15 @@ input { font: inherit; outline: none; border: none; }
   transform: translateX(-50%);
   width: 100%;
   max-width: 480px;
-  height: var(--tab-h);
+  height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
   background: rgba(10, 10, 12, 0.96);
   backdrop-filter: blur(25px);
   -webkit-backdrop-filter: blur(25px);
   border-top: 1px solid var(--glass-border);
   display: flex;
-  padding-bottom: env(safe-area-inset-bottom, 0);
+  align-items: flex-start;
+  padding-top: 0;
+  padding-bottom: env(safe-area-inset-bottom, 0px);
   z-index: 100;
 }
 
@@ -240,7 +242,10 @@ input { font: inherit; outline: none; border: none; }
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
   z-index: 9999;
   animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: nowrap;
+  white-space: normal;
+  max-width: calc(100vw - 32px);
+  text-align: center;
+  word-break: keep-all;
 }
 
 @keyframes toastIn {
