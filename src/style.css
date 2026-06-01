@@ -543,7 +543,8 @@ input { font: inherit; outline: none; border: none; }
 .feed-item-amount--zero { color: var(--zero); }
 
 /* Reactions as modern pill tags */
-.feed-reactions { display: flex; gap: 8px; border-top: 1px solid var(--divider); padding-top: 12px; }
+.feed-reactions { display: flex; gap: 8px; border-top: 1px solid var(--divider); padding-top: 12px; overflow-x: auto; scrollbar-width: none; }
+.feed-reactions::-webkit-scrollbar { display: none; }
 .reaction-btn {
   display: flex;
   align-items: center;
