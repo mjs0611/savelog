@@ -793,7 +793,7 @@ input { font: inherit; outline: none; border: none; }
 .items-total-amount { font-size: 18px; font-weight: 900; }
 
 /* 항목 추가 폼 */
-.item-form { display: flex; flex-direction: column; gap: 14px; }
+.item-form { display: flex; flex-direction: column; gap: 16px; }
 .form-label { font-size: 13px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
 
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }

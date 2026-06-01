@@ -84,9 +84,12 @@ export default function App() {
 
   async function loadRank() {
     setRankLoading(true);
-    const data = await fetchWeekRank(getWeekKey());
-    setWeekRank(data);
-    setRankLoading(false);
+    try {
+      const data = await fetchWeekRank(getWeekKey());
+      setWeekRank(data);
+    } finally {
+      setRankLoading(false);
+    }
   }
 
   // ── 유저 식별키 발급 ────────────────────────────────────────────────────────

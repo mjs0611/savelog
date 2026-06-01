@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, TextField, Spacing } from '@toss/tds-mobile';
+import { Button, TextField } from '@toss/tds-mobile';
 import type { SpendingItem } from '../lib/supabase';
 import { formatAmount } from '../lib/utils';
 
@@ -156,7 +156,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 ))}
               </div>
 
-              <Spacing size={16} />
               <TextField
                 variant="box"
                 label="지출 금액"
@@ -167,7 +166,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 onChange={(e: any) => handleAmountChange(e.target.value)}
               />
 
-              <Spacing size={16} />
               <TextField
                 variant="box"
                 label="한 줄 메모 (선택)"
@@ -176,7 +174,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 maxLength={40}
                 onChange={(e: any) => setComment(e.target.value)}
               />
-              <Spacing size={20} />
 
               <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem}>
                 항목 추가
