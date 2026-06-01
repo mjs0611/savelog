@@ -68,10 +68,16 @@ export default function RankScreen({ userId, weekRank, loading, onClaimRankRewar
         <p className="reward-info-title">주간 리워드</p>
         <div className="reward-rows">
           <div className="reward-row">🥇 1위 <span>+100원</span></div>
-          <div className="reward-row">상위 10% <span>+30원</span></div>
-          <div className="reward-row">7일 완주 <span>+20원</span></div>
-          <div className="reward-row">매일 기록 <span>+3원/일</span></div>
+          <div className="reward-row">📊 상위 10% <span>+30원</span></div>
+          <div className="reward-row">🔥 7일 완주 <span>+20원</span></div>
+          <div className="reward-row">📝 매일 기록 <span>+3원</span></div>
+          <div className="reward-row">🎯 일일 미션 달성 <span>+5원</span></div>
+          <div className="reward-row">👃 게시글 반응 <span>+1원</span></div>
+          <div className="reward-row">⚖️ 밸런스 투표 <span>+1원</span></div>
         </div>
+        <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.5 }}>
+          📝·🎯·⚖️ 적립분은 광고 시청 후 수령 · 나머지는 즉시 지급
+        </p>
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
             disabled={claimedThisWeek}
