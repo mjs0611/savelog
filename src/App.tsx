@@ -70,7 +70,6 @@ export default function App() {
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
-  const [pendingSubmit, setPendingSubmit] = useState<{ items: SpendingItem[], image?: string } | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -212,16 +211,12 @@ export default function App() {
 
   async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
     if (submitting || daily.recorded) return;
-    setPendingSubmit({ items, image });
-    showInterstitial(() => handleCloseAdAndSubmit({ items, image }));
+    showInterstitial(() => handleCloseAdAndSubmit(items, image));
   }
 
-  async function handleCloseAdAndSubmit(override?: { items: SpendingItem[], image?: string }) {
-    const payload = override ?? pendingSubmit;
-    if (!payload || submitting || daily.recorded) return;
+  async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
+    if (submitting || daily.recorded) return;
     setSubmitting(true);
-
-    const { items, image } = payload;
     const total = items.reduce((s, i) => s + i.amount, 0);
     const weekKey = getWeekKey();
     const currentPersona = getPersona() ?? undefined;
@@ -302,7 +297,6 @@ export default function App() {
     setDaily(newDaily);
     setSubmitting(false);
     setShowRecord(false);
-    setPendingSubmit(null);
     loadRank();
   }
 
@@ -368,10 +362,9 @@ export default function App() {
             userId={userId}
             pendingPoints={pendingPoints}
             onRecord={() => !daily.recorded && setShowRecord(true)}
-            onQuickZeroSpend={() => handleCloseAdAndSubmit({
-              items: [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
-              image: undefined,
-            })}
+            onQuickZeroSpend={() => handleCloseAdAndSubmit(
+              [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
+            )}
             onClaimPending={handleClaimPending}
           />
         )}
