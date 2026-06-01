@@ -1,5 +1,19 @@
-import { useState, useEffect } from 'react';
-import { Badge, Button, Modal } from '@toss/tds-mobile';
+import React, { useState, useEffect } from 'react';
+import { Badge, Button } from '@toss/tds-mobile';
+
+function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
+      onClick={onClose}>
+      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
+      <div style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#1C2230', borderRadius: '20px 20px 0 0', padding: '24px 20px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}
+        onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+}
 import type { Entry } from '../lib/supabase';
 import { fetchMyWeekEntries } from '../lib/supabase';
 import type { StreakData, CheeringMessage } from '../lib/storage';
@@ -21,6 +35,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [messages, setMessages] = useState<CheeringMessage[]>([]);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
+  const [showRival, setShowRival] = useState(false);
   useEffect(() => {
     fetchMyWeekEntries(userId, getWeekKey()).then(setMyEntries);
     setMessages(getCheeringMessages());
@@ -99,8 +114,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 📊 소비 성향 육각형 레이더 차트 Widget */}
       {(() => {
-        const [showRival, setShowRival] = useState(false);
-
         // 스탯 연산
         const selfControl = Math.max(30, Math.min(100, 100 - Math.floor(weekTotal / 5000)));
         const savings = Math.max(40, Math.min(100, 40 + streak.streak * 10));
@@ -421,42 +434,38 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       <div style={{ height: 24 }} />
 
       {/* 서비스 이용약관 모달 */}
-      <Modal open={termsModalOpen} onOpenChange={setTermsModalOpen}>
-        <Modal.Content style={{ padding: '24px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <h3 style={{ fontSize: 15, fontWeight: 900, marginBottom: 4 }}>서비스 이용약관</h3>
-            <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>세이브로그 서비스 이용 동의서</p>
-          </div>
-          <div className="terms-content-box">
-            <h4>제 1 조 (목적)</h4>
-            <p>본 약관은 "세이브로그"(이하 "회사"라 함)가 제공하는 제반 서비스의 이용조건 및 절차, 회원과 회사 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
-            <h4>제 2 조 (용어의 정의)</h4>
-            <p>1. "서비스"라 함은 이용자가 모바일 기기를 통해 소비 내역을 기록하고, 짠물 미션 및 피드 기능을 제공받는 서비스를 말합니다.<br/>2. "토스포인트"라 함은 서비스 내 미션이나 활동 수행 시 토스 플랫폼을 통해 지급되는 포인트를 의미합니다.</p>
-            <h4>제 3 조 (리워드)</h4>
-            <p>회사는 서비스 활성화를 위해 기록 및 미션 달성 보상으로 토스포인트를 적립해 드리며, 적립 조건은 회사 내부 정책에 따릅니다.</p>
-          </div>
-          <Button display="block" color="primary" variant="fill" onClick={() => setTermsModalOpen(false)}>확인</Button>
-        </Modal.Content>
-      </Modal>
+      <SimpleModal open={termsModalOpen} onClose={() => setTermsModalOpen(false)}>
+        <div>
+          <h3 style={{ fontSize: 15, fontWeight: 900, marginBottom: 4 }}>서비스 이용약관</h3>
+          <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>세이브로그 서비스 이용 동의서</p>
+        </div>
+        <div className="terms-content-box">
+          <h4>제 1 조 (목적)</h4>
+          <p>본 약관은 "세이브로그"(이하 "회사"라 함)가 제공하는 제반 서비스의 이용조건 및 절차, 회원과 회사 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
+          <h4>제 2 조 (용어의 정의)</h4>
+          <p>1. "서비스"라 함은 이용자가 모바일 기기를 통해 소비 내역을 기록하고, 짠물 미션 및 피드 기능을 제공받는 서비스를 말합니다.<br/>2. "토스포인트"라 함은 서비스 내 미션이나 활동 수행 시 토스 플랫폼을 통해 지급되는 포인트를 의미합니다.</p>
+          <h4>제 3 조 (리워드)</h4>
+          <p>회사는 서비스 활성화를 위해 기록 및 미션 달성 보상으로 토스포인트를 적립해 드리며, 적립 조건은 회사 내부 정책에 따릅니다.</p>
+        </div>
+        <Button display="block" color="primary" variant="fill" onClick={() => setTermsModalOpen(false)}>확인</Button>
+      </SimpleModal>
 
       {/* 마케팅 수신동의 모달 */}
-      <Modal open={marketingModalOpen} onOpenChange={setMarketingModalOpen}>
-        <Modal.Content style={{ padding: '24px 20px 20px 20px', display: 'flex', flexDirection: 'column', gap: 16 }}>
-          <div>
-            <h3 style={{ fontSize: 15, fontWeight: 900, marginBottom: 4 }}>마케팅 정보 수신 동의</h3>
-            <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>혜택 알림 및 이벤트 정보 안내</p>
-          </div>
-          <div className="terms-content-box">
-            <h4>1. 개인정보 수집 및 이용 목적</h4>
-            <p>서비스 내 신규 미션, 주간 챌린지 혜택, 이벤트 정보 등 맞춤 안내를 제공하기 위해 활용합니다.</p>
-            <h4>2. 수집하는 개인정보 항목</h4>
-            <p>닉네임, 기기 고유 식별값 및 마케팅 광고 식별값</p>
-            <h4>3. 보유 및 이용 기간</h4>
-            <p>동의 철회 시 또는 회원 탈퇴 시까지 보유 및 이용하며, 거부 시에도 서비스 기본 기능은 정상 이용 가능합니다.</p>
-          </div>
-          <Button display="block" color="primary" variant="fill" onClick={() => setMarketingModalOpen(false)}>동의 완료</Button>
-        </Modal.Content>
-      </Modal>
+      <SimpleModal open={marketingModalOpen} onClose={() => setMarketingModalOpen(false)}>
+        <div>
+          <h3 style={{ fontSize: 15, fontWeight: 900, marginBottom: 4 }}>마케팅 정보 수신 동의</h3>
+          <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>혜택 알림 및 이벤트 정보 안내</p>
+        </div>
+        <div className="terms-content-box">
+          <h4>1. 개인정보 수집 및 이용 목적</h4>
+          <p>서비스 내 신규 미션, 주간 챌린지 혜택, 이벤트 정보 등 맞춤 안내를 제공하기 위해 활용합니다.</p>
+          <h4>2. 수집하는 개인정보 항목</h4>
+          <p>닉네임, 기기 고유 식별값 및 마케팅 광고 식별값</p>
+          <h4>3. 보유 및 이용 기간</h4>
+          <p>동의 철회 시 또는 회원 탈퇴 시까지 보유 및 이용하며, 거부 시에도 서비스 기본 기능은 정상 이용 가능합니다.</p>
+        </div>
+        <Button display="block" color="primary" variant="fill" onClick={() => setMarketingModalOpen(false)}>동의 완료</Button>
+      </SimpleModal>
     </div>
   );
 }
