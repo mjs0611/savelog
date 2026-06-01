@@ -61,8 +61,14 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
       e.target.value = '';
       return;
     }
+    const input = e.target;
     const reader = new FileReader();
     reader.onloadend = () => {
+      if (reader.error) {
+        alert('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
+        input.value = '';
+        return;
+      }
       setImage(reader.result as string);
     };
     reader.readAsDataURL(file);
