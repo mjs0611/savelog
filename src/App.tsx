@@ -368,9 +368,9 @@ export default function App() {
         </div>
       )}
 
-      {/* 탭 콘텐츠 */}
+      {/* 탭 콘텐츠 — display:none으로 마운트 유지 (재요청/플리커 방지) */}
       <div className="tab-content">
-        {tab === 'home' && (
+        <div style={tab !== 'home' ? { display: 'none' } : {}}>
           <HomeScreen
             daily={daily}
             streak={streak}
@@ -383,8 +383,8 @@ export default function App() {
             )}
             onClaimPending={handleClaimPending}
           />
-        )}
-        {tab === 'feed' && (
+        </div>
+        <div style={tab !== 'feed' ? { display: 'none' } : {}}>
           <FeedScreen
             userId={userId}
             onEarnPending={(amount) => {
@@ -396,8 +396,8 @@ export default function App() {
               grantFeedReward(1).catch(() => {});
             }}
           />
-        )}
-        {tab === 'rank' && (
+        </div>
+        <div style={tab !== 'rank' ? { display: 'none' } : {}}>
           <RankScreen
             userId={userId}
             weekRank={weekRank}
@@ -405,8 +405,8 @@ export default function App() {
             onClaimRankReward={handleClaimRankReward}
             claimedThisWeek={getClaimedRankReward(getWeekKey())}
           />
-        )}
-        {tab === 'profile' && (
+        </div>
+        <div style={tab !== 'profile' ? { display: 'none' } : {}}>
           <ProfileScreen
             userId={userId}
             nickname={nickname}
@@ -414,7 +414,7 @@ export default function App() {
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
           />
-        )}
+        </div>
       </div>
 
       {/* 하단 탭바 */}
