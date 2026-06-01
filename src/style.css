@@ -309,6 +309,8 @@ input { font: inherit; outline: none; border: none; }
 
 /* ── Home Screen ────────────────────────────────────────────────────────────── */
 
+.screen-home { gap: 16px; }
+
 .home-header {
   display: flex;
   justify-content: space-between;
@@ -1640,11 +1642,6 @@ input { font: inherit; outline: none; border: none; }
   z-index: 100;
   animation: storyHeartFloat 1.8s cubic-bezier(0.1, 0.85, 0.25, 1) forwards;
   filter: drop-shadow(0 6px 14px rgba(0,0,0,0.6));
-}
-
-@keyframes floating {
-  0%, 100% { transform: translateY(0); }
-  50% { transform: translateY(-10px); }
 }
 
 @keyframes fadeInOverlay {
