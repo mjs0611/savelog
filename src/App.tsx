@@ -23,7 +23,7 @@ import {
   type StreakData,
   type DailyState,
 } from './lib/storage';
-import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
+import { initAit, grantPendingReward, grantRankReward, grantFeedReward, grantStreakReward } from './lib/tosspoint';
 import { preloadInterstitial, showInterstitial, preloadReward, showReward } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey } from './lib/utils';
@@ -40,7 +40,7 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'home',    icon: '/images/icon_home.png', label: '홈'  },
   { key: 'feed',    icon: '/images/icon_feed.png', label: '피드' },
   { key: 'rank',    icon: '/images/icon_rank.png', label: '순위' },
-  { key: 'profile', icon: '/images/icon_profile.png', label: '나'  },
+  { key: 'profile', icon: '/images/icon_profile.png', label: '내 정보'  },
 ];
 
 
@@ -274,21 +274,24 @@ export default function App() {
       setRecordedDate(today);
       setStreak(newStreak);
 
-      if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-        totalEarn += 20;
-      }
+      const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
 
       const newPending = addPendingPoints(totalEarn);
       setPendingPoints(newPending);
       if (newPending > 0) preloadReward();
+
+      // 7일 연속 달성 보너스는 별도 프로모션으로 직접 지급
+      if (isStreakBonus) {
+        grantStreakReward(20).catch(() => {});
+      }
 
       // 토스트 조합
       let toastMsg = `✅ 기록 완료! +${totalEarn}원 대기 중 (광고 보고 받기)`;
       if (missionCleared) {
         toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중`;
       }
-      if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-        toastMsg = `🔥 7일 완주 보너스! +${totalEarn}원 대기 중`;
+      if (isStreakBonus) {
+        toastMsg = `🔥 7일 완주 보너스! +20원 바로 지급 + +${totalEarn}원 대기 중`;
       }
 
       showToast(toastMsg);
@@ -378,6 +381,9 @@ export default function App() {
               const next = addPendingPoints(amount);
               setPendingPoints(next);
               if (next > 0) preloadReward();
+            }}
+            onGrantFeedReward={() => {
+              grantFeedReward(1).catch(() => {});
             }}
           />
         )}

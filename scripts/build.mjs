@@ -40,5 +40,11 @@ for (const chunk of outputs) {
   }
 }
 
+// Copy public/ directory to outDir (Vite skips this with write:false)
+const publicDir = path.join(root, 'public');
+if (fs.existsSync(publicDir)) {
+  fs.cpSync(publicDir, outDir, { recursive: true });
+}
+
 console.log('Built ' + outputs.length + ' files to dist/');
 process.exit(0);

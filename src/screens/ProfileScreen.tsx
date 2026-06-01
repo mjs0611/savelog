@@ -269,24 +269,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         );
       })()}
 
-      {/* 스탯 */}
-      <div className="stats-row">
-        <div className="glass-card stat-card">
-          <span className="stat-icon">
-            <img src="/images/icon_flame.png" className="custom-icon--lg" />
-          </span>
-          <span className="stat-value">{streak.streak}일</span>
-          <span className="stat-label">연속 기록</span>
-        </div>
-        <div className="glass-card stat-card">
-          <span className="stat-icon">
-            <img src="/images/icon_target.png" className="custom-icon--lg" />
-          </span>
-          <span className="stat-value">{streak.totalDays}일</span>
-          <span className="stat-label">총 기록</span>
-        </div>
-      </div>
-
       {/* 내 쪽지함 📬 */}
       <div className="glass-card mailbox-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>

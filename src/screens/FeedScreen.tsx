@@ -8,6 +8,7 @@ import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotific
 interface Props {
   userId: string;
   onEarnPending?: (amount: number) => void;
+  onGrantFeedReward?: () => void;
 }
 
 const MOCK_STORIES = [
@@ -18,7 +19,7 @@ const MOCK_STORIES = [
   { id: '5', name: '탕진러', icon: '/images/mbti_unicorn.png', color: '#E0A0FF', spent: '148,000원', text: '헤어샵에서 플렉스했어용', recorded: false },
 ];
 
-export default function FeedScreen({ userId, onEarnPending }: Props) {
+export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -138,6 +139,10 @@ export default function FeedScreen({ userId, onEarnPending }: Props) {
     if (entry.user_id === userId) return;
     if (toggling) return;
     setToggling(entry.id);
+
+    // 반응 추가일 때만 포인트 지급
+    const isAdding = entry.my_reaction !== type;
+    if (isAdding) onGrantFeedReward?.();
 
     // 파티클 생성
     spawnParticles(type === 'trust' ? '👃' : '🤔', e);

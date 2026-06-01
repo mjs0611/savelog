@@ -1,5 +1,7 @@
-const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? 'TEST_01KT1WCAF6DRYGEKQFXVA48DPZ';
-const RANK_PROMO  = import.meta.env.VITE_RANK_PROMO_CODE  ?? 'PLACEHOLDER_RANK';
+const DAILY_PROMO  = import.meta.env.VITE_DAILY_PROMO_CODE  ?? '01KT1WCAF6DRYGEKQFXVA48DPZ';
+const RANK_PROMO   = import.meta.env.VITE_RANK_PROMO_CODE   ?? '01KSJNKQYZKXM8M7FTB3B601J2';
+const FEED_PROMO   = import.meta.env.VITE_FEED_PROMO_CODE   ?? '01KSJNZP5GB4PZAQ6HZ5BK65VS';
+const STREAK_PROMO = import.meta.env.VITE_STREAK_PROMO_CODE ?? '01KSJNJ16PG8SPY1JVRXYV9P5M';
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
 
@@ -46,7 +48,17 @@ export async function grantRankReward(amount: number): Promise<boolean> {
   return grant(RANK_PROMO, amount);
 }
 
-// 펜딩 포인트 일괄 지급 (광고 시청 후)
+// 게시글 반응 리워드 (직접 지급)
+export async function grantFeedReward(amount: number): Promise<boolean> {
+  return grant(FEED_PROMO, amount);
+}
+
+// 연속 기록 달성 리워드 (직접 지급)
+export async function grantStreakReward(amount: number): Promise<boolean> {
+  return grant(STREAK_PROMO, amount);
+}
+
+// 펜딩 포인트 일괄 지급 (소비기록/밸런스 투표 → 광고 시청 후)
 export async function grantPendingReward(amount: number): Promise<boolean> {
   return grant(DAILY_PROMO, amount);
 }
