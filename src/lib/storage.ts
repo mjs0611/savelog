@@ -51,7 +51,7 @@ export function updateStreak(today: string): StreakData {
 
   const yesterday = new Date(today + 'T00:00:00');
   yesterday.setDate(yesterday.getDate() - 1);
-  const yStr = yesterday.toISOString().split('T')[0];
+  const yStr = `${yesterday.getFullYear()}-${String(yesterday.getMonth() + 1).padStart(2, '0')}-${String(yesterday.getDate()).padStart(2, '0')}`;
 
   const newStreak = data.lastDate === yStr ? data.streak + 1 : 1;
   const next: StreakData = {
