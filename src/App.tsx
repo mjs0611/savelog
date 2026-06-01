@@ -77,6 +77,7 @@ export default function App() {
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rankClaimingRef = useRef(false);
+  const pendingClaimingRef = useRef(false);
 
   useEffect(() => {
     initAit();
@@ -335,18 +336,24 @@ export default function App() {
   }
 
   function handleClaimPending() {
-    if (pendingPoints <= 0) return;
+    if (pendingPoints <= 0 || pendingClaimingRef.current) return;
+    pendingClaimingRef.current = true;
     const amount = pendingPoints;
     showReward(async () => {
-      const ok = await grantPendingReward(amount);
-      if (!ok) {
-        showToast('포인트 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
-        return;
+      try {
+        const ok = await grantPendingReward(amount);
+        if (!ok) {
+          showToast('포인트 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        clearPendingPoints();
+        setPendingPoints(0);
+        showToast(`🎁 ${amount}원 지급 완료!`);
+      } finally {
+        pendingClaimingRef.current = false;
       }
-      clearPendingPoints();
-      setPendingPoints(0);
-      showToast(`🎁 ${amount}원 지급 완료!`);
     }, () => {
+      pendingClaimingRef.current = false;
       showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
     });
   }
@@ -400,7 +407,10 @@ export default function App() {
             weekRank={weekRank}
             userId={userId}
             pendingPoints={pendingPoints}
-            onRecord={() => !daily.recorded && setShowRecord(true)}
+            onRecord={() => {
+              const today = getTodayStr();
+              if (!daily.recorded || daily.date !== today) setShowRecord(true);
+            }}
             onQuickZeroSpend={() => handleCloseAdAndSubmit(
               [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
             )}
