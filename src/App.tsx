@@ -76,6 +76,7 @@ export default function App() {
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const submittingRef = useRef(false);
   const rankClaimingRef = useRef(false);
   const pendingClaimingRef = useRef(false);
 
@@ -237,13 +238,14 @@ export default function App() {
   }
 
   async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
-    if (submitting || (daily.recorded && daily.date === getTodayStr())) return;
+    if (submittingRef.current || (daily.recorded && daily.date === getTodayStr())) return;
     showInterstitial(() => handleCloseAdAndSubmit(items, image));
   }
 
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
     const today = getTodayStr(); // 제출 시점의 날짜 (자정 이후 앱 재진입 대응)
-    if (submitting || (daily.recorded && daily.date === today)) return;
+    if (submittingRef.current || (daily.recorded && daily.date === today)) return;
+    submittingRef.current = true;
     setSubmitting(true);
     try {
       const total = items.reduce((s, i) => s + i.amount, 0);
@@ -331,6 +333,7 @@ export default function App() {
       setShowRecord(false);
       loadRank();
     } finally {
+      submittingRef.current = false;
       setSubmitting(false);
     }
   }
