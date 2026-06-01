@@ -69,9 +69,10 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               value={draft}
               maxLength={12}
               onChange={(e) => setDraft(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && saveNickname()}
               autoFocus
             />
-            <Button size="small" color="primary" variant="fill" onClick={saveNickname}>저장</Button>
+            <Button size="small" color="primary" variant="fill" onClick={saveNickname} disabled={!draft.trim()}>저장</Button>
             <Button size="small" color="dark" variant="weak" onClick={() => { setDraft(nickname); setEditing(false); }}>취소</Button>
           </div>
         ) : (
