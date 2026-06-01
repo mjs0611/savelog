@@ -76,6 +76,7 @@ export default function App() {
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rankClaimingRef = useRef(false);
 
   useEffect(() => {
     initAit();
@@ -352,14 +353,19 @@ export default function App() {
 
   async function handleClaimRankReward(amount: number) {
     const weekKey = getWeekKey();
-    if (getClaimedRankReward(weekKey)) return;
-    const ok = await grantRankReward(amount);
-    if (!ok) {
-      showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
-      return;
+    if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
+    rankClaimingRef.current = true;
+    try {
+      const ok = await grantRankReward(amount);
+      if (!ok) {
+        showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      setClaimedRankReward(weekKey);
+      showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
+    } finally {
+      rankClaimingRef.current = false;
     }
-    setClaimedRankReward(weekKey);
-    showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
   }
 
   function showToast(msg: string) {
