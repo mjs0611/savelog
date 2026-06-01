@@ -371,7 +371,16 @@ export default function App() {
             onClaimPending={handleClaimPending}
           />
         )}
-        {tab === 'feed' && <FeedScreen userId={userId} />}
+        {tab === 'feed' && (
+          <FeedScreen
+            userId={userId}
+            onEarnPending={(amount) => {
+              const next = addPendingPoints(amount);
+              setPendingPoints(next);
+              if (next > 0) preloadReward();
+            }}
+          />
+        )}
         {tab === 'rank' && (
           <RankScreen
             userId={userId}

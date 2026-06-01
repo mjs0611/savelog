@@ -7,6 +7,7 @@ import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotific
 
 interface Props {
   userId: string;
+  onEarnPending?: (amount: number) => void;
 }
 
 const MOCK_STORIES = [
@@ -17,7 +18,7 @@ const MOCK_STORIES = [
   { id: '5', name: '탕진러', icon: '/images/mbti_unicorn.png', color: '#E0A0FF', spent: '148,000원', text: '헤어샵에서 플렉스했어용', recorded: false },
 ];
 
-export default function FeedScreen({ userId }: Props) {
+export default function FeedScreen({ userId, onEarnPending }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -326,6 +327,7 @@ export default function FeedScreen({ userId }: Props) {
                       const overPct = 65 + Math.floor(Math.random() * 20);
                       setBalanceStats({ over: overPct, ok: 100 - overPct });
                       setBalanceVoted('over');
+                      onEarnPending?.(1);
                       
                       // spawn emoji particles
                       const rect = e.currentTarget.getBoundingClientRect();
@@ -358,6 +360,7 @@ export default function FeedScreen({ userId }: Props) {
                       const okPct = 60 + Math.floor(Math.random() * 25);
                       setBalanceStats({ over: 100 - okPct, ok: okPct });
                       setBalanceVoted('ok');
+                      onEarnPending?.(1);
 
                       // spawn emoji particles
                       const rect = e.currentTarget.getBoundingClientRect();

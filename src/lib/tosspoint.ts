@@ -1,4 +1,4 @@
-const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? 'PLACEHOLDER_DAILY';
+const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? 'TEST_01KT1WCAF6DRYGEKQFXVA48DPZ';
 const RANK_PROMO  = import.meta.env.VITE_RANK_PROMO_CODE  ?? 'PLACEHOLDER_RANK';
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
