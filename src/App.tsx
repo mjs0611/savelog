@@ -220,7 +220,7 @@ export default function App() {
 
   async function handleCloseAdAndSubmit(override?: { items: SpendingItem[], image?: string }) {
     const payload = override ?? pendingSubmit;
-    if (!payload || submitting) return;
+    if (!payload || submitting || daily.recorded) return;
     setSubmitting(true);
 
     const { items, image } = payload;
@@ -352,7 +352,10 @@ export default function App() {
             userId={userId}
             pendingPoints={pendingPoints}
             onRecord={() => !daily.recorded && setShowRecord(true)}
-            onQuickZeroSpend={() => handleCloseAdAndSubmit({ items: [], image: undefined })}
+            onQuickZeroSpend={() => handleCloseAdAndSubmit({
+              items: [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
+              image: undefined,
+            })}
             onClaimPending={handleClaimPending}
           />
         )}
