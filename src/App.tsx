@@ -357,7 +357,15 @@ export default function App() {
           />
         )}
         {tab === 'feed' && <FeedScreen userId={userId} />}
-        {tab === 'rank' && <RankScreen userId={userId} weekRank={weekRank} loading={rankLoading} />}
+        {tab === 'rank' && (
+          <RankScreen
+            userId={userId}
+            weekRank={weekRank}
+            loading={rankLoading}
+            onClaimRankReward={handleClaimRankReward}
+            claimedThisWeek={getClaimedRankReward(getWeekKey())}
+          />
+        )}
         {tab === 'profile' && (
           <ProfileScreen
             userId={userId}

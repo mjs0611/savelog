@@ -6,14 +6,21 @@ interface Props {
   userId: string;
   weekRank: WeekRankRow[];
   loading: boolean;
+  onClaimRankReward?: (amount: number) => void;
+  claimedThisWeek?: boolean;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, loading }: Props) {
+export default function RankScreen({ userId, weekRank, loading, onClaimRankReward, claimedThisWeek }: Props) {
   const weekKey = getWeekKey();
   const myIdx = weekRank.findIndex((r) => r.user_id === userId);
   const totalParticipants = weekRank.length;
+
+  // 수령 가능한 순위 리워드 계산
+  const rankRewardAmount = myIdx === 0 ? 100
+    : myIdx >= 0 && totalParticipants > 0 && (myIdx + 1) / totalParticipants <= 0.1 ? 30
+    : 0;
 
   return (
     <div className="screen screen-rank">
@@ -65,7 +72,31 @@ export default function RankScreen({ userId, weekRank, loading }: Props) {
           <div className="reward-row">7일 완주 <span>+20원</span></div>
           <div className="reward-row">매일 기록 <span>+3원/일</span></div>
         </div>
-        <p className="reward-note">* 주간 1위 리워드는 일요일 자정에 자동 지급됩니다</p>
+        {rankRewardAmount > 0 && onClaimRankReward && (
+          <button
+            disabled={claimedThisWeek}
+            onClick={() => onClaimRankReward(rankRewardAmount)}
+            style={{
+              marginTop: 12,
+              width: '100%',
+              padding: '10px 0',
+              borderRadius: 10,
+              border: 'none',
+              background: claimedThisWeek
+                ? 'rgba(255,255,255,0.05)'
+                : 'linear-gradient(135deg, #FFD700 0%, #FF9500 100%)',
+              color: claimedThisWeek ? 'var(--text-mute)' : '#090A10',
+              fontSize: 13,
+              fontWeight: 900,
+              cursor: claimedThisWeek ? 'default' : 'pointer',
+              boxShadow: claimedThisWeek ? 'none' : '0 4px 12px rgba(255, 200, 0, 0.25)',
+              transition: 'all 0.2s',
+            }}
+          >
+            {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : `🏆 리워드 수령하기 +${rankRewardAmount}원`}
+          </button>
+        )}
+        <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 즉시 지급됩니다</p>
       </div>
 
       {/* 순위 리스트 */}
