@@ -242,11 +242,10 @@ export default function FeedScreen({ userId }: Props) {
       </div>
 
       {/* 🎴 짠물 밸런스 게임 (Tinder Swipe Widget) */}
-      <div className="glass-card balance-game-card" style={{ margin: '0 16px 16px 16px', padding: 18, border: '1px solid rgba(255,255,255,0.08)', background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)' }}>
+      <div className="glass-card balance-game-card" style={{ margin: '0 0 4px 0', padding: 18, border: '1px solid rgba(255,255,255,0.08)', background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
           <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
             🎴 짠물 밸런스 게임
-            <span style={{ fontSize: 10, background: 'rgba(0,245,160,0.15)', color: '#00F5A0', padding: '1px 5px', borderRadius: 4 }}>+2P</span>
           </span>
           <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
             {balanceIndex < MOCK_BALANCE_CARDS.length ? `${balanceIndex + 1} / ${MOCK_BALANCE_CARDS.length}` : '완료 🏆'}
@@ -556,7 +555,7 @@ export default function FeedScreen({ userId }: Props) {
                 )}
 
                 {/* 신뢰도 경고 */}
-                {entry.doubt_count > 0 && entry.trust_count > 0 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
+                {entry.doubt_count > 0 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
                   <div className="doubt-warning">
                     🚨 일부 사용자가 의심하고 있어요 ({Math.round(entry.doubt_count / (entry.trust_count + entry.doubt_count) * 100)}%)
                   </div>
@@ -922,7 +921,7 @@ export default function FeedScreen({ userId }: Props) {
                   onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.97)'}
                   onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
                 >
-                  📸 인스타 스토리 공유하기 (+15P)
+                  📸 인스타 스토리 공유하기
                 </button>
                 
                 <button
