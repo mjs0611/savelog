@@ -26,9 +26,10 @@ interface Props {
   streak: StreakData;
   onNicknameChange: (name: string) => void;
   onStartTest: () => void;
+  refreshToken?: number;
 }
 
-export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest }: Props) {
+export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
@@ -39,7 +40,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   useEffect(() => {
     fetchMyWeekEntries(userId, getWeekKey()).then(setMyEntries);
     setMessages(getCheeringMessages());
-  }, [userId]);
+  }, [userId, refreshToken]);
 
   function saveNickname() {
     if (!draft.trim()) return;

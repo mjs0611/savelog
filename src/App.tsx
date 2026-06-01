@@ -414,6 +414,7 @@ export default function App() {
             userId={userId}
             nickname={nickname}
             streak={streak}
+            refreshToken={feedRefreshToken}
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
           />
