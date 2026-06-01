@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, TextField, Spacing } from '@toss/tds-mobile';
+import { Button, TextField } from '@toss/tds-mobile';
 import { getAnonymousKey } from '@apps-in-toss/web-framework';
 import {
   getUserId,
@@ -196,8 +196,6 @@ export default function App() {
           />
         </div>
 
-        <Spacing size={24} />
-
         <Button
           size="xlarge"
           display="full"
@@ -220,87 +218,89 @@ export default function App() {
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
     if (submitting || daily.recorded) return;
     setSubmitting(true);
-    const total = items.reduce((s, i) => s + i.amount, 0);
-    const weekKey = getWeekKey();
-    const currentPersona = getPersona() ?? undefined;
+    try {
+      const total = items.reduce((s, i) => s + i.amount, 0);
+      const weekKey = getWeekKey();
+      const currentPersona = getPersona() ?? undefined;
 
-    const entryId = await submitEntry({
-      user_id: userId,
-      nickname: nickname!,
-      date: today,
-      week_key: weekKey,
-      items,
-      total_amount: total,
-      persona: currentPersona,
-      image,
-    });
+      const entryId = await submitEntry({
+        user_id: userId,
+        nickname: nickname!,
+        date: today,
+        week_key: weekKey,
+        items,
+        total_amount: total,
+        persona: currentPersona,
+        image,
+      });
 
-    if (!entryId && isSupabaseConfigured) {
-      showToast('기록 저장에 실패했어요. 다시 시도해 주세요.');
-      setSubmitting(false);
-      return;
-    }
-
-    // 미션 확인
-    const mission = getDailyMission(today);
-    let missionCleared = false;
-    if (!mission.completed) {
-      if (mission.category === '기타') {
-        if (total === 0) missionCleared = true;
-      } else if (mission.category === '식비') {
-        const foodSpend = items.filter(x => x.category === '식비').reduce((s, x) => s + x.amount, 0);
-        const hasFoodRecord = items.some(x => x.category === '식비');
-        if (!hasFoodRecord || foodSpend <= 5000) missionCleared = true;
-      } else if (mission.category === '교통') {
-        const transportSpend = items.filter(x => x.category === '교통').reduce((s, x) => s + x.amount, 0);
-        const hasTransportRecord = items.some(x => x.category === '교통');
-        if (!hasTransportRecord || transportSpend <= 2000) missionCleared = true;
-      } else {
-        const categorySpend = items.filter(x => x.category === mission.category).reduce((s, x) => s + x.amount, 0);
-        const hasCategoryRecord = items.some(x => x.category === mission.category);
-        if (!hasCategoryRecord || categorySpend === 0) missionCleared = true;
+      if (!entryId && isSupabaseConfigured) {
+        showToast('기록 저장에 실패했어요. 다시 시도해 주세요.');
+        return;
       }
+
+      // 미션 확인
+      const mission = getDailyMission(today);
+      let missionCleared = false;
+      if (!mission.completed) {
+        if (mission.category === '기타') {
+          if (total === 0) missionCleared = true;
+        } else if (mission.category === '식비') {
+          const foodSpend = items.filter(x => x.category === '식비').reduce((s, x) => s + x.amount, 0);
+          const hasFoodRecord = items.some(x => x.category === '식비');
+          if (!hasFoodRecord || foodSpend <= 5000) missionCleared = true;
+        } else if (mission.category === '교통') {
+          const transportSpend = items.filter(x => x.category === '교통').reduce((s, x) => s + x.amount, 0);
+          const hasTransportRecord = items.some(x => x.category === '교통');
+          if (!hasTransportRecord || transportSpend <= 2000) missionCleared = true;
+        } else {
+          const categorySpend = items.filter(x => x.category === mission.category).reduce((s, x) => s + x.amount, 0);
+          const hasCategoryRecord = items.some(x => x.category === mission.category);
+          if (!hasCategoryRecord || categorySpend === 0) missionCleared = true;
+        }
+      }
+
+      if (missionCleared) {
+        completeDailyMission(today);
+      }
+
+      // 펜딩 포인트 적립 (max 50원, 광고 보고 수령)
+      const dailyEarn = 3;
+      let totalEarn = dailyEarn;
+      if (missionCleared) totalEarn += 5;
+
+      // 스트릭 업데이트
+      const newStreak = updateStreak(today);
+      setRecordedDate(today);
+      setStreak(newStreak);
+
+      if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
+        totalEarn += 20;
+      }
+
+      const newPending = addPendingPoints(totalEarn);
+      setPendingPoints(newPending);
+      if (newPending > 0) preloadReward();
+
+      // 토스트 조합
+      let toastMsg = `✅ 기록 완료! +${totalEarn}원 대기 중 (광고 보고 받기)`;
+      if (missionCleared) {
+        toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중`;
+      }
+      if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
+        toastMsg = `🔥 7일 완주 보너스! +${totalEarn}원 대기 중`;
+      }
+
+      showToast(toastMsg);
+
+      const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: total };
+      saveDailyState(newDaily);
+      setDaily(newDaily);
+      setShowRecord(false);
+      loadRank();
+    } finally {
+      setSubmitting(false);
     }
-
-    if (missionCleared) {
-      completeDailyMission(today);
-    }
-
-    // 펜딩 포인트 적립 (max 50원, 광고 보고 수령)
-    const dailyEarn = 3;
-    let totalEarn = dailyEarn;
-    if (missionCleared) totalEarn += 5;
-
-    // 스트릭 업데이트
-    const newStreak = updateStreak(today);
-    setRecordedDate(today);
-    setStreak(newStreak);
-
-    if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-      totalEarn += 20;
-    }
-
-    const newPending = addPendingPoints(totalEarn);
-    setPendingPoints(newPending);
-    if (newPending > 0) preloadReward();
-
-    // 토스트 조합
-    let toastMsg = `✅ 기록 완료! +${totalEarn}원 대기 중 (광고 보고 받기)`;
-    if (missionCleared) {
-      toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중`;
-    }
-    if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-      toastMsg = `🔥 7일 완주 보너스! +${totalEarn}원 대기 중`;
-    }
-
-    showToast(toastMsg);
-
-    const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: total };
-    saveDailyState(newDaily);
-    setDaily(newDaily);
-    setSubmitting(false);
-    setShowRecord(false);
-    loadRank();
   }
 
   function handleClaimPending() {
