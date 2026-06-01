@@ -39,6 +39,9 @@ const MOCK_BALANCE_CARDS = [
   }
 ];
 
+const COMMENT_CHIPS = ['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'];
+const STORY_EMOJI_REACTIONS = ['❤️', '👏', '🔥', '😮', '😢', '💸', '👑'];
+
 const MOCK_STORIES = [
   { id: '1', name: '자린고비', icon: '/images/mbti_hamster.png', color: '#FF9500', spent: '0원', text: '점심 동료가 사줌 개이득!', recorded: true },
   { id: '2', name: '가성비킹', icon: '/images/mbti_robot.png', color: '#00F5A0', spent: '4,500원', text: '편의점 학식 정식 얌얌', recorded: true },
@@ -606,7 +609,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 <div className="feed-comment-chips-container">
                   <span className="comment-chips-label">말 한마디:</span>
                   <div className="comment-chips-scroll">
-                    {['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'].map((cmt) => (
+                    {COMMENT_CHIPS.map((cmt) => (
                       <button
                         key={cmt}
                         className="comment-chip-btn"
@@ -706,7 +709,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           {/* 하단 리액션 전송 바 (인스타그램 스타일) */}
           <div style={{ padding: '16px 16px 36px 16px', background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%)', display: 'flex', flexDirection: 'column', gap: 12, zIndex: 10 }}>
             <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-              {['❤️', '👏', '🔥', '😮', '😢', '💸', '👑'].map((emoji) => (
+              {STORY_EMOJI_REACTIONS.map((emoji) => (
                 <button
                   key={emoji}
                   onClick={(e) => {
