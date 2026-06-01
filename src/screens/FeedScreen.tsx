@@ -23,6 +23,7 @@ const MOCK_STORIES = [
 export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, refreshToken = 0 }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
+  const initialLoaded = React.useRef(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const [selectedStory, setSelectedStory] = useState<typeof MOCK_STORIES[number] | null>(null);
   
@@ -92,11 +93,12 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const myPersonaKey = getPersona();
 
   useEffect(() => {
-    load();
+    // 최초 로드는 스켈레톤 표시, 이후 refreshToken 변경은 조용히 갱신
+    load(initialLoaded.current);
   }, [refreshToken]);
 
-  async function load() {
-    setLoading(true);
+  async function load(silent = false) {
+    if (!silent) setLoading(true);
     try {
       const data = await fetchFeed(userId);
       setEntries(data);
@@ -116,7 +118,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         });
       }
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
+      initialLoaded.current = true;
     }
   }
 
