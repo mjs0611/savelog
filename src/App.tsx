@@ -45,7 +45,6 @@ const TABS: { key: Tab; icon: string; label: string }[] = [
 
 
 export default function App() {
-  const today      = useRef(getTodayStr()).current;
   const fallbackId = useRef(getUserId()).current;
 
   const [anonymousKey, setAnonymousKey] = useState<string | null>(() => getUserKey());
@@ -65,7 +64,7 @@ export default function App() {
     if (path === 'feed' || path === 'rank' || path === 'profile') return path;
     return 'home';
   });
-  const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(today));
+  const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
   const [streak, setStreak]     = useState<StreakData>(() => loadStreak());
   const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
   const [rankLoading, setRankLoading] = useState(true);
@@ -86,6 +85,18 @@ export default function App() {
     if (termsAgreed && !anonymousKey && import.meta.env.PROD) {
       fetchAnonymousKey();
     }
+  }, []);
+
+  // 자정 넘어 앱으로 돌아올 때 daily 상태 갱신 (날짜 staleness 방지)
+  useEffect(() => {
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'visible') {
+        const currentDay = getTodayStr();
+        setDaily(prev => prev.date !== currentDay ? loadDailyState(currentDay) : prev);
+      }
+    }
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
 
   function navigateTo(next: Tab) {
@@ -231,6 +242,7 @@ export default function App() {
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
     if (submitting || daily.recorded) return;
     setSubmitting(true);
+    const today = getTodayStr(); // 제출 시점의 날짜 (자정 이후 앱 재진입 대응)
     try {
       const total = items.reduce((s, i) => s + i.amount, 0);
       const weekKey = getWeekKey();

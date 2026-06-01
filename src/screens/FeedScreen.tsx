@@ -12,6 +12,33 @@ interface Props {
   refreshToken?: number;
 }
 
+const MOCK_BALANCE_CARDS = [
+  {
+    id: 1,
+    nickname: '시발비용맨 🦄',
+    spent: '스타벅스 시그니처 핫초코',
+    amount: 6500,
+    emoji: '☕',
+    description: '스트레스 잔뜩 받아서 당 충전용으로 벤티 사이즈 주문함 ㅠ'
+  },
+  {
+    id: 2,
+    nickname: '자린고비 햄스터 🐹',
+    spent: '지각 방지용 카카오 택시',
+    amount: 14200,
+    emoji: '🚕',
+    description: '9시 정각 출근 세이프를 위해 어쩔 수 없이 지른 시발비용...'
+  },
+  {
+    id: 3,
+    nickname: '가성비 AI 🤖',
+    spent: '삼성 초고속 무선 충전기',
+    amount: 28000,
+    emoji: '🔌',
+    description: '충전 속도 너무 답답해서 지르긴 했는데 이거 과소비일까요?'
+  }
+];
+
 const MOCK_STORIES = [
   { id: '1', name: '자린고비', icon: '/images/mbti_hamster.png', color: '#FF9500', spent: '0원', text: '점심 동료가 사줌 개이득!', recorded: true },
   { id: '2', name: '가성비킹', icon: '/images/mbti_robot.png', color: '#00F5A0', spent: '4,500원', text: '편의점 학식 정식 얌얌', recorded: true },
@@ -62,33 +89,6 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [balanceIndex, setBalanceIndex] = useState(0);
   const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
   const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
-
-  const MOCK_BALANCE_CARDS = [
-    {
-      id: 1,
-      nickname: '시발비용맨 🦄',
-      spent: '스타벅스 시그니처 핫초코',
-      amount: 6500,
-      emoji: '☕',
-      description: '스트레스 잔뜩 받아서 당 충전용으로 벤티 사이즈 주문함 ㅠ'
-    },
-    {
-      id: 2,
-      nickname: '자린고비 햄스터 🐹',
-      spent: '지각 방지용 카카오 택시',
-      amount: 14200,
-      emoji: '🚕',
-      description: '9시 정각 출근 세이프를 위해 어쩔 수 없이 지른 시발비용...'
-    },
-    {
-      id: 3,
-      nickname: '가성비 AI 🤖',
-      spent: '삼성 초고속 무선 충전기',
-      amount: 28000,
-      emoji: '🔌',
-      description: '충전 속도 너무 답답해서 지르긴 했는데 이거 과소비일까요?'
-    }
-  ];
 
   const myPersonaKey = getPersona();
 
