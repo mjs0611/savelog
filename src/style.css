@@ -877,6 +877,9 @@ input { font: inherit; outline: none; border: none; }
 
 /* ── Skeleton / Empty ────────────────────────────────────────────────────────── */
 
+.feed-skeleton { display: flex; flex-direction: column; gap: 12px; }
+.rank-skeleton { display: flex; flex-direction: column; gap: 10px; }
+
 .skeleton-card {
   height: 140px;
   background: linear-gradient(90deg, #18181C 25%, #24242A 50%, #18181C 75%);
