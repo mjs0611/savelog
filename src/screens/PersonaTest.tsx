@@ -63,7 +63,7 @@ export default function PersonaTest({ onClose }: Props) {
   const [answers, setAnswers] = useState<string[]>([]);
   const [result, setResult] = useState<string | null>(null);
 
-  const progressPercent = Math.round(((qIdx) / QUESTIONS.length) * 100);
+  const progressPercent = Math.round(((qIdx + 1) / QUESTIONS.length) * 100);
 
   function handleSelect(type: string) {
     const nextAnswers = [...answers, type];
