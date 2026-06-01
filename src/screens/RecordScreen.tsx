@@ -253,6 +253,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
         <div className="modal-footer">
           {items.length === 0 ? (
             <p className="submit-hint">항목을 1개 이상 추가해 주세요</p>
+          ) : showForm ? (
+            <p className="submit-hint">항목 추가 버튼을 눌러 먼저 저장해 주세요</p>
           ) : (
             <Button
               size="xlarge"
