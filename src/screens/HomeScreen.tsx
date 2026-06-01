@@ -20,10 +20,10 @@ interface Props {
 const WEEK_DAYS = 7;
 
 const MOCK_ONLINE_USERS = [
-  { id: 'user-1', nickname: '시발비용맨', spentAmount: 12500, personaKey: 'unicorn', isOnline: true, hasPoked: false },
+  { id: 'user-1', nickname: '시발비용맨', spentAmount: 12500, personaKey: 'flexer', isOnline: true, hasPoked: false },
   { id: 'user-2', nickname: '자린고비 햄스터', spentAmount: 0, personaKey: 'hamster', isOnline: true, hasPoked: false },
-  { id: 'user-3', nickname: '가성비 AI', spentAmount: 4500, personaKey: 'robot', isOnline: false, hasPoked: false },
-  { id: 'user-4', nickname: '장바구니 키퍼', spentAmount: 0, personaKey: 'cart', isOnline: true, hasPoked: false }
+  { id: 'user-3', nickname: '가성비 AI', spentAmount: 4500, personaKey: 'cost_ai', isOnline: false, hasPoked: false },
+  { id: 'user-4', nickname: '장바구니 키퍼', spentAmount: 0, personaKey: 'keeper', isOnline: true, hasPoked: false }
 ];
 
 export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
