@@ -1,6 +1,5 @@
-const DAILY_PROMO   = import.meta.env.VITE_DAILY_PROMO_CODE  ?? 'PLACEHOLDER_DAILY';
-const STREAK_PROMO  = import.meta.env.VITE_STREAK_PROMO_CODE ?? 'PLACEHOLDER_STREAK';
-const RANK_PROMO    = import.meta.env.VITE_RANK_PROMO_CODE   ?? 'PLACEHOLDER_RANK';
+const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? 'PLACEHOLDER_DAILY';
+const RANK_PROMO  = import.meta.env.VITE_RANK_PROMO_CODE  ?? 'PLACEHOLDER_RANK';
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
 
@@ -40,16 +39,6 @@ async function grant(promoCode: string, amount: number): Promise<boolean> {
   } catch {
     return false;
   }
-}
-
-// 매일 기록 3원
-export async function grantDailyPoint(): Promise<boolean> {
-  return grant(DAILY_PROMO, 3);
-}
-
-// 연속 기록 완주 보너스 (7일 +20원)
-export async function grantStreakBonus(): Promise<boolean> {
-  return grant(STREAK_PROMO, 20);
 }
 
 // 주간 순위 리워드

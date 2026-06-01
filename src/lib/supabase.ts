@@ -155,11 +155,20 @@ export async function fetchMyWeekEntries(userId: string, weekKey: string): Promi
 
 // ── Mock data (Supabase 미설정 시 개발용) ──────────────────────────────────────
 
+function localDateStr(d: Date): string {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${day}`;
+}
+
 function buildMockFeed(userId: string): EntryWithReactions[] {
+  const today = localDateStr(new Date());
+  const yesterday = localDateStr(new Date(Date.now() - 86400000));
   return [
     {
       id: 'mock-1', user_id: 'mock-a', nickname: '절약왕민지',
-      date: new Date().toISOString().split('T')[0],
+      date: today,
       week_key: 'mock', items: [
         { category: '식비', emoji: '🍚', amount: 0, comment: '회사 도시락 싸옴' },
         { category: '교통', emoji: '🚇', amount: 0, comment: '자전거 출근' },
@@ -173,7 +182,7 @@ function buildMockFeed(userId: string): EntryWithReactions[] {
     },
     {
       id: 'mock-2', user_id: 'mock-b', nickname: '짠돌이홍길동',
-      date: new Date().toISOString().split('T')[0],
+      date: today,
       week_key: 'mock', items: [
         { category: '식비', emoji: '🍚', amount: 3500, comment: '편의점 삼각김밥 2개' },
         { category: '교통', emoji: '🚇', amount: 1400, comment: '버스' },
@@ -185,7 +194,7 @@ function buildMockFeed(userId: string): EntryWithReactions[] {
     },
     {
       id: 'mock-3', user_id: 'mock-c', nickname: '무지출챌린저',
-      date: new Date(Date.now() - 86400000).toISOString().split('T')[0],
+      date: yesterday,
       week_key: 'mock', items: [
         { category: '식비', emoji: '🍚', amount: 0, comment: '냉장고 털기 성공' },
         { category: '교통', emoji: '🚇', amount: 0, comment: '재택근무' },
