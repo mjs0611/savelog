@@ -19,6 +19,12 @@ interface Props {
 
 const WEEK_DAYS = 7;
 
+function getCompatibilityScore(userPersona: string, myPersona: string) {
+  if (!userPersona || !myPersona) return 72;
+  const hash = (userPersona.charCodeAt(0) + myPersona.charCodeAt(0)) % 29;
+  return 72 + hash;
+}
+
 const MOCK_ONLINE_USERS = [
   { id: 'user-1', nickname: '시발비용맨', spentAmount: 12500, personaKey: 'flexer', isOnline: true, hasPoked: false },
   { id: 'user-2', nickname: '자린고비 햄스터', spentAmount: 0, personaKey: 'hamster', isOnline: true, hasPoked: false },
@@ -43,11 +49,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       return null;
     }
   });
-  function getCompatibilityScore(userPersona: string, myPersona: string) {
-    if (!userPersona || !myPersona) return 72;
-    const hash = (userPersona.charCodeAt(0) + myPersona.charCodeAt(0)) % 29;
-    return 72 + hash;
-  }
 
   const doneCount = daily.recorded
     ? (streak.streak % WEEK_DAYS === 0 ? WEEK_DAYS : streak.streak % WEEK_DAYS)

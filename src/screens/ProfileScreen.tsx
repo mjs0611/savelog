@@ -32,6 +32,11 @@ interface Props {
 export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0 }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
+
+  // nickname prop이 바뀔 때(저장 완료 후) draft를 동기화
+  React.useEffect(() => {
+    if (!editing) setDraft(nickname);
+  }, [nickname]);
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [messages, setMessages] = useState<CheeringMessage[]>([]);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
