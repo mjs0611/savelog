@@ -60,7 +60,11 @@ export default function App() {
   const [nickname, setNicknameState] = useState<string | null>(() => getNickname());
   const [nicknameInput, setNicknameInput] = useState('');
   const [persona, setPersonaState] = useState<string | null>(() => getPersona());
-  const [tab, setTab]           = useState<Tab>('home');
+  const [tab, setTab]           = useState<Tab>(() => {
+    const path = window.location.pathname.replace(/^\//, '').split('/')[0];
+    if (path === 'feed' || path === 'rank' || path === 'profile') return path;
+    return 'home';
+  });
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(today));
   const [streak, setStreak]     = useState<StreakData>(() => loadStreak());
   const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
@@ -81,6 +85,12 @@ export default function App() {
       fetchAnonymousKey();
     }
   }, []);
+
+  function navigateTo(next: Tab) {
+    setTab(next);
+    const path = next === 'home' ? '/' : '/' + next;
+    window.history.replaceState(null, '', path);
+  }
 
   async function loadRank() {
     setRankLoading(true);
@@ -413,7 +423,7 @@ export default function App() {
           <button
             key={t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn--active bottom-nav-item--active' : ''}`}
-            onClick={() => setTab(t.key)}
+            onClick={() => navigateTo(t.key)}
           >
             <img src={t.icon} alt={t.label} className="custom-icon--tab" />
             <span className="tab-label">{t.label}</span>
