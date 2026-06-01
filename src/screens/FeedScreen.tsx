@@ -9,6 +9,7 @@ interface Props {
   userId: string;
   onEarnPending?: (amount: number) => void;
   onGrantFeedReward?: () => void;
+  refreshToken?: number;
 }
 
 const MOCK_STORIES = [
@@ -19,7 +20,7 @@ const MOCK_STORIES = [
   { id: '5', name: '탕진러', icon: '/images/mbti_unicorn.png', color: '#E0A0FF', spent: '148,000원', text: '헤어샵에서 플렉스했어용', recorded: false },
 ];
 
-export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward }: Props) {
+export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, refreshToken = 0 }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const [toggling, setToggling] = useState<string | null>(null);
@@ -85,7 +86,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward }:
 
   useEffect(() => {
     load();
-  }, []);
+  }, [refreshToken]);
 
   async function load() {
     setLoading(true);

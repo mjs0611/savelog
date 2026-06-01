@@ -74,6 +74,7 @@ export default function App() {
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
+  const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
@@ -309,6 +310,7 @@ export default function App() {
       const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: total };
       saveDailyState(newDaily);
       setDaily(newDaily);
+      setFeedRefreshToken(t => t + 1);
       setShowRecord(false);
       loadRank();
     } finally {
@@ -387,6 +389,7 @@ export default function App() {
         <div style={tab !== 'feed' ? { display: 'none' } : {}}>
           <FeedScreen
             userId={userId}
+            refreshToken={feedRefreshToken}
             onEarnPending={(amount) => {
               const next = addPendingPoints(amount);
               setPendingPoints(next);
