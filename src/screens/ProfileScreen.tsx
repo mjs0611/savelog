@@ -385,8 +385,11 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       <div className="glass-card how-to-card">
         <p className="how-to-title">포인트 획득 방법</p>
         <div className="how-to-rows">
-          <div className="how-to-row"><span>📝 매일 기록</span><span>+3원</span></div>
-          <div className="how-to-row"><span>🎯 일일 미션 달성</span><span>+5원</span></div>
+          <div className="how-to-row"><span>📝 매일 기록</span><span style={{color:'var(--text-mute)',fontSize:10}}>대기</span></div>
+          <div className="how-to-row"><span>🎯 일일 미션 달성</span><span style={{color:'var(--text-mute)',fontSize:10}}>대기</span></div>
+          <div className="how-to-row"><span>⚖️ 밸런스 투표</span><span style={{color:'var(--text-mute)',fontSize:10}}>대기</span></div>
+          <div className="how-to-row"><span style={{fontSize:11,color:'var(--text-mute)',marginLeft:8}}>└ 광고 시청 후 토스포인트 지급</span><span></span></div>
+          <div className="how-to-row"><span>👃 게시글 반응하기</span><span>+1원</span></div>
           <div className="how-to-row"><span>🔥 7일 연속 완주</span><span>+20원</span></div>
           <div className="how-to-row"><span>🥇 주간 1위</span><span>+100원</span></div>
           <div className="how-to-row"><span>📊 상위 10%</span><span>+30원</span></div>

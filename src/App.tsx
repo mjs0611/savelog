@@ -291,7 +291,7 @@ export default function App() {
         toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중`;
       }
       if (isStreakBonus) {
-        toastMsg = `🔥 7일 완주 보너스! +20원 바로 지급 + +${totalEarn}원 대기 중`;
+        toastMsg = `🔥 7일 완주 보너스! +20원 즉시 지급 · 기록 +${totalEarn}원 대기 중`;
       }
 
       showToast(toastMsg);
