@@ -30,6 +30,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [messageRecipientEntry, setMessageRecipientEntry] = useState<EntryWithReactions | null>(null);
   const [messageText, setMessageText] = useState('');
   const [toastText, setToastText] = useState<string | null>(null);
+  const toastTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  function showFeedToast(msg: string) {
+    if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    setToastText(msg);
+    toastTimerRef.current = setTimeout(() => { setToastText(null); toastTimerRef.current = null; }, 2200);
+  }
   const [doubleTappedHearts, setDoubleTappedHearts] = useState<Record<string, boolean>>({});
 
   // 로컬 댓글 상태 저장 (실제 서비스처럼 동작)
@@ -143,7 +150,10 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
     // 반응 추가일 때만 포인트 지급
     const isAdding = entry.my_reaction !== type;
-    if (isAdding) onGrantFeedReward?.();
+    if (isAdding) {
+      onGrantFeedReward?.();
+      showFeedToast('👃 +1원 즉시 지급!');
+    }
 
     // 파티클 생성
     spawnParticles(type === 'trust' ? '👃' : '🤔', e);
@@ -211,10 +221,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     );
 
     // 쪽지 전송 완료 피드백 토스트
-    setToastText(`${messageRecipientEntry.nickname}님에게 따뜻한 응원 쪽지를 보냈어요! ✉️`);
-    setTimeout(() => {
-      setToastText(null);
-    }, 2500);
+    showFeedToast(`${messageRecipientEntry.nickname}님에게 따뜻한 응원 쪽지를 보냈어요! ✉️`);
 
     // 모달 상태 초기화
     setMessageRecipientEntry(null);
@@ -334,7 +341,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       setBalanceStats({ over: overPct, ok: 100 - overPct });
                       setBalanceVoted('over');
                       onEarnPending?.(1);
-                      
+                      showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
+
                       // spawn emoji particles
                       const rect = e.currentTarget.getBoundingClientRect();
                       const fakeEvent = {
@@ -367,6 +375,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       setBalanceStats({ over: 100 - okPct, ok: okPct });
                       setBalanceVoted('ok');
                       onEarnPending?.(1);
+                      showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
 
                       // spawn emoji particles
                       const rect = e.currentTarget.getBoundingClientRect();
