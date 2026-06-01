@@ -235,14 +235,14 @@ export default function App() {
   }
 
   async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
-    if (submitting || daily.recorded) return;
+    if (submitting || (daily.recorded && daily.date === getTodayStr())) return;
     showInterstitial(() => handleCloseAdAndSubmit(items, image));
   }
 
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
-    if (submitting || daily.recorded) return;
-    setSubmitting(true);
     const today = getTodayStr(); // 제출 시점의 날짜 (자정 이후 앱 재진입 대응)
+    if (submitting || (daily.recorded && daily.date === today)) return;
+    setSubmitting(true);
     try {
       const total = items.reduce((s, i) => s + i.amount, 0);
       const weekKey = getWeekKey();
