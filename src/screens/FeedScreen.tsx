@@ -90,6 +90,18 @@ export default function FeedScreen({ userId }: Props) {
     const data = await fetchFeed(userId);
     setEntries(data);
     setLoading(false);
+
+    // 현재 피드에 없는 엔트리의 댓글을 localStorage에서 정리
+    const validIds = new Set(data.map((e) => e.id));
+    setLocalComments((prev) => {
+      const pruned = Object.fromEntries(
+        Object.entries(prev).filter(([id]) => validIds.has(id))
+      );
+      if (Object.keys(pruned).length < Object.keys(prev).length) {
+        localStorage.setItem('feed_comments', JSON.stringify(pruned));
+      }
+      return pruned;
+    });
   }
 
   function spawnParticles(emoji: string, e: React.MouseEvent<HTMLButtonElement>) {
