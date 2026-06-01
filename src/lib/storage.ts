@@ -250,7 +250,7 @@ export function sendCheeringMessage(recipientNickname: string, text: string, sen
     const currentMessages = getCheeringMessages();
     const p = senderPersonaKey ? PERSONAS[senderPersonaKey] : null;
     const newMessage: CheeringMessage = {
-      id: Math.random().toString(),
+      id: crypto.randomUUID(),
       senderNickname: senderNickname || '익명 절약가',
       senderPersonaEmoji: p?.emoji || '🐷',
       senderPersonaColor: p?.color || '#00F5A0',
@@ -274,7 +274,7 @@ export function sendPokeNotification(recipientNickname: string, senderNickname: 
       : `오늘 지출에 깜짝 일침 콕! 찌르기를 날렸습니다. "우리 절약합시다!" ⚡`;
       
     const newMessage: CheeringMessage = {
-      id: Math.random().toString(),
+      id: crypto.randomUUID(),
       senderNickname: senderNickname || '익명 절약가',
       senderPersonaEmoji: p?.emoji || '🐷',
       senderPersonaColor: p?.color || '#00F5A0',
