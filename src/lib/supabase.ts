@@ -101,7 +101,7 @@ export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithRe
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (error || !entries) return [];
+  if (error || !entries || (entries as Entry[]).length === 0) return [];
 
   const ids = (entries as Entry[]).map((e) => e.id);
   const { data: reactions } = await supabase
