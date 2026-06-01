@@ -110,7 +110,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 fontWeight: 800,
                 textAlign: 'center',
                 cursor: 'pointer',
-                marginBottom: '16px',
                 transition: 'all 0.2s ease',
               }}
             >
@@ -186,7 +185,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
           )}
 
           {/* 이미지 업로드 영역 */}
-          <div className="image-upload-section" style={{ marginTop: 20 }}>
+          <div className="image-upload-section">
             <p className="form-label">지출 인증샷 / 영수증 (선택)</p>
             {image ? (
               <div className="image-preview-container" style={{ position: 'relative', width: '100%', height: 160, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
