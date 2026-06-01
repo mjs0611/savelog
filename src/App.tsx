@@ -48,10 +48,7 @@ export default function App() {
   const today      = useRef(getTodayStr()).current;
   const fallbackId = useRef(getUserId()).current;
 
-  const [anonymousKey, setAnonymousKey] = useState<string | null>(() => {
-    const stored = getUserKey();
-    return stored ? String(stored) : null;
-  });
+  const [anonymousKey, setAnonymousKey] = useState<string | null>(() => getUserKey());
   const [termsAgreed, setTermsAgreed] = useState<boolean>(() => {
     try { return localStorage.getItem('savelog_terms_agreed') === 'true'; } catch { return false; }
   });
@@ -101,7 +98,7 @@ export default function App() {
     try {
       const result = await getAnonymousKey();
       if (result && typeof result === 'object' && result.type === 'HASH') {
-        setUserKeyStorage(result.hash as unknown as number);
+        setUserKeyStorage(result.hash);
         setAnonymousKey(result.hash);
       } else {
         setLoginError(`식별키 발급 실패: ${result}`);

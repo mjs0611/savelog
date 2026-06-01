@@ -12,13 +12,12 @@ export function getUserId(): string {
   return id;
 }
 
-export function getUserKey(): number | null {
-  const raw = localStorage.getItem(USER_KEY_KEY);
-  return raw ? Number(raw) : null;
+export function getUserKey(): string | null {
+  return localStorage.getItem(USER_KEY_KEY);
 }
 
-export function setUserKey(key: number): void {
-  localStorage.setItem(USER_KEY_KEY, String(key));
+export function setUserKey(key: string): void {
+  localStorage.setItem(USER_KEY_KEY, key);
 }
 
 export function getNickname(): string | null {
