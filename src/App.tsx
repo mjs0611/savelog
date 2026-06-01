@@ -74,6 +74,7 @@ export default function App() {
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [pendingSubmit, setPendingSubmit] = useState<{ items: SpendingItem[], image?: string } | null>(null);
+  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     initAit();
@@ -338,8 +339,12 @@ export default function App() {
   }
 
   function showToast(msg: string) {
+    if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
     setShowPointToast(msg);
-    setTimeout(() => setShowPointToast(null), 3000);
+    toastTimerRef.current = setTimeout(() => {
+      setShowPointToast(null);
+      toastTimerRef.current = null;
+    }, 3000);
   }
 
   // ── 메인 앱 ─────────────────────────────────────────────────────────────────
