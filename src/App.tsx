@@ -312,7 +312,11 @@ export default function App() {
     if (pendingPoints <= 0) return;
     const amount = pendingPoints;
     showReward(async () => {
-      await grantPendingReward(amount);
+      const ok = await grantPendingReward(amount);
+      if (!ok) {
+        showToast('포인트 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
       clearPendingPoints();
       setPendingPoints(0);
       showToast(`🎁 ${amount}원 지급 완료!`);
@@ -324,7 +328,11 @@ export default function App() {
   async function handleClaimRankReward(amount: number) {
     const weekKey = getWeekKey();
     if (getClaimedRankReward(weekKey)) return;
-    await grantRankReward(amount);
+    const ok = await grantRankReward(amount);
+    if (!ok) {
+      showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
+      return;
+    }
     setClaimedRankReward(weekKey);
     showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
   }
