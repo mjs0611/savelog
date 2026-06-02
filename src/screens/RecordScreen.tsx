@@ -78,7 +78,13 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   async function handleSubmit() {
     if (items.length === 0) return;
-    await onSubmit(items, image || undefined);
+    // 폼에 금액을 입력했지만 "항목 추가"를 누르지 않은 경우 자동으로 추가
+    let finalItems = items;
+    if (showForm && amountStr) {
+      const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
+      finalItems = [...items, { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() }];
+    }
+    await onSubmit(finalItems, image || undefined);
   }
 
   return (
