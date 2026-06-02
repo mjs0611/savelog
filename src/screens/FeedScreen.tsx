@@ -128,6 +128,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           return pruned;
         });
       }
+    } catch {
+      if (!silent) setLoadFailed(true);
     } finally {
       if (!silent) setLoading(false);
       initialLoaded.current = true;
@@ -777,7 +779,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       {selectedReceiptEntry && (
         <div
           className="story-modal-overlay"
-          onClick={() => setSelectedReceiptEntry(null)}
+          onClick={() => { setSelectedReceiptEntry(null); setInstagramShareMockup(false); }}
           style={{
             position: 'fixed',
             top: 0,
@@ -1002,7 +1004,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 </button>
                 
                 <button
-                  onClick={() => setSelectedReceiptEntry(null)}
+                  onClick={() => { setSelectedReceiptEntry(null); setInstagramShareMockup(false); }}
                   style={{
                     width: '100%',
                     padding: 12,
