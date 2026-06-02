@@ -44,11 +44,15 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
   const [showRival, setShowRival] = useState(false);
   useEffect(() => {
-    setEntriesLoading(true);
-    fetchMyWeekEntries(userId, getWeekKey()).then((data) => {
-      setMyEntries(data);
-      setEntriesLoading(false);
-    });
+    (async () => {
+      setEntriesLoading(true);
+      try {
+        const data = await fetchMyWeekEntries(userId, getWeekKey());
+        setMyEntries(data);
+      } finally {
+        setEntriesLoading(false);
+      }
+    })();
     setMessages(getCheeringMessages());
   }, [userId, refreshToken]);
 

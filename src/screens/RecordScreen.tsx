@@ -50,7 +50,9 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   function handleAmountChange(val: string) {
     const digits = val.replace(/\D/g, '');
-    setAmountStr(digits ? parseInt(digits).toLocaleString('ko-KR') : '');
+    if (!digits) { setAmountStr(''); return; }
+    const num = Math.min(parseInt(digits, 10), 9999999);
+    setAmountStr(num.toLocaleString('ko-KR'));
   }
 
   function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
