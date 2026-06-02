@@ -52,7 +52,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   });
 
   const doneCount = daily.recorded
-    ? (streak.streak % WEEK_DAYS === 0 ? WEEK_DAYS : streak.streak % WEEK_DAYS)
+    ? (streak.streak > 0 && streak.streak % WEEK_DAYS === 0 ? WEEK_DAYS : streak.streak % WEEK_DAYS)
     : (streak.streak % WEEK_DAYS);
 
   function handlePokeUser(id: string, targetNickname: string, isPraise: boolean) {

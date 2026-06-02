@@ -36,7 +36,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   function addItem() {
     const amount = parseInt(amountStr.replace(/,/g, '')) || 0;
-    if (amount <= 0) return;
+    if (amount < 0) return;
     setItems((prev) => [
       ...prev,
       { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() },
@@ -87,7 +87,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
     let finalItems = items;
     if (showForm && amountStr) {
       const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
-      if (amount > 0) {
+      if (amount >= 0) {
         finalItems = [...items, { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() }];
       }
     }

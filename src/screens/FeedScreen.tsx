@@ -575,14 +575,14 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                     <button
                       className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
                       onClick={(e) => handleReact(entry, 'trust', e)}
-                      disabled={toggling !== null}
+                      disabled={toggling === entry.id}
                     >
                       👃 짠내난다 {entry.trust_count > 0 && <span className="reaction-count">{entry.trust_count}</span>}
                     </button>
                     <button
                       className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
                       onClick={(e) => handleReact(entry, 'doubt', e)}
-                      disabled={toggling !== null}
+                      disabled={toggling === entry.id}
                     >
                       🤔 진짜야? {entry.doubt_count > 0 && <span className="reaction-count">{entry.doubt_count}</span>}
                     </button>
