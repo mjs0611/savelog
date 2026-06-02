@@ -58,7 +58,6 @@ export default function App() {
 
   const [nickname, setNicknameState] = useState<string | null>(() => getNickname());
   const [nicknameInput, setNicknameInput] = useState('');
-  const [persona, setPersonaState] = useState<string | null>(() => getPersona());
   const [tab, setTab]           = useState<Tab>(() => {
     const path = window.location.pathname.replace(/^\//, '').split('/')[0];
     if (path === 'feed' || path === 'rank' || path === 'profile') return path;
@@ -484,7 +483,6 @@ export default function App() {
           onClose={(newPersona) => {
             setShowPersonaTest(false);
             if (newPersona) {
-              setPersonaState(newPersona);
               loadRank();
             }
           }}
