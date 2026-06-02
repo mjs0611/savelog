@@ -206,10 +206,6 @@ export function completeDailyMission(dateStr: string): void {
 
 // ── Retention helpers ───────────────────────────────────────────────────────
 
-export function hasRecordedDate(dateStr: string): boolean {
-  return localStorage.getItem('savelog_recorded_date_' + dateStr) === 'true';
-}
-
 export function setRecordedDate(dateStr: string): void {
   localStorage.setItem('savelog_recorded_date_' + dateStr, 'true');
 }
@@ -314,7 +310,10 @@ const PENDING_KEY = 'savelog_pending_points';
 export const MAX_PENDING_POINTS = 50;
 
 export function getPendingPoints(): number {
-  try { return Math.min(Number(localStorage.getItem(PENDING_KEY) ?? '0'), MAX_PENDING_POINTS); }
+  try {
+    const n = Number(localStorage.getItem(PENDING_KEY) ?? '0');
+    return Math.min(isNaN(n) ? 0 : n, MAX_PENDING_POINTS);
+  }
   catch { return 0; }
 }
 
