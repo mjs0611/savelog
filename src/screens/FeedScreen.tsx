@@ -57,7 +57,14 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [loadFailed, setLoadFailed] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const togglingRef = React.useRef(false);
-  const [pokedEntries, setPokedEntries] = useState<Set<string>>(() => new Set());
+  const [pokedEntries, setPokedEntries] = useState<Set<string>>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_poked_entries');
+      return saved ? new Set(JSON.parse(saved) as string[]) : new Set();
+    } catch {
+      return new Set();
+    }
+  });
   const [selectedStory, setSelectedStory] = useState<typeof MOCK_STORIES[number] | null>(null);
   
   // 쪽지 및 하트 인터랙션 관련 상태
@@ -186,11 +193,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           my_reaction: same ? null : type,
           trust_count:
             type === 'trust'
-              ? e.trust_count + (same ? -1 : 1) - (prevType === 'doubt' ? 0 : 0)
+              ? e.trust_count + (same ? -1 : 1)
               : e.trust_count - (prevType === 'trust' ? 1 : 0),
           doubt_count:
             type === 'doubt'
-              ? e.doubt_count + (same ? -1 : 1) - (prevType === 'trust' ? 0 : 0)
+              ? e.doubt_count + (same ? -1 : 1)
               : e.doubt_count - (prevType === 'doubt' ? 1 : 0),
         };
       }),
@@ -579,7 +586,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       disabled={pokedEntries.has(entry.id)}
                       onClick={(e) => {
                         if (pokedEntries.has(entry.id)) return;
-                        setPokedEntries(prev => new Set(prev).add(entry.id));
+                        setPokedEntries(prev => {
+                          const next = new Set(prev).add(entry.id);
+                          try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...next])); } catch {}
+                          return next;
+                        });
                         spawnParticles('⚡', e);
                         const myName = getNickname() || '나';
                         sendPokeNotification(entry.nickname || '익명', myName, myPersonaKey, isZeroSpend);
