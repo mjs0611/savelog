@@ -17,7 +17,7 @@ import {
   setRecordedDate,
   getPendingPoints,
   addPendingPoints,
-  clearPendingPoints,
+  consumePendingPoints,
   getClaimedRankReward,
   setClaimedRankReward,
   type StreakData,
@@ -360,8 +360,9 @@ export default function App() {
           showToast('포인트 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
           return;
         }
-        clearPendingPoints();
-        setPendingPoints(0);
+        // 광고 시청 중 추가 적립된 포인트를 보존하기 위해 청구한 금액만 차감
+        const remaining = consumePendingPoints(amount);
+        setPendingPoints(remaining);
         showToast(`🎁 ${amount}원 지급 완료!`);
       } finally {
         pendingClaimingRef.current = false;

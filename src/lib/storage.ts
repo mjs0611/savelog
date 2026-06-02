@@ -331,6 +331,13 @@ export function clearPendingPoints(): void {
   try { localStorage.setItem(PENDING_KEY, '0'); } catch {}
 }
 
+// 청구된 금액만 차감 후 나머지를 반환 (광고 시청 중 추가 적립분 보존)
+export function consumePendingPoints(amount: number): number {
+  const remaining = Math.max(0, getPendingPoints() - amount);
+  try { localStorage.setItem(PENDING_KEY, String(remaining)); } catch {}
+  return remaining;
+}
+
 // ── Rank Reward Claimed ──────────────────────────────────────────────────────
 
 export function getClaimedRankReward(weekKey: string): boolean {
