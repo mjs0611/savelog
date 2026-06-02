@@ -106,6 +106,7 @@ export default function App() {
 
   function navigateTo(next: Tab) {
     setTab(next);
+    if (next === 'feed') setFeedRefreshToken(t => t + 1);
     if (next === 'profile') setProfileRefreshToken(t => t + 1);
     if (next === 'rank') loadRank();
     const path = next === 'home' ? '/' : '/' + next;
