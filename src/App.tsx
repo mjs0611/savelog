@@ -70,6 +70,7 @@ export default function App() {
   const [rankLoadFailed, setRankLoadFailed] = useState(false);
   const [showRecord, setShowRecord] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [rankClaiming, setRankClaiming] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
@@ -374,6 +375,7 @@ export default function App() {
     const weekKey = getWeekKey();
     if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
     rankClaimingRef.current = true;
+    setRankClaiming(true);
     try {
       const ok = await grantRankReward(amount);
       if (!ok) {
@@ -384,6 +386,7 @@ export default function App() {
       showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
     } finally {
       rankClaimingRef.current = false;
+      setRankClaiming(false);
     }
   }
 
@@ -452,6 +455,7 @@ export default function App() {
             loadFailed={rankLoadFailed}
             onClaimRankReward={handleClaimRankReward}
             claimedThisWeek={getClaimedRankReward(getWeekKey())}
+            rankClaiming={rankClaiming}
           />
         </div>
         <div style={tab !== 'profile' ? { display: 'none' } : {}}>

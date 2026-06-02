@@ -30,6 +30,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
   const [amountStr, setAmountStr] = useState('');
   const [comment, setComment] = useState('');
   const [image, setImage] = useState<string | null>(null);
+  const [imageError, setImageError] = useState<string | null>(null);
 
   const total = items.reduce((s, i) => s + i.amount, 0);
 
@@ -59,15 +60,16 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
     const file = e.target.files?.[0];
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) {
-      alert('이미지 크기는 2MB 이하여야 합니다.');
+      setImageError('이미지 크기는 2MB 이하여야 합니다.');
       e.target.value = '';
       return;
     }
+    setImageError(null);
     const input = e.target;
     const reader = new FileReader();
     reader.onloadend = () => {
       if (reader.error) {
-        alert('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
+        setImageError('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
         input.value = '';
         return;
       }
@@ -195,11 +197,16 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
           {/* 이미지 업로드 영역 */}
           <div className="image-upload-section">
             <p className="form-label">지출 인증샷 / 영수증 (선택)</p>
+            {imageError && (
+              <p style={{ fontSize: 12, color: '#FF4D4F', fontWeight: 600, margin: '0 0 8px 0' }}>
+                ⚠️ {imageError}
+              </p>
+            )}
             {image ? (
               <div className="image-preview-container" style={{ position: 'relative', width: '100%', height: 160, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
                 <img src={image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button
-                  onClick={() => setImage(null)}
+                  onClick={() => { setImage(null); setImageError(null); }}
                   style={{
                     position: 'absolute',
                     top: 8,

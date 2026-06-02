@@ -9,11 +9,12 @@ interface Props {
   loadFailed?: boolean;
   onClaimRankReward?: (amount: number) => void;
   claimedThisWeek?: boolean;
+  rankClaiming?: boolean;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek }: Props) {
+export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false }: Props) {
   const weekKey = getWeekKey();
   const myIdx = weekRank.findIndex((r) => r.user_id === userId);
   const totalParticipants = weekRank.length;
@@ -81,7 +82,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
         </p>
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
-            disabled={claimedThisWeek}
+            disabled={claimedThisWeek || rankClaiming}
             onClick={() => onClaimRankReward(rankRewardAmount)}
             style={{
               marginTop: 12,
@@ -89,18 +90,18 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
               padding: '10px 0',
               borderRadius: 10,
               border: 'none',
-              background: claimedThisWeek
+              background: claimedThisWeek || rankClaiming
                 ? 'rgba(255,255,255,0.05)'
                 : 'linear-gradient(135deg, #FFD700 0%, #FF9500 100%)',
-              color: claimedThisWeek ? 'var(--text-mute)' : '#090A10',
+              color: claimedThisWeek || rankClaiming ? 'var(--text-mute)' : '#090A10',
               fontSize: 13,
               fontWeight: 900,
-              cursor: claimedThisWeek ? 'default' : 'pointer',
-              boxShadow: claimedThisWeek ? 'none' : '0 4px 12px rgba(255, 200, 0, 0.25)',
+              cursor: claimedThisWeek || rankClaiming ? 'default' : 'pointer',
+              boxShadow: claimedThisWeek || rankClaiming ? 'none' : '0 4px 12px rgba(255, 200, 0, 0.25)',
               transition: 'all 0.2s',
             }}
           >
-            {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : `🏆 리워드 수령하기 +${rankRewardAmount}원`}
+            {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : rankClaiming ? '지급 중...' : `🏆 리워드 수령하기 +${rankRewardAmount}원`}
           </button>
         )}
         <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 즉시 지급됩니다</p>
