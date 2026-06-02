@@ -6,13 +6,14 @@ interface Props {
   userId: string;
   weekRank: WeekRankRow[];
   loading: boolean;
+  loadFailed?: boolean;
   onClaimRankReward?: (amount: number) => void;
   claimedThisWeek?: boolean;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, loading, onClaimRankReward, claimedThisWeek }: Props) {
+export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek }: Props) {
   const weekKey = getWeekKey();
   const myIdx = weekRank.findIndex((r) => r.user_id === userId);
   const totalParticipants = weekRank.length;
@@ -109,6 +110,11 @@ export default function RankScreen({ userId, weekRank, loading, onClaimRankRewar
       {loading ? (
         <div className="rank-skeleton">
           {[1, 2, 3, 4, 5].map((i) => <div key={i} className="skeleton-rank-row" />)}
+        </div>
+      ) : loadFailed && weekRank.length === 0 ? (
+        <div className="empty-state">
+          <p>순위를 불러오지 못했어요</p>
+          <p className="empty-sub">네트워크 상태를 확인하고 순위 탭을 다시 눌러보세요</p>
         </div>
       ) : weekRank.length === 0 ? (
         <div className="empty-state">

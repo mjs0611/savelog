@@ -68,6 +68,7 @@ export default function App() {
   const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
   const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
   const [rankLoading, setRankLoading] = useState(true);
+  const [rankLoadFailed, setRankLoadFailed] = useState(false);
   const [showRecord, setShowRecord] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
@@ -115,6 +116,11 @@ export default function App() {
     setRankLoading(true);
     try {
       const data = await fetchWeekRank(getWeekKey());
+      if (data === null) {
+        setRankLoadFailed(true);
+        return; // 기존 데이터 유지
+      }
+      setRankLoadFailed(false);
       setWeekRank(data);
     } finally {
       setRankLoading(false);
@@ -441,6 +447,7 @@ export default function App() {
             userId={userId}
             weekRank={weekRank}
             loading={rankLoading}
+            loadFailed={rankLoadFailed}
             onClaimRankReward={handleClaimRankReward}
             claimedThisWeek={getClaimedRankReward(getWeekKey())}
           />

@@ -124,14 +124,14 @@ export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithRe
   });
 }
 
-export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[]> {
+export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | null> {
   if (!supabase) return MOCK_RANK;
 
   const { data, error } = await supabase
     .from('entries')
     .select('user_id, nickname, total_amount, date')
     .eq('week_key', weekKey);
-  if (error || !data) return [];
+  if (error || !data) return null; // 네트워크 오류 — null로 구분
 
   const map = new Map<string, WeekRankRow>();
   for (const row of data as { user_id: string; nickname: string; total_amount: number; date: string }[]) {
