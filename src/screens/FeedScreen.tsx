@@ -56,8 +56,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const initialLoaded = React.useRef(false);
   const loadIdRef = React.useRef(0);
   const [loadFailed, setLoadFailed] = useState(false);
-  const [toggling, setToggling] = useState<string | null>(null);
-  const togglingRef = React.useRef(false);
+  const [toggling, setToggling] = useState<Set<string>>(() => new Set());
+  const togglingRef = React.useRef<Set<string>>(new Set());
   const [pokedEntries, setPokedEntries] = useState<Set<string>>(() => {
     try {
       const saved = localStorage.getItem('savelog_poked_entries');
@@ -174,9 +174,9 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
   async function handleReact(entry: EntryWithReactions, type: 'trust' | 'doubt', e: React.MouseEvent<HTMLButtonElement>) {
     if (entry.user_id === userId) return;
-    if (togglingRef.current) return;
-    togglingRef.current = true;
-    setToggling(entry.id);
+    if (togglingRef.current.has(entry.id)) return;
+    togglingRef.current.add(entry.id);
+    setToggling(prev => new Set(prev).add(entry.id));
 
     // 반응 추가일 때만 포인트 지급
     const isAdding = entry.my_reaction !== type;
@@ -217,15 +217,15 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         prev.map((e) => (e.id === entry.id ? { ...entry } : e)),
       );
     } finally {
-      togglingRef.current = false;
-      setToggling(null);
+      togglingRef.current.delete(entry.id);
+      setToggling(prev => { const s = new Set(prev); s.delete(entry.id); return s; });
     }
   }
 
   // 더블 탭 시 인스타그램 하트 애니메이션 및 짠내난다(trust) 반응 자동 활성화
   function handleDoubleTap(entry: EntryWithReactions, e: React.MouseEvent<HTMLDivElement>) {
     if (entry.user_id === userId) return;
-    if (togglingRef.current) return; // 진행 중인 반응이 있으면 애니메이션도 생략
+    if (togglingRef.current.has(entry.id)) return; // 이 항목 반응 진행 중이면 애니메이션도 생략
 
     // 하트 애니메이션 켜기
     setDoubleTappedHearts(prev => ({ ...prev, [entry.id]: true }));
@@ -575,14 +575,14 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                     <button
                       className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
                       onClick={(e) => handleReact(entry, 'trust', e)}
-                      disabled={toggling === entry.id}
+                      disabled={toggling.has(entry.id)}
                     >
                       👃 짠내난다 {entry.trust_count > 0 && <span className="reaction-count">{entry.trust_count}</span>}
                     </button>
                     <button
                       className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
                       onClick={(e) => handleReact(entry, 'doubt', e)}
-                      disabled={toggling === entry.id}
+                      disabled={toggling.has(entry.id)}
                     >
                       🤔 진짜야? {entry.doubt_count > 0 && <span className="reaction-count">{entry.doubt_count}</span>}
                     </button>
