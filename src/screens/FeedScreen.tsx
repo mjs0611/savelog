@@ -219,7 +219,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   // 더블 탭 시 인스타그램 하트 애니메이션 및 짠내난다(trust) 반응 자동 활성화
   function handleDoubleTap(entry: EntryWithReactions, e: React.MouseEvent<HTMLDivElement>) {
     if (entry.user_id === userId) return;
-    
+    if (togglingRef.current) return; // 진행 중인 반응이 있으면 애니메이션도 생략
+
     // 하트 애니메이션 켜기
     setDoubleTappedHearts(prev => ({ ...prev, [entry.id]: true }));
     setTimeout(() => {

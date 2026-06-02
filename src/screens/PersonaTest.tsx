@@ -94,6 +94,11 @@ export default function PersonaTest({ onClose }: Props) {
     return (
       <div className="modal-overlay">
         <div className="modal-sheet persona-result-sheet">
+          <div className="modal-header">
+            <button className="modal-close-btn" onClick={() => onClose()}>✕</button>
+            <h2 className="modal-title">소비 MBTI 결과</h2>
+            <div style={{ width: 32 }} />
+          </div>
           <div className="modal-body result-body">
             <div className="result-header">
               <span className="result-subtitle">당신의 소비 MBTI 분석 결과</span>
