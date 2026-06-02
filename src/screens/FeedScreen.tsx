@@ -106,10 +106,10 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     if (!silent) setLoading(true);
     try {
       const data = await fetchFeed(userId);
+      if (data === null) return; // 네트워크 오류 — 기존 피드 그대로 유지
       setEntries(data);
 
       // 현재 피드에 없는 엔트리의 댓글을 localStorage에서 정리
-      // data가 빈 배열이면 네트워크 오류일 수 있으므로 정리 건너뜀
       if (data.length > 0) {
         const validIds = new Set(data.map((e) => e.id));
         setLocalComments((prev) => {

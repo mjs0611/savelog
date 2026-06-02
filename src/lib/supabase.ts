@@ -93,7 +93,7 @@ export async function toggleReaction(
 
 // ── Read ──────────────────────────────────────────────────────────────────────
 
-export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithReactions[]> {
+export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithReactions[] | null> {
   if (!supabase) return buildMockFeed(userId);
 
   const { data: entries, error } = await supabase
@@ -101,7 +101,8 @@ export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithRe
     .select('*')
     .order('created_at', { ascending: false })
     .limit(limit);
-  if (error || !entries || (entries as Entry[]).length === 0) return [];
+  if (error || !entries) return null; // 네트워크 오류 — 기존 피드 유지용 null
+  if ((entries as Entry[]).length === 0) return [];
 
   const ids = (entries as Entry[]).map((e) => e.id);
   const { data: reactions } = await supabase
