@@ -463,6 +463,7 @@ export default function App() {
             onClaimRankReward={handleClaimRankReward}
             claimedThisWeek={getClaimedRankReward(getWeekKey())}
             rankClaiming={rankClaiming}
+            dailyRecorded={daily.recorded && daily.date === getTodayStr()}
           />
         </div>
         <div style={tab !== 'profile' ? { display: 'none' } : {}}>

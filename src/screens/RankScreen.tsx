@@ -10,11 +10,12 @@ interface Props {
   onClaimRankReward?: (amount: number) => void;
   claimedThisWeek?: boolean;
   rankClaiming?: boolean;
+  dailyRecorded?: boolean;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false }: Props) {
+export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false }: Props) {
   const weekKey = getWeekKey();
   const myIdx = weekRank.findIndex((r) => r.user_id === userId);
   const totalParticipants = weekRank.length;
@@ -61,7 +62,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
               차이 {formatAmount(weekRank[myIdx].total - weekRank[myIdx - 1].total)}
             </span>
           </div>
-          <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>오늘 기록하면 이 사람을 추월할 수 있어요</p>
+          <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>{dailyRecorded ? '오늘 기록 완료! 내일도 절약하면 역전할 수 있어요' : '오늘 기록하면 이 사람을 추월할 수 있어요'}</p>
         </div>
       )}
 
