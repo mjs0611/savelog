@@ -254,6 +254,7 @@ export default function App() {
 
   async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
     if (submittingRef.current || (daily.recorded && daily.date === getTodayStr())) return;
+    setSubmitting(true); // 광고 표시 중에도 버튼 로딩 상태 유지
     showInterstitial(() => handleCloseAdAndSubmit(items, image));
   }
 
