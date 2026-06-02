@@ -55,6 +55,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [loading, setLoading] = useState(true);
   const initialLoaded = React.useRef(false);
   const [toggling, setToggling] = useState<string | null>(null);
+  const togglingRef = React.useRef(false);
   const [selectedStory, setSelectedStory] = useState<typeof MOCK_STORIES[number] | null>(null);
   
   // 쪽지 및 하트 인터랙션 관련 상태
@@ -91,6 +92,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   // 🎴 짠물 밸런스 게임 상태
   const [balanceIndex, setBalanceIndex] = useState(0);
   const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
+  const balanceVotingRef = React.useRef(false);
   const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
 
   const myPersonaKey = getPersona();
@@ -151,7 +153,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
   async function handleReact(entry: EntryWithReactions, type: 'trust' | 'doubt', e: React.MouseEvent<HTMLButtonElement>) {
     if (entry.user_id === userId) return;
-    if (toggling) return;
+    if (togglingRef.current) return;
+    togglingRef.current = true;
     setToggling(entry.id);
 
     // 반응 추가일 때만 포인트 지급
@@ -188,6 +191,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     try {
       await toggleReaction(entry.id, userId, type);
     } finally {
+      togglingRef.current = false;
       setToggling(null);
     }
   }
@@ -321,6 +325,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       setBalanceIndex(prev => prev + 1);
                       setBalanceVoted(null);
                       setBalanceStats(null);
+                      balanceVotingRef.current = false;
                     }}
                     style={{
                       width: '100%',
@@ -343,6 +348,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 <div style={{ display: 'flex', gap: 10, width: '100%' }}>
                   <button
                     onClick={(e) => {
+                      if (balanceVotingRef.current) return;
+                      balanceVotingRef.current = true;
                       const overPct = 65 + Math.floor(Math.random() * 20);
                       setBalanceStats({ over: overPct, ok: 100 - overPct });
                       setBalanceVoted('over');
@@ -377,6 +384,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
                   <button
                     onClick={(e) => {
+                      if (balanceVotingRef.current) return;
+                      balanceVotingRef.current = true;
                       const okPct = 60 + Math.floor(Math.random() * 25);
                       setBalanceStats({ over: 100 - okPct, ok: okPct });
                       setBalanceVoted('ok');
