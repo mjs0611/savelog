@@ -394,8 +394,8 @@ export default function App() {
       <div className="bg-glow-orb orb-2"></div>
       <div className="bg-glow-orb orb-3"></div>
       
-      {/* Supabase 미설정 배너 */}
-      {!isSupabaseConfigured && (
+      {/* Supabase 미설정 배너 — 개발 환경에서만 표시 */}
+      {import.meta.env.DEV && !isSupabaseConfigured && (
         <div className="dev-banner">
           개발 모드 — Supabase 미연결 (목업 데이터)
         </div>
