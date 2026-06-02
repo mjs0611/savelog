@@ -54,8 +54,10 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const initialLoaded = React.useRef(false);
+  const [loadFailed, setLoadFailed] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const togglingRef = React.useRef(false);
+  const [pokedEntries, setPokedEntries] = useState<Set<string>>(() => new Set());
   const [selectedStory, setSelectedStory] = useState<typeof MOCK_STORIES[number] | null>(null);
   
   // 쪽지 및 하트 인터랙션 관련 상태
@@ -106,7 +108,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     if (!silent) setLoading(true);
     try {
       const data = await fetchFeed(userId);
-      if (data === null) return; // 네트워크 오류 — 기존 피드 그대로 유지
+      if (data === null) {
+        if (!silent) setLoadFailed(true);
+        return; // 네트워크 오류 — 기존 피드 그대로 유지
+      }
+      setLoadFailed(false);
       setEntries(data);
 
       // 현재 피드에 없는 엔트리의 댓글을 localStorage에서 정리
@@ -432,8 +438,17 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
       {entries.length === 0 ? (
         <div className="empty-state">
-          <p>아직 기록이 없어요</p>
-          <p className="empty-sub">첫 번째로 오늘 소비를 기록해 보세요!</p>
+          {loadFailed ? (
+            <>
+              <p>피드를 불러오지 못했어요</p>
+              <p className="empty-sub">네트워크 상태를 확인하고 새로고침 버튼을 눌러보세요</p>
+            </>
+          ) : (
+            <>
+              <p>아직 기록이 없어요</p>
+              <p className="empty-sub">첫 번째로 오늘 소비를 기록해 보세요!</p>
+            </>
+          )}
         </div>
       ) : (
         <div className="feed-list">
@@ -554,19 +569,23 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                     {/* 콕 찌르기 단축 단추 */}
                     <button
                       className="reaction-btn"
+                      disabled={pokedEntries.has(entry.id)}
                       onClick={(e) => {
+                        if (pokedEntries.has(entry.id)) return;
+                        setPokedEntries(prev => new Set(prev).add(entry.id));
                         spawnParticles('⚡', e);
                         const myName = getNickname() || '나';
                         sendPokeNotification(entry.nickname || '익명', myName, myPersonaKey, isZeroSpend);
                       }}
                       style={{
-                        borderColor: isZeroSpend ? 'rgba(0, 245, 160, 0.2)' : 'rgba(255, 77, 79, 0.2)',
-                        background: isZeroSpend ? 'rgba(0, 245, 160, 0.05)' : 'rgba(255, 77, 79, 0.05)',
-                        color: isZeroSpend ? '#00F5A0' : '#FF4D4F',
-                        fontWeight: 800
+                        borderColor: pokedEntries.has(entry.id) ? 'rgba(255,255,255,0.08)' : isZeroSpend ? 'rgba(0, 245, 160, 0.2)' : 'rgba(255, 77, 79, 0.2)',
+                        background: pokedEntries.has(entry.id) ? 'rgba(255,255,255,0.03)' : isZeroSpend ? 'rgba(0, 245, 160, 0.05)' : 'rgba(255, 77, 79, 0.05)',
+                        color: pokedEntries.has(entry.id) ? 'var(--text-mute)' : isZeroSpend ? '#00F5A0' : '#FF4D4F',
+                        fontWeight: 800,
+                        cursor: pokedEntries.has(entry.id) ? 'default' : 'pointer',
                       }}
                     >
-                      {isZeroSpend ? '칭찬 ⚡' : '일침 ⚡'}
+                      {pokedEntries.has(entry.id) ? '콕 찌름 ✓' : isZeroSpend ? '칭찬 ⚡' : '일침 ⚡'}
                     </button>
 
                     <button
