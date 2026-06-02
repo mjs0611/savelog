@@ -39,6 +39,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   }, [nickname]);
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(true);
+  const [entriesError, setEntriesError] = useState(false);
   const [messages, setMessages] = useState<CheeringMessage[]>([]);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
@@ -47,9 +48,16 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     let cancelled = false;
     (async () => {
       setEntriesLoading(true);
+      setEntriesError(false);
       try {
         const data = await fetchMyWeekEntries(userId, getWeekKey());
-        if (!cancelled) setMyEntries(data);
+        if (!cancelled) {
+          if (data === null) {
+            setEntriesError(true);
+          } else {
+            setMyEntries(data);
+          }
+        }
       } finally {
         if (!cancelled) setEntriesLoading(false);
       }
@@ -377,6 +385,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
         {entriesLoading ? (
           <p className="week-entries-empty" style={{ color: 'var(--text-mute)' }}>불러오는 중...</p>
+        ) : entriesError ? (
+          <p className="week-entries-empty" style={{ color: '#FF4D4F' }}>기록을 불러오지 못했어요</p>
         ) : myEntries.length === 0 ? (
           <p className="week-entries-empty">아직 기록이 없어요</p>
         ) : (

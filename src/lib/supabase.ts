@@ -145,7 +145,7 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
     .sort((a, b) => a.total - b.total);
 }
 
-export async function fetchMyWeekEntries(userId: string, weekKey: string): Promise<Entry[]> {
+export async function fetchMyWeekEntries(userId: string, weekKey: string): Promise<Entry[] | null> {
   if (!supabase) return [];
 
   const { data, error } = await supabase
@@ -154,7 +154,7 @@ export async function fetchMyWeekEntries(userId: string, weekKey: string): Promi
     .eq('user_id', userId)
     .eq('week_key', weekKey)
     .order('date', { ascending: false });
-  if (error || !data) return [];
+  if (error || !data) return null; // null = 네트워크 오류, []와 구분
   return data as Entry[];
 }
 

@@ -80,6 +80,7 @@ export default function App() {
   const submittingRef = useRef(false);
   const rankClaimingRef = useRef(false);
   const pendingClaimingRef = useRef(false);
+  const rankLoadIdRef = useRef(0);
 
   useEffect(() => {
     initAit();
@@ -114,9 +115,11 @@ export default function App() {
   }
 
   async function loadRank() {
+    const loadId = ++rankLoadIdRef.current;
     setRankLoading(true);
     try {
       const data = await fetchWeekRank(getWeekKey());
+      if (loadId !== rankLoadIdRef.current) return; // 더 최신 요청이 진행 중 → 결과 버림
       if (data === null) {
         setRankLoadFailed(true);
         return; // 기존 데이터 유지
@@ -124,9 +127,10 @@ export default function App() {
       setRankLoadFailed(false);
       setWeekRank(data);
     } catch {
+      if (loadId !== rankLoadIdRef.current) return;
       setRankLoadFailed(true);
     } finally {
-      setRankLoading(false);
+      if (loadId === rankLoadIdRef.current) setRankLoading(false);
     }
   }
 
