@@ -9,7 +9,6 @@ import {
   setNickname,
   loadDailyState,
   saveDailyState,
-  loadStreak,
   getEffectiveStreak,
   updateStreak,
   getPersona,

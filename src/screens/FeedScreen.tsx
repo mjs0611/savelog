@@ -196,6 +196,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
     try {
       await toggleReaction(entry.id, userId, type);
+    } catch {
+      // 네트워크 오류 시 optimistic update 롤백
+      setEntries((prev) =>
+        prev.map((e) => (e.id === entry.id ? { ...entry } : e)),
+      );
     } finally {
       togglingRef.current = false;
       setToggling(null);
