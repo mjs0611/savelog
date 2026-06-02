@@ -38,12 +38,17 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     if (!editing) setDraft(nickname);
   }, [nickname]);
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
+  const [entriesLoading, setEntriesLoading] = useState(true);
   const [messages, setMessages] = useState<CheeringMessage[]>([]);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
   const [showRival, setShowRival] = useState(false);
   useEffect(() => {
-    fetchMyWeekEntries(userId, getWeekKey()).then(setMyEntries);
+    setEntriesLoading(true);
+    fetchMyWeekEntries(userId, getWeekKey()).then((data) => {
+      setMyEntries(data);
+      setEntriesLoading(false);
+    });
     setMessages(getCheeringMessages());
   }, [userId, refreshToken]);
 
@@ -364,7 +369,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           )}
         </div>
 
-        {myEntries.length === 0 ? (
+        {entriesLoading ? (
+          <p className="week-entries-empty" style={{ color: 'var(--text-mute)' }}>불러오는 중...</p>
+        ) : myEntries.length === 0 ? (
           <p className="week-entries-empty">아직 기록이 없어요</p>
         ) : (
           <div className="week-entries-list">
