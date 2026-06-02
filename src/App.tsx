@@ -254,8 +254,12 @@ export default function App() {
 
   async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
     if (submittingRef.current || (daily.recorded && daily.date === getTodayStr())) return;
+    submittingRef.current = true; // 인터스티셜 표시 중 이중 클릭 방지
     setSubmitting(true); // 광고 표시 중에도 버튼 로딩 상태 유지
-    showInterstitial(() => handleCloseAdAndSubmit(items, image));
+    showInterstitial(() => {
+      submittingRef.current = false; // handleCloseAdAndSubmit 내부 가드 통과 후 재설정
+      handleCloseAdAndSubmit(items, image);
+    });
   }
 
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
