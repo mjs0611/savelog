@@ -178,8 +178,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     togglingRef.current.add(entry.id);
     setToggling(prev => new Set(prev).add(entry.id));
 
-    // 반응 추가일 때만 포인트 지급
-    const isAdding = entry.my_reaction !== type;
+    // 반응이 없는 상태에서 처음 추가할 때만 포인트 지급 (타입 전환 시 중복 지급 방지)
+    const isAdding = entry.my_reaction === null;
     if (isAdding) {
       onGrantFeedReward?.();
       showFeedToast('👃 +1원 즉시 지급!');
