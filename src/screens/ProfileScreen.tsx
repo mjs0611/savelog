@@ -44,16 +44,18 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
   const [showRival, setShowRival] = useState(false);
   useEffect(() => {
+    let cancelled = false;
     (async () => {
       setEntriesLoading(true);
       try {
         const data = await fetchMyWeekEntries(userId, getWeekKey());
-        setMyEntries(data);
+        if (!cancelled) setMyEntries(data);
       } finally {
-        setEntriesLoading(false);
+        if (!cancelled) setEntriesLoading(false);
       }
     })();
     setMessages(getCheeringMessages());
+    return () => { cancelled = true; };
   }, [userId, refreshToken]);
 
   function saveNickname() {
