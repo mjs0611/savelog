@@ -18,7 +18,7 @@ import type { Entry } from '../lib/supabase';
 import { fetchMyWeekEntries } from '../lib/supabase';
 import type { StreakData, CheeringMessage } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages } from '../lib/storage';
-import { formatAmount, formatDate, getWeekKey } from '../lib/utils';
+import { formatAmount, formatDate, getWeekKey, timeAgo } from '../lib/utils';
 
 interface Props {
   userId: string;
@@ -353,7 +353,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                     </span>
                     <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>익명 응원</span>
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>{msg.timestamp}</span>
+                  <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
                 </div>
                 <p style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.4 }}>
                   {msg.text}

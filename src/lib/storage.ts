@@ -219,6 +219,7 @@ export interface CheeringMessage {
   senderPersonaColor?: string;
   text: string;
   timestamp: string;
+  created_at?: string; // ISO string; if present, use for timeAgo display instead of timestamp
   recipientNickname?: string;
 }
 
@@ -271,6 +272,7 @@ export function sendCheeringMessage(recipientNickname: string, text: string, sen
       senderPersonaColor: p?.color || '#00F5A0',
       text: text.trim(),
       timestamp: '방금 전',
+      created_at: new Date().toISOString(),
       recipientNickname
     };
     currentMessages.unshift(newMessage);
@@ -295,6 +297,7 @@ export function sendPokeNotification(recipientNickname: string, senderNickname: 
       senderPersonaColor: p?.color || '#00F5A0',
       text,
       timestamp: '방금 전',
+      created_at: new Date().toISOString(),
       recipientNickname
     };
     currentMessages.unshift(newMessage);
