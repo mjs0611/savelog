@@ -10,6 +10,7 @@ import {
   loadDailyState,
   saveDailyState,
   loadStreak,
+  getEffectiveStreak,
   updateStreak,
   getPersona,
   getDailyMission,
@@ -64,7 +65,7 @@ export default function App() {
     return 'home';
   });
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
-  const [streak, setStreak]     = useState<StreakData>(() => loadStreak());
+  const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
   const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
   const [rankLoading, setRankLoading] = useState(true);
   const [showRecord, setShowRecord] = useState(false);
@@ -95,6 +96,7 @@ export default function App() {
       if (document.visibilityState === 'visible') {
         const currentDay = getTodayStr();
         setDaily(prev => prev.date !== currentDay ? loadDailyState(currentDay) : prev);
+        setStreak(getEffectiveStreak());
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);

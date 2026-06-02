@@ -44,6 +44,25 @@ export function loadStreak(): StreakData {
   }
 }
 
+// 오늘 또는 어제 기록이 없으면 streak을 0으로 반환 (stale 표시 방지)
+export function getEffectiveStreak(): StreakData {
+  const data = loadStreak();
+  if (!data.lastDate || data.streak === 0) return data;
+
+  const today = new Date();
+  const fmt = (d: Date) =>
+    `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+  const todayStr = fmt(today);
+  if (data.lastDate === todayStr) return data;
+
+  const yesterday = new Date(today);
+  yesterday.setDate(today.getDate() - 1);
+  if (data.lastDate === fmt(yesterday)) return data;
+
+  // 마지막 기록이 이틀 이상 전 → streak 끊김
+  return { ...data, streak: 0 };
+}
+
 export function updateStreak(today: string): StreakData {
   const data = loadStreak();
   if (data.lastDate === today) return data;
