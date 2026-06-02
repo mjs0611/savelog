@@ -133,12 +133,16 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
     .eq('week_key', weekKey);
   if (error || !data) return null; // 네트워크 오류 — null로 구분
 
-  const map = new Map<string, WeekRankRow>();
+  const map = new Map<string, { user_id: string; nickname: string; total: number; dateSet: Set<string> }>();
   for (const row of data as { user_id: string; nickname: string; total_amount: number; date: string }[]) {
-    const prev = map.get(row.user_id) ?? { user_id: row.user_id, nickname: row.nickname, total: 0, days: 0 };
-    map.set(row.user_id, { ...prev, total: prev.total + row.total_amount, days: prev.days + 1 });
+    const prev = map.get(row.user_id) ?? { user_id: row.user_id, nickname: row.nickname, total: 0, dateSet: new Set<string>() };
+    prev.dateSet.add(row.date);
+    prev.total += row.total_amount;
+    map.set(row.user_id, prev);
   }
-  return Array.from(map.values()).sort((a, b) => a.total - b.total);
+  return Array.from(map.values())
+    .map(({ dateSet, ...rest }) => ({ ...rest, days: dateSet.size }))
+    .sort((a, b) => a.total - b.total);
 }
 
 export async function fetchMyWeekEntries(userId: string, weekKey: string): Promise<Entry[]> {
