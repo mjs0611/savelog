@@ -5,10 +5,17 @@ const STREAK_PROMO = import.meta.env.VITE_STREAK_PROMO_CODE ?? '01KSJNJ16PG8SPY1
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
 
+type GrantResult =
+  | { key: string }
+  | { errorCode: string; message: string }
+  | { code: string; [key: string]: unknown }
+  | 'ERROR'
+  | undefined;
+
 interface AitModule {
   grantPromotionReward?: (params: {
     params: { promotionCode: string; amount: number };
-  }) => Promise<unknown>;
+  }) => Promise<GrantResult>;
   generateHapticFeedback?: (params: { type: 'success' | 'error' | 'warning' }) => Promise<void>;
 }
 
@@ -30,15 +37,39 @@ async function grant(promoCode: string, amount: number): Promise<boolean> {
     console.log(`[TossPoint] test – would grant ${amount}p via ${promoCode}`);
     return true;
   }
-  if (!ait?.grantPromotionReward) return false;
+  if (!ait?.grantPromotionReward) {
+    console.warn('[TossPoint] grantPromotionReward unavailable – ait not loaded?', { promoCode, amount });
+    return false;
+  }
   try {
     const result = await ait.grantPromotionReward({
       params: { promotionCode: promoCode, amount },
     });
-    const ok = result != null && typeof result === 'object' && 'key' in result;
-    if (ok) ait.generateHapticFeedback?.({ type: 'success' }).catch(() => {});
-    return ok;
-  } catch {
+
+    if (result == null) {
+      console.warn('[TossPoint] grant returned undefined – app version too old?', { promoCode, amount });
+      return false;
+    }
+    if (result === 'ERROR') {
+      console.error('[TossPoint] grant returned ERROR (unknown error)', { promoCode, amount });
+      return false;
+    }
+    if ('key' in result) {
+      ait.generateHapticFeedback?.({ type: 'success' }).catch(() => {});
+      return true;
+    }
+    if ('errorCode' in result) {
+      console.error('[TossPoint] grant failed – errorCode:', result.errorCode, result.message, { promoCode, amount });
+      return false;
+    }
+    if ('code' in result) {
+      console.error('[TossPoint] grant failed – code:', result.code, { promoCode, amount });
+      return false;
+    }
+    console.error('[TossPoint] grant unexpected result', result, { promoCode, amount });
+    return false;
+  } catch (err) {
+    console.error('[TossPoint] grant threw exception', err, { promoCode, amount });
     return false;
   }
 }
