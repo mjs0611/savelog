@@ -104,6 +104,7 @@ export default function App() {
   function navigateTo(next: Tab) {
     setTab(next);
     if (next === 'profile') setProfileRefreshToken(t => t + 1);
+    if (next === 'rank') loadRank();
     const path = next === 'home' ? '/' : '/' + next;
     window.history.replaceState(null, '', path);
   }
@@ -484,6 +485,7 @@ export default function App() {
             setShowPersonaTest(false);
             if (newPersona) {
               loadRank();
+              navigateTo('feed');
             }
           }}
         />
