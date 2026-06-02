@@ -54,6 +54,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const initialLoaded = React.useRef(false);
+  const loadIdRef = React.useRef(0);
   const [loadFailed, setLoadFailed] = useState(false);
   const [toggling, setToggling] = useState<string | null>(null);
   const togglingRef = React.useRef(false);
@@ -112,9 +113,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   }, [refreshToken]);
 
   async function load(silent = false) {
+    const loadId = ++loadIdRef.current;
     if (!silent) setLoading(true);
     try {
       const data = await fetchFeed(userId);
+      if (loadId !== loadIdRef.current) return; // 더 최신 요청이 진행 중 → 결과 버림
       if (data === null) {
         if (!silent) setLoadFailed(true);
         return; // 네트워크 오류 — 기존 피드 그대로 유지
@@ -136,10 +139,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         });
       }
     } catch {
+      if (loadId !== loadIdRef.current) return;
       if (!silent) setLoadFailed(true);
     } finally {
-      if (!silent) setLoading(false);
-      initialLoaded.current = true;
+      if (loadId === loadIdRef.current) {
+        if (!silent) setLoading(false);
+        initialLoaded.current = true;
+      }
     }
   }
 

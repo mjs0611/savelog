@@ -48,6 +48,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   function removeItem(idx: number) {
     setItems((prev) => prev.filter((_, i) => i !== idx));
+    // 마지막 항목을 삭제하면 폼을 다시 열어서 바로 입력할 수 있게 함
+    if (items.length === 1) setShowForm(true);
   }
 
   function handleAmountChange(val: string) {
