@@ -12,6 +12,7 @@ interface Props {
   weekRank: WeekRankRow[];
   userId: string;
   pendingPoints: number;
+  submitting?: boolean;
   onRecord: () => void;
   onQuickZeroSpend: () => void;
   onClaimPending: () => void;
@@ -32,7 +33,7 @@ const MOCK_ONLINE_USERS = [
   { id: 'user-4', nickname: '장바구니 키퍼', spentAmount: 0, personaKey: 'keeper', isOnline: true, hasPoked: false }
 ];
 
-export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
+export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
   const myRank = weekRank.findIndex((r) => r.user_id === userId);
@@ -96,39 +97,41 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div style={{ display: 'flex', gap: 8 }}>
               <button
                 onClick={onQuickZeroSpend}
+                disabled={submitting}
                 style={{
                   flex: 1.2,
                   padding: '12px 0',
                   borderRadius: 12,
                   border: 'none',
-                  background: 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)',
-                  color: '#090A10',
+                  background: submitting ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)',
+                  color: submitting ? 'var(--text-mute)' : '#090A10',
                   fontSize: 12,
                   fontWeight: 900,
-                  cursor: 'pointer',
+                  cursor: submitting ? 'default' : 'pointer',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   gap: 4,
-                  boxShadow: '0 4px 15px rgba(0, 245, 160, 0.25)',
+                  boxShadow: submitting ? 'none' : '0 4px 15px rgba(0, 245, 160, 0.25)',
                   transition: 'all 0.2s'
                 }}
               >
-                🌿 오늘 무지출 완료
+                {submitting ? '저장 중...' : '🌿 오늘 무지출 완료'}
               </button>
 
               <button
                 onClick={onRecord}
+                disabled={submitting}
                 style={{
                   flex: 0.8,
                   padding: '12px 0',
                   borderRadius: 12,
                   border: '1px solid rgba(255,255,255,0.15)',
                   background: 'rgba(255,255,255,0.06)',
-                  color: '#fff',
+                  color: submitting ? 'var(--text-mute)' : '#fff',
                   fontSize: 12,
                   fontWeight: 800,
-                  cursor: 'pointer',
+                  cursor: submitting ? 'default' : 'pointer',
                   transition: 'all 0.2s'
                 }}
               >

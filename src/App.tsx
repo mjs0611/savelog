@@ -419,6 +419,7 @@ export default function App() {
             weekRank={weekRank}
             userId={userId}
             pendingPoints={pendingPoints}
+            submitting={submitting}
             onRecord={() => {
               const today = getTodayStr();
               if (!daily.recorded || daily.date !== today) setShowRecord(true);
