@@ -36,7 +36,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   function addItem() {
     const amount = parseInt(amountStr.replace(/,/g, '')) || 0;
-    if (amount < 0) return;
+    if (amount <= 0) return;
     setItems((prev) => [
       ...prev,
       { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() },
@@ -87,7 +87,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
     let finalItems = items;
     if (showForm && amountStr) {
       const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
-      if (amount >= 0) {
+      if (amount > 0) {
         finalItems = [...items, { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() }];
       }
     }
@@ -189,7 +189,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 onChange={(e: any) => setComment(e.target.value)}
               />
 
-              <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr}>
+              <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr || amountStr === '0'}>
                 항목 추가
               </Button>
             </div>
