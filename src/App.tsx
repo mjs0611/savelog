@@ -121,6 +121,8 @@ export default function App() {
       }
       setRankLoadFailed(false);
       setWeekRank(data);
+    } catch {
+      setRankLoadFailed(true);
     } finally {
       setRankLoading(false);
     }

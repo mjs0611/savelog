@@ -9,6 +9,8 @@ create table entries (
   week_key     text not null,       -- 'YYYY-WXX'
   items        jsonb not null default '[]',
   total_amount integer not null default 0,
+  persona      text,
+  image        text,
   created_at   timestamptz default now()
 );
 
