@@ -329,17 +329,22 @@ export default function App() {
       const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
       if (isStreakBonus) totalEarn += 20; // 7일 완주 보너스를 펜딩에 합산 (광고 보고 수령)
 
+      // 한도(50원) 적용 후 실제 추가된 양으로 토스트 표시 (한도 도달 시 오표시 방지)
+      const prevPending = getPendingPoints();
       const newPending = addPendingPoints(totalEarn);
+      const actualEarned = newPending - prevPending;
       setPendingPoints(newPending);
       if (newPending > 0) preloadReward();
 
       // 토스트 조합
-      let toastMsg = `✅ 기록 완료! +${totalEarn}원 대기 중 (광고 보고 받기)`;
-      if (missionCleared) {
-        toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중 (광고 보고 받기)`;
+      let toastMsg = actualEarned > 0
+        ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기)`
+        : `✅ 기록 완료! (오늘 포인트 한도 도달)`;
+      if (missionCleared && actualEarned > 0) {
+        toastMsg = `🎯 미션 달성! +${actualEarned}원 대기 중 (광고 보고 받기)`;
       }
       if (isStreakBonus) {
-        toastMsg = `🔥 7일 연속 완주! 총 +${totalEarn}원 적립 대기 (광고 보고 받기)`;
+        toastMsg = `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)`;
       }
 
       showToast(toastMsg);
