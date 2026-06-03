@@ -344,7 +344,9 @@ export default function App() {
         toastMsg = `🎯 미션 달성! +${actualEarned}원 대기 중 (광고 보고 받기)`;
       }
       if (isStreakBonus) {
-        toastMsg = `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)`;
+        toastMsg = actualEarned > 0
+          ? `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)`
+          : `🔥 7일 연속 완주! (포인트 한도 도달 — 광고 보고 먼저 받기)`;
       }
 
       showToast(toastMsg);
