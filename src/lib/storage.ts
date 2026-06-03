@@ -348,3 +348,34 @@ export function getClaimedRankReward(weekKey: string): boolean {
 export function setClaimedRankReward(weekKey: string): void {
   try { localStorage.setItem(`savelog_rank_claimed_${weekKey}`, 'true'); } catch {}
 }
+
+// ── Stale key cleanup (once per day) ────────────────────────────────────────
+
+const CLEANUP_DATE_KEY = 'savelog_last_cleanup';
+
+export function cleanupStaleKeys(): void {
+  try {
+    const fmt = (d: Date) =>
+      `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+    const today = fmt(new Date());
+    if (localStorage.getItem(CLEANUP_DATE_KEY) === today) return; // 오늘 이미 실행
+
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+
+    const toRemove: string[] = [];
+    for (let i = 0; i < localStorage.length; i++) {
+      const key = localStorage.key(i);
+      if (!key) continue;
+      const dateStr =
+        key.startsWith('savelog_mission_completed_') ? key.slice('savelog_mission_completed_'.length)
+        : key.startsWith('savelog_recorded_date_') ? key.slice('savelog_recorded_date_'.length)
+        : null;
+      if (dateStr && new Date(dateStr + 'T00:00:00') < cutoff) toRemove.push(key);
+    }
+    toRemove.forEach((k) => localStorage.removeItem(k));
+    localStorage.setItem(CLEANUP_DATE_KEY, today);
+  } catch {
+    // localStorage 접근 실패 시 무시
+  }
+}

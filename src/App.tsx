@@ -20,6 +20,7 @@ import {
   consumePendingPoints,
   getClaimedRankReward,
   setClaimedRankReward,
+  cleanupStaleKeys,
   type StreakData,
   type DailyState,
 } from './lib/storage';
@@ -88,6 +89,7 @@ export default function App() {
     preloadInterstitial();
     if (getPendingPoints() > 0) preloadReward();
     loadRank();
+    cleanupStaleKeys();
     if (termsAgreed && !anonymousKey && import.meta.env.PROD) {
       fetchAnonymousKey();
     }
