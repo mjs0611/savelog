@@ -1285,6 +1285,11 @@ input { font: inherit; outline: none; border: none; }
 .comment-chip-btn:hover {
   background: rgba(255, 255, 255, 0.08);
 }
+.comment-chip-btn--used {
+  opacity: 0.4;
+  cursor: default;
+  pointer-events: none;
+}
 .comment-chip-btn:active {
   transform: scale(0.95);
   background: rgba(0, 245, 160, 0.08);

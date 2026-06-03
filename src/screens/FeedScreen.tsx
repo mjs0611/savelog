@@ -669,15 +669,21 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                   <div className="feed-comment-chips-container">
                     <span className="comment-chips-label">말 한마디:</span>
                     <div className="comment-chips-scroll">
-                      {COMMENT_CHIPS.map((cmt) => (
-                        <button
-                          key={cmt}
-                          className="comment-chip-btn"
-                          onClick={() => addComment(entry.id, cmt)}
-                        >
-                          {cmt}
-                        </button>
-                      ))}
+                      {COMMENT_CHIPS.map((cmt) => {
+                        const used = (localComments[entry.id] || []).some(
+                          (c) => c.sender === '나' && c.text === cmt
+                        );
+                        return (
+                          <button
+                            key={cmt}
+                            className={`comment-chip-btn${used ? ' comment-chip-btn--used' : ''}`}
+                            onClick={() => addComment(entry.id, cmt)}
+                            disabled={used}
+                          >
+                            {cmt}
+                          </button>
+                        );
+                      })}
                     </div>
                   </div>
                 )}
