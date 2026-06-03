@@ -125,7 +125,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       setLoadFailed(false);
       setEntries(data);
 
-      // 현재 피드에 없는 엔트리의 댓글을 localStorage에서 정리
+      // 현재 피드에 없는 엔트리의 댓글 및 콕 찌르기를 localStorage에서 정리
       if (data.length > 0) {
         const validIds = new Set(data.map((e) => e.id));
         setLocalComments((prev) => {
@@ -136,6 +136,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
             localStorage.setItem('feed_comments', JSON.stringify(pruned));
           }
           return pruned;
+        });
+        setPokedEntries((prev) => {
+          const cleaned = new Set([...prev].filter((id) => validIds.has(id)));
+          if (cleaned.size !== prev.size) {
+            try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...cleaned])); } catch {}
+          }
+          return cleaned;
         });
       }
     } catch {
