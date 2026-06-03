@@ -373,6 +373,7 @@ export function cleanupStaleKeys(): void {
         key.startsWith('savelog_mission_completed_') ? key.slice('savelog_mission_completed_'.length)
         : key.startsWith('savelog_recorded_date_') ? key.slice('savelog_recorded_date_'.length)
         : key.startsWith('savelog_balance_idx_') ? key.slice('savelog_balance_idx_'.length)
+        : key.startsWith('savelog_balance_voted_') ? key.slice('savelog_balance_voted_'.length, 'savelog_balance_voted_'.length + 10)
         : null;
       if (dateStr && new Date(dateStr + 'T00:00:00') < cutoff) { toRemove.push(key); continue; }
       if (key.startsWith('savelog_rank_claimed_')) {

@@ -108,9 +108,28 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       return 0;
     }
   });
-  const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
+  const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(() => {
+    try {
+      const todayStr = getTodayStr();
+      const idxStr = localStorage.getItem('savelog_balance_idx_' + todayStr);
+      const idx = idxStr ? parseInt(idxStr, 10) : 0;
+      const s = localStorage.getItem(`savelog_balance_voted_${todayStr}_${idx}`);
+      return (s === 'over' || s === 'ok') ? s : null;
+    } catch { return null; }
+  });
   const balanceVotingRef = React.useRef(false);
-  const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
+  const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(() => {
+    try {
+      const todayStr = getTodayStr();
+      const idxStr = localStorage.getItem('savelog_balance_idx_' + todayStr);
+      const idx = idxStr ? parseInt(idxStr, 10) : 0;
+      const voted = localStorage.getItem(`savelog_balance_voted_${todayStr}_${idx}`);
+      if (!voted) return null;
+      const hash = (todayStr + idx).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+      const overPct = 65 + Math.abs(hash) % 20;
+      return { over: overPct, ok: 100 - overPct };
+    } catch { return null; }
+  });
 
   const myPersonaKey = getPersona();
 
@@ -397,6 +416,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       const overPct = 65 + Math.floor(Math.random() * 20);
                       setBalanceStats({ over: overPct, ok: 100 - overPct });
                       setBalanceVoted('over');
+                      try { localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'over'); } catch {}
                       onEarnPending?.(1);
                       showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
 
@@ -433,6 +453,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       const okPct = 60 + Math.floor(Math.random() * 25);
                       setBalanceStats({ over: 100 - okPct, ok: okPct });
                       setBalanceVoted('ok');
+                      try { localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'ok'); } catch {}
                       onEarnPending?.(1);
                       showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
 
