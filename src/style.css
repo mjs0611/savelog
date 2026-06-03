@@ -114,7 +114,7 @@ input { font: inherit; outline: none; border: none; }
 .tab-content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(var(--tab-h) + 16px);
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
 }
 
 /* ── Bottom Nav ─────────────────────────────────────────────────────────────── */
