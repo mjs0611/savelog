@@ -44,6 +44,7 @@ export interface WeekRankRow {
   nickname: string;
   total: number;
   days: number;
+  doubtCount: number; // 이번 주 entries에 달린 '진짜야?' 리액션 합계
 }
 
 // ── Write ─────────────────────────────────────────────────────────────────────
@@ -129,25 +130,69 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
 
   const { data, error } = await supabase
     .from('entries')
-    .select('user_id, nickname, total_amount, date')
+    .select('id, user_id, nickname, total_amount, date')
     .eq('week_key', weekKey);
   if (error || !data) return null; // 네트워크 오류 — null로 구분
 
-  const map = new Map<string, { user_id: string; nickname: string; total: number; dateSet: Set<string>; latestDate: string }>();
-  for (const row of data as { user_id: string; nickname: string; total_amount: number; date: string }[]) {
-    const prev = map.get(row.user_id) ?? { user_id: row.user_id, nickname: row.nickname, total: 0, dateSet: new Set<string>(), latestDate: '' };
+  const typedData = data as { id: string; user_id: string; nickname: string; total_amount: number; date: string }[];
+
+  const map = new Map<string, { user_id: string; nickname: string; total: number; dateSet: Set<string>; latestDate: string; earliestDate: string; entryIds: string[] }>();
+  for (const row of typedData) {
+    const prev = map.get(row.user_id) ?? { user_id: row.user_id, nickname: row.nickname, total: 0, dateSet: new Set<string>(), latestDate: '', earliestDate: row.date, entryIds: [] };
     prev.dateSet.add(row.date);
     prev.total += row.total_amount;
+    prev.entryIds.push(row.id);
     // 가장 최신 날짜 기록의 닉네임을 사용 (주중 닉네임 변경 반영)
     if (row.date > prev.latestDate) {
       prev.nickname = row.nickname;
       prev.latestDate = row.date;
     }
+    // 이번 주 첫 기록일 추적 (세 번째 정렬 기준용)
+    if (row.date < prev.earliestDate) {
+      prev.earliestDate = row.date;
+    }
     map.set(row.user_id, prev);
   }
+
+  // '진짜야?' 리액션 집계 — 허위 무지출 감지에 활용
+  const allEntryIds = typedData.map((r) => r.id);
+  const doubtByUser = new Map<string, number>();
+  if (allEntryIds.length > 0) {
+    const { data: rxData } = await supabase
+      .from('reactions')
+      .select('entry_id, type')
+      .in('entry_id', allEntryIds)
+      .eq('type', 'doubt');
+    if (rxData) {
+      for (const rx of rxData as { entry_id: string; type: string }[]) {
+        // entry_id → user_id 역매핑
+        const entry = typedData.find((e) => e.id === rx.entry_id);
+        if (entry) {
+          doubtByUser.set(entry.user_id, (doubtByUser.get(entry.user_id) ?? 0) + 1);
+        }
+      }
+    }
+  }
+
   return Array.from(map.values())
-    .map(({ dateSet, latestDate: _ld, ...rest }) => ({ ...rest, days: dateSet.size }))
-    .sort((a, b) => a.total - b.total);
+    .map(({ dateSet, latestDate: _ld, earliestDate, entryIds: _ids, ...rest }) => ({
+      ...rest,
+      days: dateSet.size,
+      earliestDate,
+      doubtCount: doubtByUser.get(rest.user_id) ?? 0,
+    }))
+    .sort((a, b) => {
+      // 의심 반응이 3개 이상인 무지출 기록은 정상 기록 뒤로 밀림
+      const aSuspect = a.total === 0 && a.doubtCount >= 3;
+      const bSuspect = b.total === 0 && b.doubtCount >= 3;
+      if (aSuspect !== bSuspect) return aSuspect ? 1 : -1;
+      if (a.total !== b.total) return a.total - b.total;
+      // 동률이면 기록 일수가 많은 쪽이 상위
+      if (a.days !== b.days) return b.days - a.days;
+      // 일수도 같으면 이번 주 첫 기록일이 빠른 쪽이 상위 (더 일찍 도전 시작)
+      return a.earliestDate < b.earliestDate ? -1 : a.earliestDate > b.earliestDate ? 1 : 0;
+    })
+    .map(({ earliestDate: _ed, ...row }) => row);
 }
 
 export async function fetchMyWeekEntries(userId: string, weekKey: string): Promise<Entry[] | null> {
@@ -219,7 +264,7 @@ function buildMockFeed(userId: string): EntryWithReactions[] {
 }
 
 const MOCK_RANK: WeekRankRow[] = [
-  { user_id: 'mock-c', nickname: '무지출챌린저', total: 0, days: 5 },
-  { user_id: 'mock-a', nickname: '절약왕민지', total: 11500, days: 5 },
-  { user_id: 'mock-b', nickname: '짠돌이홍길동', total: 24500, days: 4 },
+  { user_id: 'mock-c', nickname: '무지출챌린저', total: 0, days: 5, doubtCount: 0 },
+  { user_id: 'mock-a', nickname: '절약왕민지', total: 11500, days: 5, doubtCount: 0 },
+  { user_id: 'mock-b', nickname: '짠돌이홍길동', total: 24500, days: 4, doubtCount: 0 },
 ];

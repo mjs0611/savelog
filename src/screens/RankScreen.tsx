@@ -20,8 +20,13 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
   const myIdx = weekRank.findIndex((r) => r.user_id === userId);
   const totalParticipants = weekRank.length;
 
-  // 수령 가능한 순위 리워드 계산
-  const rankRewardAmount = myIdx === 0 ? 100
+  // 의심 반응 3개 이상이면 리워드 수령 불가
+  const myRow = myIdx >= 0 ? weekRank[myIdx] : null;
+  const isSuspicious = myRow ? (myRow.total === 0 && myRow.doubtCount >= 3) : false;
+
+  // 수령 가능한 순위 리워드 계산 (의심됨 상태면 0)
+  const rankRewardAmount = isSuspicious ? 0
+    : myIdx === 0 ? 100
     : myIdx >= 0 && totalParticipants > 0 && (myIdx + 1) / totalParticipants <= 0.1 ? 30
     : 0;
 
@@ -40,7 +45,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
 
       {/* 내 순위 요약 */}
       {myIdx >= 0 && (
-        <div className="glass-card my-rank-card">
+        <div className="glass-card my-rank-card" style={isSuspicious ? { border: '1px solid rgba(255,77,79,0.3)', background: 'rgba(255,77,79,0.04)' } : {}}>
           <div className="my-rank-left">
             <span className="my-rank-pos">{myIdx + 1}위</span>
             <span className="my-rank-label">/ {totalParticipants}명</span>
@@ -48,6 +53,11 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <div className="my-rank-right">
             <p className="my-rank-amount">{formatAmount(weekRank[myIdx].total)}</p>
             <Badge size="small" color="blue" variant="weak">{weekRank[myIdx].days}일 기록</Badge>
+            {isSuspicious && (
+              <p style={{ margin: '4px 0 0 0', fontSize: 10, color: '#FF4D4F', fontWeight: 700 }}>
+                ⚠ 의심 반응이 많아 리워드가 제한됩니다
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -56,16 +66,45 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       {myIdx > 0 && (
         <div className="glass-card" style={{ padding: '12px 16px', border: '1px solid rgba(255, 77, 79, 0.2)', background: 'rgba(255, 77, 79, 0.04)' }}>
           <p style={{ margin: 0, fontSize: 11, color: '#FF4D4F', fontWeight: 800, marginBottom: 6 }}>🔥 지금 역전 가능해요</p>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-            <div>
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)' }}>{weekRank[myIdx - 1].nickname}</span>
-              <span style={{ fontSize: 11, color: 'var(--text-mute)', marginLeft: 6 }}>({myIdx}위)</span>
-            </div>
-            <span style={{ fontSize: 12, fontWeight: 800, color: '#FF4D4F' }}>
-              차이 {formatAmount(weekRank[myIdx].total - weekRank[myIdx - 1].total)}
-            </span>
-          </div>
-          <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>{dailyRecorded ? '오늘 기록 완료! 내일도 절약하면 역전할 수 있어요' : '오늘 기록하면 이 사람을 추월할 수 있어요'}</p>
+          {(() => {
+            const above = weekRank[myIdx - 1];
+            const me = weekRank[myIdx];
+            const amountDiff = me.total - above.total;
+            const daysDiff = above.days - me.days;
+            const isTotalTied = amountDiff === 0;
+            const isDaysTied = daysDiff === 0;
+
+            let diffLabel: string;
+            if (!isTotalTied) {
+              diffLabel = `차이 ${formatAmount(amountDiff)}`;
+            } else if (daysDiff > 0) {
+              diffLabel = `기록 ${daysDiff}일 차이`;
+            } else {
+              diffLabel = '기록 시작일 차이';
+            }
+
+            let hint: string;
+            if (!isTotalTied) {
+              hint = dailyRecorded ? '오늘 기록 완료! 내일도 절약하면 역전할 수 있어요' : '오늘 기록하면 이 사람을 추월할 수 있어요';
+            } else if (!isDaysTied) {
+              hint = dailyRecorded ? '지출 금액이 같아요! 꾸준히 기록해서 기록 일수로 역전하세요' : '지출 금액이 같아요! 오늘 기록하면 기록 일수로 역전할 수 있어요';
+            } else {
+              hint = '지출·기록 일수가 동일해요! 이번 주를 더 일찍 시작한 사람이 앞서 있어요';
+            }
+
+            return (
+              <>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                  <div>
+                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)' }}>{above.nickname}</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-mute)', marginLeft: 6 }}>({myIdx}위)</span>
+                  </div>
+                  <span style={{ fontSize: 12, fontWeight: 800, color: '#FF4D4F' }}>{diffLabel}</span>
+                </div>
+                <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>{hint}</p>
+              </>
+            );
+          })()}
         </div>
       )}
 
@@ -128,31 +167,52 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
         </div>
       ) : (
         <div className="rank-list">
-          {weekRank.map((row, i) => (
-            <div
-              key={row.user_id}
-              className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`}
-            >
-              <span className="rank-pos">
-                {i < 3 ? MEDAL[i] : <span className="rank-num">{i + 1}</span>}
-              </span>
-              <div className="rank-row-info">
-                <span className="rank-row-nickname">
-                  {row.nickname}
-                  {row.user_id === userId && (
-                    <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
-                  )}
-                </span>
-                <span className="rank-row-days">{row.days}일 기록</span>
+          {weekRank.map((row, i) => {
+            const isZero = row.total === 0;
+            // 0원 그룹과 유료 그룹 사이 구분선 삽입
+            const prevIsZero = i > 0 && weekRank[i - 1].total === 0;
+            const showDivider = !isZero && prevIsZero;
+            return (
+              <div key={row.user_id}>
+                {showDivider && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                    <span style={{ fontSize: 9, color: 'var(--text-mute)', fontWeight: 700, whiteSpace: 'nowrap' }}>유료 지출 구간</span>
+                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                  </div>
+                )}
+                <div
+                  className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`}
+                  style={isZero ? { border: '1px solid rgba(0, 245, 160, 0.15)', background: 'rgba(0,245,160,0.03)' } : {}}
+                >
+                  <span className="rank-pos">
+                    {i < 3 ? MEDAL[i] : <span className="rank-num">{i + 1}</span>}
+                  </span>
+                  <div className="rank-row-info">
+                    <span className="rank-row-nickname">
+                      {row.nickname}
+                      {row.user_id === userId && (
+                        <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
+                      )}
+                      {isZero && (
+                        <Badge size="xsmall" color="green" variant="weak" style={{ marginLeft: 6 }}>무지출</Badge>
+                      )}
+                      {isZero && row.doubtCount >= 3 && (
+                        <Badge size="xsmall" color="red" variant="weak" style={{ marginLeft: 4 }}>⚠ 의심됨</Badge>
+                      )}
+                    </span>
+                    <span className="rank-row-days">{row.days}일 기록</span>
+                  </div>
+                  <div className="rank-row-right">
+                    <span className={`rank-row-amount ${isZero ? 'rank-row-amount--zero' : ''}`}>
+                      {formatAmount(row.total)}
+                    </span>
+                    {i === 0 && <span className="rank-crown">👑</span>}
+                  </div>
+                </div>
               </div>
-              <div className="rank-row-right">
-                <span className={`rank-row-amount ${row.total === 0 ? 'rank-row-amount--zero' : ''}`}>
-                  {formatAmount(row.total)}
-                </span>
-                {i === 0 && <span className="rank-crown">👑</span>}
-              </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
