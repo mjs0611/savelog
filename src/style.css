@@ -44,6 +44,7 @@ body {
 
 #root { min-height: 100dvh; }
 button { cursor: pointer; border: none; background: none; font: inherit; }
+button:disabled { cursor: default; }
 input { font: inherit; outline: none; border: none; }
 
 /* ── App Shell (Vibrant Neon Glow Backdrops) ────────────────────────────────── */
@@ -741,6 +742,7 @@ input { font: inherit; outline: none; border: none; }
 }
 .modal-close-btn { font-size: 18px; color: var(--text-mute); padding: 4px; transition: color 0.2s; }
 .modal-close-btn:hover { color: var(--text-main); }
+.modal-close-btn:disabled { opacity: 0.3; }
 .modal-title { font-size: 18px; font-weight: 800; color: var(--text-main); }
 
 .modal-body {
