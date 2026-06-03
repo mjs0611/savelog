@@ -392,14 +392,33 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                   </div>
                   <button
                     onClick={() => {
-                      setBalanceIndex(prev => {
-                        const next = prev + 1;
-                        try { localStorage.setItem('savelog_balance_idx_' + getTodayStr(), String(next)); } catch {}
-                        return next;
-                      });
-                      setBalanceVoted(null);
-                      setBalanceStats(null);
-                      balanceVotingRef.current = false;
+                      const next = balanceIndex + 1;
+                      const todayStr = getTodayStr();
+                      try { localStorage.setItem('savelog_balance_idx_' + todayStr, String(next)); } catch {}
+
+                      // 다음 카드의 기존 투표 여부를 복원하여 중복 포인트 지급 방지
+                      const nextVotedRaw = localStorage.getItem(`savelog_balance_voted_${todayStr}_${next}`);
+                      const nextVoted = (nextVotedRaw === 'over' || nextVotedRaw === 'ok') ? nextVotedRaw : null;
+                      let nextStats: { over: number; ok: number } | null = null;
+                      if (nextVoted) {
+                        try {
+                          const raw = localStorage.getItem(`savelog_balance_stats_${todayStr}_${next}`);
+                          if (raw) {
+                            const parsed = JSON.parse(raw) as { over: number; ok: number };
+                            if (typeof parsed.over === 'number' && typeof parsed.ok === 'number') nextStats = parsed;
+                          }
+                        } catch {}
+                        if (!nextStats) {
+                          const hash = (todayStr + next).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+                          const overPct = 65 + Math.abs(hash) % 20;
+                          nextStats = { over: overPct, ok: 100 - overPct };
+                        }
+                      }
+
+                      setBalanceIndex(next);
+                      setBalanceVoted(nextVoted);
+                      setBalanceStats(nextStats);
+                      balanceVotingRef.current = nextVoted !== null;
                     }}
                     style={{
                       width: '100%',

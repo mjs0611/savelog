@@ -734,9 +734,31 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                 background: 'rgba(15, 17, 26, 0.95)',
                 borderRadius: 24,
                 textAlign: 'center',
-                boxShadow: '0 12px 40px rgba(0, 245, 160, 0.15)'
+                boxShadow: '0 12px 40px rgba(0, 245, 160, 0.15)',
+                position: 'relative'
               }}
             >
+              <button
+                onClick={() => {
+                  localStorage.setItem('savelog_tutorial_completed', 'true');
+                  setTutorialStep(null);
+                }}
+                style={{
+                  position: 'absolute',
+                  top: 16,
+                  right: 16,
+                  background: 'rgba(255,255,255,0.08)',
+                  border: 'none',
+                  color: 'var(--text-mute)',
+                  fontSize: 11,
+                  fontWeight: 700,
+                  padding: '3px 10px',
+                  borderRadius: 100,
+                  cursor: 'pointer'
+                }}
+              >
+                건너뛰기
+              </button>
               <span style={{ fontSize: 36, display: 'block', marginBottom: 12 }}>{current.icon}</span>
               <h3 style={{ fontSize: 15, fontWeight: 900, color: '#fff', margin: '0 0 10px 0' }}>{current.title}</h3>
               <p style={{ fontSize: 11, color: 'var(--text-mute)', margin: '0 0 20px 0', lineHeight: 1.5, wordBreak: 'keep-all' }}>
