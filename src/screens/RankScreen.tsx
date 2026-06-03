@@ -82,7 +82,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <div className="reward-row">⚖️ 밸런스 투표 <span>+1원</span></div>
         </div>
         <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.5 }}>
-          📝·🎯·⚖️ 적립분은 광고 시청 후 수령 · 나머지는 즉시 지급
+          👃 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령
         </p>
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
