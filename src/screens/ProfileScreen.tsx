@@ -38,6 +38,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [entriesLoading, setEntriesLoading] = useState(true);
   const [entriesError, setEntriesError] = useState(false);
   const [messages, setMessages] = useState<CheeringMessage[]>([]);
+  const [clearConfirm, setClearConfirm] = useState(false);
+  const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
   const [showRival, setShowRival] = useState(false);
@@ -71,6 +73,16 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   }
 
   function handleClearAllMessages() {
+    if (!clearConfirm) {
+      setClearConfirm(true);
+      clearConfirmTimerRef.current = setTimeout(() => {
+        setClearConfirm(false);
+        clearConfirmTimerRef.current = null;
+      }, 3000);
+      return;
+    }
+    if (clearConfirmTimerRef.current) clearTimeout(clearConfirmTimerRef.current);
+    setClearConfirm(false);
     localStorage.setItem('savelog_user_messages', JSON.stringify([]));
     setMessages([]);
   }
@@ -305,19 +317,17 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                   onClick={handleClearAllMessages}
                   style={{
                     border: 'none',
-                    background: 'rgba(255,255,255,0.06)',
-                    color: 'var(--text-mute)',
+                    background: clearConfirm ? 'rgba(255,77,79,0.15)' : 'rgba(255,255,255,0.06)',
+                    color: clearConfirm ? '#FF4D4F' : 'var(--text-mute)',
                     fontSize: 10,
                     fontWeight: 700,
                     padding: '2px 8px',
                     borderRadius: 100,
                     cursor: 'pointer',
-                    transition: 'background 0.2s'
+                    transition: 'all 0.2s'
                   }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,77,79,0.15)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.06)'}
                 >
-                  전체 삭제
+                  {clearConfirm ? '한 번 더 탭하면 삭제' : '전체 삭제'}
                 </button>
                 <Badge size="small" color="blue" variant="weak">{messages.length}개</Badge>
               </>
