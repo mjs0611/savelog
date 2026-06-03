@@ -13,6 +13,7 @@ interface Props {
   userId: string;
   pendingPoints: number;
   submitting?: boolean;
+  pendingClaiming?: boolean;
   onRecord: () => void;
   onQuickZeroSpend: () => void;
   onClaimPending: () => void;
@@ -33,7 +34,7 @@ const MOCK_ONLINE_USERS = [
   { id: 'user-4', nickname: '장바구니 키퍼', spentAmount: 0, personaKey: 'keeper', isOnline: true, hasPoked: false }
 ];
 
-export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
+export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, pendingClaiming = false, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
   const myRank = weekRank.findIndex((r) => r.user_id === userId);
@@ -240,22 +241,23 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           </div>
           <button
             onClick={onClaimPending}
+            disabled={pendingClaiming}
             style={{
               width: '100%',
               padding: '12px 0',
               borderRadius: 12,
               border: 'none',
-              background: 'linear-gradient(135deg, #FFC800 0%, #FF9500 100%)',
-              color: '#090A10',
+              background: pendingClaiming ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #FFC800 0%, #FF9500 100%)',
+              color: pendingClaiming ? 'var(--text-mute)' : '#090A10',
               fontSize: 13,
               fontWeight: 900,
-              cursor: 'pointer',
-              boxShadow: '0 4px 15px rgba(255, 200, 0, 0.25)',
+              cursor: pendingClaiming ? 'default' : 'pointer',
+              boxShadow: pendingClaiming ? 'none' : '0 4px 15px rgba(255, 200, 0, 0.25)',
               textAlign: 'center',
               transition: 'all 0.2s',
             }}
           >
-            광고 보고 받기
+            {pendingClaiming ? '광고 시청 중...' : '광고 보고 받기'}
           </button>
         </div>
       )}
@@ -295,8 +297,8 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             );
           })}
         </div>
-        {streak.streak > 0 && streak.streak % 7 === 0 && (
-          <p className="streak-reward-hint" style={{ fontSize: 11, color: 'var(--primary)', marginTop: 8, textAlign: 'center', fontWeight: 700 }}>7일 연속 완주 달성! 토스포인트가 지급되었어요 🎉</p>
+        {streak.streak > 0 && streak.streak % 7 === 0 && pendingPoints > 0 && (
+          <p className="streak-reward-hint" style={{ fontSize: 11, color: 'var(--primary)', marginTop: 8, textAlign: 'center', fontWeight: 700 }}>🔥 7일 연속 완주 보너스 포함 · 위에서 광고 보고 받기</p>
         )}
       </div>
 

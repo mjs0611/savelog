@@ -71,6 +71,7 @@ export default function App() {
   const [showRecord, setShowRecord] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [rankClaiming, setRankClaiming] = useState(false);
+  const [pendingClaiming, setPendingClaiming] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
@@ -357,6 +358,7 @@ export default function App() {
   function handleClaimPending() {
     if (pendingPoints <= 0 || pendingClaimingRef.current) return;
     pendingClaimingRef.current = true;
+    setPendingClaiming(true);
     const amount = pendingPoints;
     showReward(async () => {
       try {
@@ -371,9 +373,11 @@ export default function App() {
         showToast(`🎁 ${amount}원 지급 완료!`);
       } finally {
         pendingClaimingRef.current = false;
+        setPendingClaiming(false);
       }
     }, () => {
       pendingClaimingRef.current = false;
+      setPendingClaiming(false);
       showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
     });
   }
@@ -444,6 +448,7 @@ export default function App() {
               [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
             )}
             onClaimPending={handleClaimPending}
+            pendingClaiming={pendingClaiming}
           />
         </div>
         <div style={tab !== 'feed' ? { display: 'none' } : {}}>
