@@ -174,8 +174,8 @@ export default function App() {
         <div style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
           <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-sub)', marginBottom: 8 }}>서비스 이용을 위해 아래 약관에 동의해 주세요</p>
           <p style={{ fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.6 }}>
-            · <span style={{ color: 'var(--primary)' }}>서비스 이용약관</span> (필수)<br />
-            · <span style={{ color: 'var(--primary)' }}>개인정보 수집 및 이용 동의</span> (필수)<br />
+            · <span>서비스 이용약관</span> (필수)<br />
+            · <span>개인정보 수집 및 이용 동의</span> (필수)<br />
             · 마케팅 정보 수신 동의 (선택)
           </p>
         </div>
