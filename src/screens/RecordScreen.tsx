@@ -99,7 +99,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
       <div className="modal-sheet">
         {/* 헤더 */}
         <div className="modal-header">
-          <button className="modal-close-btn" onClick={onClose}>✕</button>
+          <button className="modal-close-btn" onClick={onClose} disabled={submitting}>✕</button>
           <h2 className="modal-title">오늘 소비 기록</h2>
           <div style={{ width: 32 }} />
         </div>
