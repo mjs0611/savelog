@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import type { EntryWithReactions } from '../lib/supabase';
 import { fetchFeed, toggleReaction } from '../lib/supabase';
-import { formatAmount, formatDate, timeAgo } from '../lib/utils';
+import { formatAmount, formatDate, timeAgo, getTodayStr } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification } from '../lib/storage';
 
 interface Props {
@@ -99,8 +99,15 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [selectedReceiptEntry, setSelectedReceiptEntry] = useState<EntryWithReactions | null>(null);
   const [instagramShareMockup, setInstagramShareMockup] = useState(false);
 
-  // 🎴 짠물 밸런스 게임 상태
-  const [balanceIndex, setBalanceIndex] = useState(0);
+  // 🎴 짠물 밸런스 게임 상태 (날짜별 localStorage persist — 같은 날 새로고침 시 재투표 방지)
+  const [balanceIndex, setBalanceIndex] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_balance_idx_' + getTodayStr());
+      return saved ? parseInt(saved, 10) : 0;
+    } catch {
+      return 0;
+    }
+  });
   const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
   const balanceVotingRef = React.useRef(false);
   const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
@@ -355,7 +362,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                   </div>
                   <button
                     onClick={() => {
-                      setBalanceIndex(prev => prev + 1);
+                      setBalanceIndex(prev => {
+                        const next = prev + 1;
+                        try { localStorage.setItem('savelog_balance_idx_' + getTodayStr(), String(next)); } catch {}
+                        return next;
+                      });
                       setBalanceVoted(null);
                       setBalanceStats(null);
                       balanceVotingRef.current = false;
