@@ -65,6 +65,12 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     return () => { cancelled = true; };
   }, [userId, refreshToken]);
 
+  useEffect(() => {
+    return () => {
+      if (clearConfirmTimerRef.current) clearTimeout(clearConfirmTimerRef.current);
+    };
+  }, []);
+
   function saveNickname() {
     if (!draft.trim()) return;
     setNickname(draft.trim());
