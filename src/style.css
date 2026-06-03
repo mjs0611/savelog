@@ -232,7 +232,7 @@ input { font: inherit; outline: none; border: none; }
 
 .point-toast {
   position: fixed;
-  top: 24px;
+  top: calc(24px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
   background: rgba(255, 255, 255, 0.95);

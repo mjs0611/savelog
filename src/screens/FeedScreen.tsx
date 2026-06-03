@@ -1195,7 +1195,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
       {/* 가상 토스트 노티파이어 */}
       {toastText && (
-        <div className="point-toast" style={{ top: 'auto', bottom: 90, background: 'rgba(18, 18, 20, 0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}>
+        <div className="point-toast" style={{ top: 'auto', bottom: 'calc(var(--tab-h, 64px) + env(safe-area-inset-bottom, 0px) + 10px)', background: 'rgba(18, 18, 20, 0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}>
           {toastText}
         </div>
       )}
