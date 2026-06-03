@@ -80,6 +80,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     toastTimerRef.current = setTimeout(() => { setToastText(null); toastTimerRef.current = null; }, 2200);
   }
   const [doubleTappedHearts, setDoubleTappedHearts] = useState<Record<string, boolean>>({});
+  // 세션 내 리액션 리워드 지급된 엔트리 추적 — 언리액션 후 재반응 시 중복 지급 방지
+  const [reactionRewardedEntries, setReactionRewardedEntries] = useState<Set<string>>(() => new Set());
 
   // 로컬 댓글 상태 저장 (실제 서비스처럼 동작)
   const [localComments, setLocalComments] = useState<Record<string, { sender: string; text: string }[]>>(() => {
@@ -125,6 +127,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       const idx = idxStr ? parseInt(idxStr, 10) : 0;
       const voted = localStorage.getItem(`savelog_balance_voted_${todayStr}_${idx}`);
       if (!voted) return null;
+      // 투표 시 저장한 stats 우선 로드 (재로드 시 % 수치 일관성 보장)
+      const savedStats = localStorage.getItem(`savelog_balance_stats_${todayStr}_${idx}`);
+      if (savedStats) {
+        const parsed = JSON.parse(savedStats) as { over: number; ok: number };
+        if (typeof parsed.over === 'number' && typeof parsed.ok === 'number') return parsed;
+      }
+      // fallback: hash 기반 결정론적 값
       const hash = (todayStr + idx).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
       const overPct = 65 + Math.abs(hash) % 20;
       return { over: overPct, ok: 100 - overPct };
@@ -211,9 +220,11 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     togglingRef.current.add(entry.id);
     setToggling(prev => new Set(prev).add(entry.id));
 
-    // 반응이 없는 상태에서 처음 추가할 때만 포인트 지급 (타입 전환 시 중복 지급 방지)
-    const isAdding = entry.my_reaction === null;
+    // 반응이 없는 상태에서 처음 추가할 때만 포인트 지급
+    // reactionRewardedEntries로 세션 내 중복 지급 방지 (un-react 후 재반응 케이스)
+    const isAdding = entry.my_reaction === null && !reactionRewardedEntries.has(entry.id);
     if (isAdding) {
+      setReactionRewardedEntries(prev => new Set(prev).add(entry.id));
       onGrantFeedReward?.();
       showFeedToast('👃 +1원 즉시 지급!');
     }
@@ -414,9 +425,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       if (balanceVotingRef.current) return;
                       balanceVotingRef.current = true;
                       const overPct = 65 + Math.floor(Math.random() * 20);
-                      setBalanceStats({ over: overPct, ok: 100 - overPct });
+                      const overStats = { over: overPct, ok: 100 - overPct };
+                      setBalanceStats(overStats);
                       setBalanceVoted('over');
-                      try { localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'over'); } catch {}
+                      try {
+                        localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'over');
+                        localStorage.setItem(`savelog_balance_stats_${getTodayStr()}_${balanceIndex}`, JSON.stringify(overStats));
+                      } catch {}
                       onEarnPending?.(1);
                       showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
 
@@ -451,9 +466,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       if (balanceVotingRef.current) return;
                       balanceVotingRef.current = true;
                       const okPct = 60 + Math.floor(Math.random() * 25);
-                      setBalanceStats({ over: 100 - okPct, ok: okPct });
+                      const okStats = { over: 100 - okPct, ok: okPct };
+                      setBalanceStats(okStats);
                       setBalanceVoted('ok');
-                      try { localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'ok'); } catch {}
+                      try {
+                        localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'ok');
+                        localStorage.setItem(`savelog_balance_stats_${getTodayStr()}_${balanceIndex}`, JSON.stringify(okStats));
+                      } catch {}
                       onEarnPending?.(1);
                       showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
 
