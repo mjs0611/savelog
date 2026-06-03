@@ -657,21 +657,23 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                   </div>
                 )}
 
-                {/* 한마디 퀵 코멘트 칩 */}
-                <div className="feed-comment-chips-container">
-                  <span className="comment-chips-label">말 한마디:</span>
-                  <div className="comment-chips-scroll">
-                    {COMMENT_CHIPS.map((cmt) => (
-                      <button
-                        key={cmt}
-                        className="comment-chip-btn"
-                        onClick={() => addComment(entry.id, cmt)}
-                      >
-                        {cmt}
-                      </button>
-                    ))}
+                {/* 한마디 퀵 코멘트 칩 — 내 게시물에는 표시하지 않음 */}
+                {entry.user_id !== userId && (
+                  <div className="feed-comment-chips-container">
+                    <span className="comment-chips-label">말 한마디:</span>
+                    <div className="comment-chips-scroll">
+                      {COMMENT_CHIPS.map((cmt) => (
+                        <button
+                          key={cmt}
+                          className="comment-chip-btn"
+                          onClick={() => addComment(entry.id, cmt)}
+                        >
+                          {cmt}
+                        </button>
+                      ))}
+                    </div>
                   </div>
-                </div>
+                )}
 
                 {/* 한마디 코멘트 목록 */}
                 {(localComments[entry.id] || []).length > 0 && (

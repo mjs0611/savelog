@@ -6,16 +6,19 @@ const REWARD_AD_ID = 'ait.v2.live.903cd8fed5b3414d';
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
 
 let interstitialLoaded = false;
+let interstitialLoading = false;
 let rewardLoaded = false;
+let rewardLoading = false;
 
 export function preloadInterstitial() {
-  if (!IS_AIT || !loadFullScreenAd.isSupported()) return;
+  if (!IS_AIT || !loadFullScreenAd.isSupported() || interstitialLoaded || interstitialLoading) return;
+  interstitialLoading = true;
   loadFullScreenAd({
     options: { adGroupId: INTERSTITIAL_AD_ID },
     onEvent: (event) => {
-      if (event.type === 'loaded') interstitialLoaded = true;
+      if (event.type === 'loaded') { interstitialLoaded = true; interstitialLoading = false; }
     },
-    onError: (e) => console.warn('[Ad] interstitial load error', e),
+    onError: (e) => { console.warn('[Ad] interstitial load error', e); interstitialLoading = false; },
   });
 }
 
@@ -41,13 +44,14 @@ export function showInterstitial(onDismissed: () => void) {
 }
 
 export function preloadReward() {
-  if (!IS_AIT || !loadFullScreenAd.isSupported()) return;
+  if (!IS_AIT || !loadFullScreenAd.isSupported() || rewardLoaded || rewardLoading) return;
+  rewardLoading = true;
   loadFullScreenAd({
     options: { adGroupId: REWARD_AD_ID },
     onEvent: (event) => {
-      if (event.type === 'loaded') rewardLoaded = true;
+      if (event.type === 'loaded') { rewardLoaded = true; rewardLoading = false; }
     },
-    onError: (e) => console.warn('[Ad] reward load error', e),
+    onError: (e) => { console.warn('[Ad] reward load error', e); rewardLoading = false; },
   });
 }
 
