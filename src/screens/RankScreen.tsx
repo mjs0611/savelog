@@ -24,10 +24,11 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
   const myRow = myIdx >= 0 ? weekRank[myIdx] : null;
   const isSuspicious = myRow ? (myRow.total === 0 && myRow.doubtCount >= 3) : false;
 
-  // 수령 가능한 순위 리워드 계산 (의심됨 상태면 0)
+  // 수령 가능한 순위 리워드 계산 (의심됨 상태면 0, 최소 3일 기록 필요)
+  const myDays = myRow?.days ?? 0;
   const rankRewardAmount = isSuspicious ? 0
-    : myIdx === 0 ? 100
-    : myIdx >= 0 && totalParticipants > 0 && (myIdx + 1) / totalParticipants <= 0.1 ? 30
+    : myIdx === 0 && myDays >= 3 ? 100
+    : myIdx >= 0 && myDays >= 3 && totalParticipants > 0 && (myIdx + 1) / totalParticipants <= 0.1 ? 30
     : 0;
 
   return (
@@ -53,6 +54,11 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <div className="my-rank-right">
             <p className="my-rank-amount">{formatAmount(weekRank[myIdx].total)}</p>
             <Badge size="small" color="blue" variant="weak">{weekRank[myIdx].days}일 기록</Badge>
+            {weekRank[myIdx].days > 0 && (
+              <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--text-mute)' }}>
+                일평균 {formatAmount(Math.round(weekRank[myIdx].total / weekRank[myIdx].days))}
+              </p>
+            )}
             {isSuspicious && (
               <p style={{ margin: '4px 0 0 0', fontSize: 10, color: '#FF4D4F', fontWeight: 700 }}>
                 ⚠ 의심 반응이 많아 리워드가 제한됩니다
@@ -112,8 +118,8 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       <div className="glass-card reward-info-card">
         <p className="reward-info-title">주간 리워드</p>
         <div className="reward-rows">
-          <div className="reward-row">🥇 1위 <span>+100원</span></div>
-          <div className="reward-row">📊 상위 10% <span>+30원</span></div>
+          <div className="reward-row">🥇 1위 (3일↑) <span>+100원</span></div>
+          <div className="reward-row">📊 상위 10% (3일↑) <span>+30원</span></div>
           <div className="reward-row">🔥 7일 완주 <span>+20원</span></div>
           <div className="reward-row">📝 매일 기록 <span>+3원</span></div>
           <div className="reward-row">🎯 일일 미션 달성 <span>+5원</span></div>
@@ -123,6 +129,11 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
         <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.5 }}>
           👃 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령
         </p>
+        {myIdx >= 0 && rankRewardAmount === 0 && !isSuspicious && myDays > 0 && myDays < 3 && (
+          <p style={{ margin: '10px 0 0 0', fontSize: 11, color: 'var(--text-mute)', textAlign: 'center' }}>
+            📅 순위 리워드는 3일 이상 기록 후 수령 가능해요 ({myDays}/3일)
+          </p>
+        )}
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
             disabled={claimedThisWeek || rankClaiming}
@@ -147,7 +158,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
             {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : rankClaiming ? '광고 시청 중...' : `📺 광고 보고 +${rankRewardAmount}원 받기`}
           </button>
         )}
-        <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 광고 시청 후 지급됩니다</p>
+        <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 최소 3일 기록 후 광고 시청 시 지급됩니다</p>
       </div>
 
       {/* 순위 리스트 */}
