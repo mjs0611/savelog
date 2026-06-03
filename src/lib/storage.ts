@@ -1,3 +1,5 @@
+import { getWeekRange } from './utils';
+
 const USER_ID_KEY = 'savelog_user_id';
 const USER_KEY_KEY = 'savelog_user_key';
 const NICKNAME_KEY = 'savelog_nickname';
@@ -371,7 +373,14 @@ export function cleanupStaleKeys(): void {
         key.startsWith('savelog_mission_completed_') ? key.slice('savelog_mission_completed_'.length)
         : key.startsWith('savelog_recorded_date_') ? key.slice('savelog_recorded_date_'.length)
         : null;
-      if (dateStr && new Date(dateStr + 'T00:00:00') < cutoff) toRemove.push(key);
+      if (dateStr && new Date(dateStr + 'T00:00:00') < cutoff) { toRemove.push(key); continue; }
+      if (key.startsWith('savelog_rank_claimed_')) {
+        const weekKey = key.slice('savelog_rank_claimed_'.length);
+        try {
+          const { start } = getWeekRange(weekKey);
+          if (start < cutoff) toRemove.push(key);
+        } catch {}
+      }
     }
     toRemove.forEach((k) => localStorage.removeItem(k));
     localStorage.setItem(CLEANUP_DATE_KEY, today);
