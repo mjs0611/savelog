@@ -181,7 +181,7 @@ function buildMockFeed(userId: string): EntryWithReactions[] {
       ],
       total_amount: 2300, created_at: new Date(Date.now() - 1000 * 60 * 30).toISOString(),
       trust_count: 142, doubt_count: 3,
-      my_reaction: userId === 'mock-a' ? null : null,
+      my_reaction: null,
       persona: 'keeper',
       image: undefined,
     },
