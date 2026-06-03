@@ -81,7 +81,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>오늘의 짠내 기록 완료! 🎉</p>
               <p style={{ margin: '2px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.3 }}>
-                {daily.spentAmount === 0 ? '무지출 달성으로 완벽하게 지갑을 철통 방어했습니다!' : `오늘 ${formatAmount(daily.spentAmount ?? 0)} 지출 기록이 피드에 공유되었습니다.`}
+                {(daily.spentAmount ?? 0) === 0 ? '무지출 달성으로 완벽하게 지갑을 철통 방어했습니다!' : `오늘 ${formatAmount(daily.spentAmount ?? 0)} 지출 기록이 피드에 공유되었습니다.`}
               </p>
             </div>
           </div>
@@ -214,7 +214,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                     <span style={{ fontSize: 8, background: 'rgba(168,85,247,0.15)', color: '#C084FC', padding: '1px 5px', borderRadius: 4, fontWeight: 900 }}>LV.{petLevel}</span>
                   </div>
                   <span style={{ fontSize: 10, color: 'var(--text-mute)', display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    {daily.recorded ? (daily.spentAmount === 0 ? '🔋 기분 최고! (무지출 상태)' : '🥱 지출 발생으로 피곤함') : '💤 기록을 기다리는 중...'}
+                    {daily.recorded ? ((daily.spentAmount ?? 0) === 0 ? '🔋 기분 최고! (무지출 상태)' : '🥱 지출 발생으로 피곤함') : '💤 기록을 기다리는 중...'}
                   </span>
                 </div>
               </div>
