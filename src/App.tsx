@@ -23,7 +23,7 @@ import {
   type StreakData,
   type DailyState,
 } from './lib/storage';
-import { initAit, grantPendingReward, grantRankReward, grantFeedReward, grantStreakReward } from './lib/tosspoint';
+import { initAit, grantPendingReward, grantRankReward, grantFeedReward } from './lib/tosspoint';
 import { preloadInterstitial, showInterstitial, preloadReward, showReward } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey } from './lib/utils';
@@ -324,23 +324,19 @@ export default function App() {
       setStreak(newStreak);
 
       const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
+      if (isStreakBonus) totalEarn += 20; // 7일 완주 보너스를 펜딩에 합산 (광고 보고 수령)
 
       const newPending = addPendingPoints(totalEarn);
       setPendingPoints(newPending);
       if (newPending > 0) preloadReward();
 
-      // 7일 연속 달성 보너스는 별도 프로모션으로 직접 지급
-      if (isStreakBonus) {
-        grantStreakReward(20).catch(() => {});
-      }
-
       // 토스트 조합
       let toastMsg = `✅ 기록 완료! +${totalEarn}원 대기 중 (광고 보고 받기)`;
       if (missionCleared) {
-        toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중`;
+        toastMsg = `🎯 미션 달성! +${totalEarn}원 대기 중 (광고 보고 받기)`;
       }
       if (isStreakBonus) {
-        toastMsg = `🔥 7일 완주 보너스! +20원 즉시 지급 · 기록 +${totalEarn}원 대기 중`;
+        toastMsg = `🔥 7일 연속 완주! 총 +${totalEarn}원 적립 대기 (광고 보고 받기)`;
       }
 
       showToast(toastMsg);
@@ -382,23 +378,29 @@ export default function App() {
     });
   }
 
-  async function handleClaimRankReward(amount: number) {
+  function handleClaimRankReward(amount: number) {
     const weekKey = getWeekKey();
     if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
     rankClaimingRef.current = true;
     setRankClaiming(true);
-    try {
-      const ok = await grantRankReward(amount);
-      if (!ok) {
-        showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
-        return;
+    showReward(async () => {
+      try {
+        const ok = await grantRankReward(amount);
+        if (!ok) {
+          showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        setClaimedRankReward(weekKey);
+        showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
+      } finally {
+        rankClaimingRef.current = false;
+        setRankClaiming(false);
       }
-      setClaimedRankReward(weekKey);
-      showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
-    } finally {
+    }, () => {
       rankClaimingRef.current = false;
       setRankClaiming(false);
-    }
+      showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
+    });
   }
 
   function showToast(msg: string) {

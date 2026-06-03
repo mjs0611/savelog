@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Badge, ProgressBar } from '@toss/tds-mobile';
+import { Badge, Button } from '@toss/tds-mobile';
 import type { DailyState, StreakData } from '../lib/storage';
 import { getDailyMission, getNickname, getPersona, PERSONAS, sendPokeNotification } from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
@@ -158,11 +158,9 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               </span>
             </div>
             
-            <ProgressBar
-              progress={daily.recorded ? temp / 100 : 0}
-              size="normal"
-              color="#00F5A0"
-            />
+            <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 100, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${daily.recorded ? temp : 0}%`, background: '#00F5A0', borderRadius: 100, transition: 'width 0.6s ease-out' }} />
+            </div>
             
             <p style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 8, lineHeight: 1.4, margin: '8px 0 0 0' }}>
               {daily.recorded ? (
@@ -227,35 +225,38 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 펜딩 포인트 (광고 보고 받기) */}
       {pendingPoints > 0 && (
-        <div className="glass-card" style={{ padding: '12px 14px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.04) 0%, rgba(255,255,255,0) 100%)' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#FFC800' }}>🎁 적립된 토스포인트</p>
-              <p style={{ margin: '3px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.4 }}>
-                리워드 광고를 시청하면 지급됩니다 · 최대 50원
-              </p>
+        <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.06) 0%, rgba(255,255,255,0.01) 100%)', display: 'flex', flexDirection: 'column', gap: 14 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ fontSize: 20 }}>🎁</span>
+              <div>
+                <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#FFC800' }}>적립된 토스포인트</p>
+                <p style={{ margin: '3px 0 0 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4, wordBreak: 'keep-all' }}>
+                  리워드 광고를 시청하면 지급됩니다 · 최대 50원
+                </p>
+              </div>
             </div>
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, flexShrink: 0 }}>
-              <span style={{ fontSize: 18, fontWeight: 900, color: '#FFC800' }}>{pendingPoints}원</span>
-              <button
-                onClick={onClaimPending}
-                style={{
-                  padding: '6px 14px',
-                  borderRadius: 100,
-                  border: 'none',
-                  background: 'linear-gradient(135deg, #FFC800 0%, #FF9500 100%)',
-                  color: '#090A10',
-                  fontSize: 11,
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  boxShadow: '0 3px 10px rgba(255, 200, 0, 0.25)',
-                  whiteSpace: 'nowrap',
-                }}
-              >
-                광고 보고 받기
-              </button>
-            </div>
+            <span style={{ fontSize: 20, fontWeight: 900, color: '#FFC800', flexShrink: 0 }}>{pendingPoints}원</span>
           </div>
+          <button
+            onClick={onClaimPending}
+            style={{
+              width: '100%',
+              padding: '12px 0',
+              borderRadius: 12,
+              border: 'none',
+              background: 'linear-gradient(135deg, #FFC800 0%, #FF9500 100%)',
+              color: '#090A10',
+              fontSize: 13,
+              fontWeight: 900,
+              cursor: 'pointer',
+              boxShadow: '0 4px 15px rgba(255, 200, 0, 0.25)',
+              textAlign: 'center',
+              transition: 'all 0.2s',
+            }}
+          >
+            광고 보고 받기
+          </button>
         </div>
       )}
 
@@ -640,58 +641,29 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
               {/* 제어 버튼 */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <button
+                <Button
+                  size="large"
+                  display="full"
+                  color="primary"
+                  variant="fill"
                   disabled={selectedAffinityUser.hasPoked}
                   onClick={() => {
                     handlePokeUser(selectedAffinityUser.id, selectedAffinityUser.nickname, isZero);
                     setSelectedAffinityUser(null);
                   }}
-                  style={{
-                    width: '100%',
-                    padding: 12,
-                    background: selectedAffinityUser.hasPoked
-                      ? 'rgba(255,255,255,0.05)'
-                      : 'linear-gradient(135deg, #FF5E62 0%, #FF9966 100%)',
-                    border: 'none',
-                    borderRadius: 'var(--radius-sm)',
-                    color: selectedAffinityUser.hasPoked ? 'var(--text-mute)' : '#fff',
-                    fontSize: 12,
-                    fontWeight: 900,
-                    cursor: selectedAffinityUser.hasPoked ? 'default' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    boxShadow: selectedAffinityUser.hasPoked
-                      ? 'none'
-                      : '0 4px 15px rgba(255, 94, 98, 0.3)',
-                    transition: 'transform 0.2s'
-                  }}
-                  onMouseDown={(e) => !selectedAffinityUser.hasPoked && (e.currentTarget.style.transform = 'scale(0.97)')}
-                  onMouseUp={(e) => !selectedAffinityUser.hasPoked && (e.currentTarget.style.transform = 'scale(1)')}
                 >
                   {selectedAffinityUser.hasPoked ? '오늘의 궁합 콕 완료 ✓' : '⚡ 궁합 콕 찌르기'}
-                </button>
+                </Button>
 
-                <button
+                <Button
+                  size="large"
+                  display="full"
+                  color="dark"
+                  variant="weak"
                   onClick={() => setSelectedAffinityUser(null)}
-                  style={{
-                    width: '100%',
-                    padding: 12,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--text-sub)',
-                    fontSize: 12,
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
                 >
                   닫기
-                </button>
+                </Button>
               </div>
             </div>
           </div>

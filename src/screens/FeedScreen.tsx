@@ -329,8 +329,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
               <span style={{ fontSize: 32, marginBottom: 8, animation: 'floating 3s infinite ease-in-out' }}>{card.emoji}</span>
               <h4 style={{ margin: '0 0 4px 0', fontSize: 13, color: '#fff', fontWeight: 800, lineHeight: 1.4 }}>
-                {card.nickname}님이 <br />
-                <span style={{ color: '#FF5E62' }}>{card.spent}</span>에 <span style={{ color: '#00F5A0' }}>{formatAmount(card.amount)}</span>을 소비했습니다!
+                {card.nickname}님이 <span style={{ color: '#FF5E62' }}>{card.spent}</span>에 <span style={{ color: '#00F5A0' }}>{formatAmount(card.amount)}</span>을 소비했습니다!
               </h4>
               <p style={{ margin: '8px 0 16px 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4, background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
                 “ {card.description} ”
@@ -356,12 +355,12 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                     }}
                     style={{
                       width: '100%',
-                      padding: 10,
-                      borderRadius: 8,
+                      padding: '12px 0',
+                      borderRadius: 12,
                       background: 'rgba(255,255,255,0.08)',
                       border: '1px solid rgba(255,255,255,0.1)',
                       color: '#fff',
-                      fontSize: 11,
+                      fontSize: 12,
                       fontWeight: 800,
                       cursor: 'pointer',
                       transition: 'all 0.2s'
@@ -1124,7 +1123,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
             <div className="story-modal-footer" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
               <Button
-                size="medium"
+                size="large"
                 color="dark"
                 variant="weak"
                 onClick={() => setMessageRecipientEntry(null)}
@@ -1133,7 +1132,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 취소
               </Button>
               <Button
-                size="medium"
+                size="large"
                 color="primary"
                 variant="fill"
                 disabled={!messageText.trim()}

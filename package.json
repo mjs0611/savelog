@@ -11,6 +11,7 @@
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^2.6.1",
+    "@emotion/react": "^11.14.0",
     "@supabase/supabase-js": "^2.106.2",
     "@toss/tds-mobile": "^2.3.0",
     "fflate": "^0.8.3",

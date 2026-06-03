@@ -4,11 +4,8 @@ import { Badge, Button } from '@toss/tds-mobile';
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
   if (!open) return null;
   return (
-    <div style={{ position: 'fixed', inset: 0, zIndex: 9999, display: 'flex', alignItems: 'flex-end', justifyContent: 'center' }}
-      onClick={onClose}>
-      <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.6)' }} />
-      <div style={{ position: 'relative', width: '100%', maxWidth: 480, background: '#1C2230', borderRadius: '20px 20px 0 0', padding: '24px 20px 36px', display: 'flex', flexDirection: 'column', gap: 16 }}
-        onClick={e => e.stopPropagation()}>
+    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999 }}>
+      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0))', gap: 16 }}>
         {children}
       </div>
     </div>
@@ -452,7 +449,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       {/* 서비스 이용약관 모달 */}
       <SimpleModal open={termsModalOpen} onClose={() => setTermsModalOpen(false)}>
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 900, marginBottom: 4 }}>서비스 이용약관</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>서비스 이용약관</h3>
           <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>세이브로그 서비스 이용 동의서</p>
         </div>
         <div className="terms-content-box">
@@ -463,13 +460,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <h4>제 3 조 (리워드)</h4>
           <p>회사는 서비스 활성화를 위해 기록 및 미션 달성 보상으로 토스포인트를 적립해 드리며, 적립 조건은 회사 내부 정책에 따릅니다.</p>
         </div>
-        <Button display="block" color="primary" variant="fill" onClick={() => setTermsModalOpen(false)}>확인</Button>
+        <Button display="full" size="large" color="primary" variant="fill" onClick={() => setTermsModalOpen(false)}>확인</Button>
       </SimpleModal>
 
       {/* 마케팅 수신동의 모달 */}
       <SimpleModal open={marketingModalOpen} onClose={() => setMarketingModalOpen(false)}>
         <div>
-          <h3 style={{ fontSize: 15, fontWeight: 900, marginBottom: 4 }}>마케팅 정보 수신 동의</h3>
+          <h3 style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>마케팅 정보 수신 동의</h3>
           <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>혜택 알림 및 이벤트 정보 안내</p>
         </div>
         <div className="terms-content-box">
@@ -480,7 +477,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <h4>3. 보유 및 이용 기간</h4>
           <p>동의 철회 시 또는 회원 탈퇴 시까지 보유 및 이용하며, 거부 시에도 서비스 기본 기능은 정상 이용 가능합니다.</p>
         </div>
-        <Button display="block" color="primary" variant="fill" onClick={() => setMarketingModalOpen(false)}>동의 완료</Button>
+        <Button display="full" size="large" color="primary" variant="fill" onClick={() => setMarketingModalOpen(false)}>동의 완료</Button>
       </SimpleModal>
     </div>
   );

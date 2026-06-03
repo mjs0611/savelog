@@ -33,6 +33,9 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <img src="/images/icon_rank.png" className="custom-icon" style={{ marginLeft: 5 }} />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
+        <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
+          🔄 매주 월요일 오전 9시 초기화
+        </p>
       </div>
 
       {/* 내 순위 요약 */}
@@ -86,10 +89,10 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
             disabled={claimedThisWeek || rankClaiming}
             onClick={() => onClaimRankReward(rankRewardAmount)}
             style={{
-              marginTop: 12,
+              marginTop: 14,
               width: '100%',
-              padding: '10px 0',
-              borderRadius: 10,
+              padding: '13px 0',
+              borderRadius: 12,
               border: 'none',
               background: claimedThisWeek || rankClaiming
                 ? 'rgba(255,255,255,0.05)'
@@ -98,14 +101,14 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
               fontSize: 13,
               fontWeight: 900,
               cursor: claimedThisWeek || rankClaiming ? 'default' : 'pointer',
-              boxShadow: claimedThisWeek || rankClaiming ? 'none' : '0 4px 12px rgba(255, 200, 0, 0.25)',
+              boxShadow: claimedThisWeek || rankClaiming ? 'none' : '0 4px 15px rgba(255, 215, 0, 0.25)',
               transition: 'all 0.2s',
             }}
           >
-            {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : rankClaiming ? '지급 중...' : `🏆 리워드 수령하기 +${rankRewardAmount}원`}
+            {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : rankClaiming ? '광고 시청 중...' : `📺 광고 보고 +${rankRewardAmount}원 받기`}
           </button>
         )}
-        <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 즉시 지급됩니다</p>
+        <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 광고 시청 후 지급됩니다</p>
       </div>
 
       {/* 순위 리스트 */}
