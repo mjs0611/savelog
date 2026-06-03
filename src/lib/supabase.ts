@@ -133,15 +133,20 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
     .eq('week_key', weekKey);
   if (error || !data) return null; // 네트워크 오류 — null로 구분
 
-  const map = new Map<string, { user_id: string; nickname: string; total: number; dateSet: Set<string> }>();
+  const map = new Map<string, { user_id: string; nickname: string; total: number; dateSet: Set<string>; latestDate: string }>();
   for (const row of data as { user_id: string; nickname: string; total_amount: number; date: string }[]) {
-    const prev = map.get(row.user_id) ?? { user_id: row.user_id, nickname: row.nickname, total: 0, dateSet: new Set<string>() };
+    const prev = map.get(row.user_id) ?? { user_id: row.user_id, nickname: row.nickname, total: 0, dateSet: new Set<string>(), latestDate: '' };
     prev.dateSet.add(row.date);
     prev.total += row.total_amount;
+    // 가장 최신 날짜 기록의 닉네임을 사용 (주중 닉네임 변경 반영)
+    if (row.date > prev.latestDate) {
+      prev.nickname = row.nickname;
+      prev.latestDate = row.date;
+    }
     map.set(row.user_id, prev);
   }
   return Array.from(map.values())
-    .map(({ dateSet, ...rest }) => ({ ...rest, days: dateSet.size }))
+    .map(({ dateSet, latestDate: _ld, ...rest }) => ({ ...rest, days: dateSet.size }))
     .sort((a, b) => a.total - b.total);
 }
 
