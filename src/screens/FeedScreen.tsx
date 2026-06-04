@@ -143,9 +143,10 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const myPersonaKey = getPersona();
 
   useEffect(() => {
-    // 최초 로드는 스켈레톤 표시, 이후 refreshToken 변경은 조용히 갱신
+    // 최초 로드는 스켈레톤 표시, 이후 refreshToken/userId 변경은 현재 로드 상태에 따라 갱신
+    // userId는 anonymousKey 발급 시 변경될 수 있어 my_reaction 정합성을 위해 포함
     load(initialLoaded.current);
-  }, [refreshToken]);
+  }, [refreshToken, userId]);
 
   async function load(silent = false) {
     const loadId = ++loadIdRef.current;
