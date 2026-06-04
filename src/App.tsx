@@ -453,7 +453,7 @@ export default function App() {
               const today = getTodayStr();
               if (!daily.recorded || daily.date !== today) setShowRecord(true);
             }}
-            onQuickZeroSpend={() => handleCloseAdAndSubmit(
+            onQuickZeroSpend={() => handleSubmitRecord(
               [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
             )}
             onClaimPending={handleClaimPending}
