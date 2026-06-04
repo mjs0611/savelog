@@ -39,6 +39,7 @@ export function showInterstitial(onDismissed: () => void) {
     onError: (e) => {
       console.warn('[Ad] interstitial show error', e);
       onDismissed();
+      preloadInterstitial();
     },
   });
 }

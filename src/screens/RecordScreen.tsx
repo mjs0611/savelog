@@ -36,7 +36,9 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   function addItem() {
     const amount = parseInt(amountStr.replace(/,/g, '')) || 0;
-    if (amount <= 0) return;
+    if (amount < 0) return;
+    // 0원 항목은 메모가 있을 때만 허용 (버튼 disabled 조건과 일치)
+    if (amount === 0 && !comment.trim()) return;
     setItems((prev) => [
       ...prev,
       { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() },
@@ -87,7 +89,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
     let finalItems = items;
     if (showForm && amountStr) {
       const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
-      if (amount > 0) {
+      if (amount > 0 || (amount === 0 && comment.trim())) {
         const autoItem = { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() };
         finalItems = [...items, autoItem];
         setItems(finalItems);
@@ -194,7 +196,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 onChange={(e: any) => setComment(e.target.value)}
               />
 
-              <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr || amountStr === '0'}>
+              <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr || (amountStr === '0' && !comment.trim())}>
                 항목 추가
               </Button>
             </div>
