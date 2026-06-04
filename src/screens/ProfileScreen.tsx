@@ -33,7 +33,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   // nickname prop이 바뀔 때(저장 완료 후) draft를 동기화
   React.useEffect(() => {
     if (!editing) setDraft(nickname);
-  }, [nickname]);
+  }, [nickname, editing]);
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(true);
   const [entriesError, setEntriesError] = useState(false);

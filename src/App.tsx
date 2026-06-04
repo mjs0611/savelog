@@ -484,6 +484,7 @@ export default function App() {
             claimedThisWeek={getClaimedRankReward(getWeekKey())}
             rankClaiming={rankClaiming}
             dailyRecorded={daily.recorded && daily.date === getTodayStr()}
+            onRetry={loadRank}
           />
         </div>
         <div style={tab !== 'profile' ? { display: 'none' } : {}}>

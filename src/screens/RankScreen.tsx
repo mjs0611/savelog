@@ -11,11 +11,12 @@ interface Props {
   claimedThisWeek?: boolean;
   rankClaiming?: boolean;
   dailyRecorded?: boolean;
+  onRetry?: () => void;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false }: Props) {
+export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false, onRetry }: Props) {
   const weekKey = getWeekKey();
   const myIdx = weekRank.findIndex((r) => r.user_id === userId);
   const totalParticipants = weekRank.length;
@@ -169,7 +170,25 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       ) : loadFailed && weekRank.length === 0 ? (
         <div className="empty-state">
           <p>순위를 불러오지 못했어요</p>
-          <p className="empty-sub">네트워크 상태를 확인하고 순위 탭을 다시 눌러보세요</p>
+          <p className="empty-sub">네트워크 상태를 확인해 주세요</p>
+          {onRetry && (
+            <button
+              onClick={onRetry}
+              style={{
+                marginTop: 12,
+                padding: '8px 20px',
+                borderRadius: 100,
+                border: '1px solid rgba(255,255,255,0.15)',
+                background: 'rgba(255,255,255,0.06)',
+                color: 'var(--text-sub)',
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
+            >
+              다시 시도
+            </button>
+          )}
         </div>
       ) : weekRank.length === 0 ? (
         <div className="empty-state">
