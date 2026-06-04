@@ -88,7 +88,12 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
     if (showForm && amountStr) {
       const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
       if (amount > 0) {
-        finalItems = [...items, { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() }];
+        const autoItem = { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() };
+        finalItems = [...items, autoItem];
+        setItems(finalItems);
+        setAmountStr('');
+        setComment('');
+        setShowForm(false);
       }
     }
     await onSubmit(finalItems, image || undefined);
