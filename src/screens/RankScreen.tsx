@@ -197,6 +197,19 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
         </div>
       ) : (
         <div className="rank-list">
+          {loadFailed && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', marginBottom: 8, background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 10 }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,200,0,0.9)', fontWeight: 700 }}>⚠ 순위 갱신 실패 · 마지막 데이터 표시 중</span>
+              {onRetry && (
+                <button
+                  onClick={onRetry}
+                  style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,200,0,0.9)', background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 100, padding: '3px 10px', cursor: 'pointer' }}
+                >
+                  재시도
+                </button>
+              )}
+            </div>
+          )}
           {weekRank.map((row, i) => {
             const isZero = row.total === 0;
             // 0원 그룹과 유료 그룹 사이 구분선 삽입
