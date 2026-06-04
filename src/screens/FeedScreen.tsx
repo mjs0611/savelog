@@ -120,6 +120,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     } catch { return null; }
   });
   const balanceVotingRef = React.useRef(false);
+  const balanceDateRef = React.useRef(getTodayStr());
   const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(() => {
     try {
       const todayStr = getTodayStr();
@@ -143,6 +144,31 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const myPersonaKey = getPersona();
 
   useEffect(() => {
+    // 날짜가 바뀌면 밸런스 게임 상태를 오늘 날짜 기준으로 초기화 (자정 넘어 앱이 열려있을 때 대비)
+    const today = getTodayStr();
+    if (balanceDateRef.current !== today) {
+      balanceDateRef.current = today;
+      try {
+        const savedIdx = localStorage.getItem('savelog_balance_idx_' + today);
+        const newIdx = savedIdx ? parseInt(savedIdx, 10) : 0;
+        const votedRaw = localStorage.getItem(`savelog_balance_voted_${today}_${newIdx}`);
+        const newVoted = (votedRaw === 'over' || votedRaw === 'ok') ? votedRaw as 'over' | 'ok' : null;
+        let newStats: { over: number; ok: number } | null = null;
+        if (newVoted) {
+          const raw = localStorage.getItem(`savelog_balance_stats_${today}_${newIdx}`);
+          if (raw) {
+            try {
+              const parsed = JSON.parse(raw) as { over: number; ok: number };
+              if (typeof parsed.over === 'number' && typeof parsed.ok === 'number') newStats = parsed;
+            } catch { /* ignore */ }
+          }
+        }
+        setBalanceIndex(newIdx);
+        setBalanceVoted(newVoted);
+        setBalanceStats(newStats);
+        balanceVotingRef.current = false;
+      } catch { /* ignore */ }
+    }
     // 최초 로드는 스켈레톤 표시, 이후 refreshToken/userId 변경은 현재 로드 상태에 따라 갱신
     // userId는 anonymousKey 발급 시 변경될 수 있어 my_reaction 정합성을 위해 포함
     load(initialLoaded.current);
