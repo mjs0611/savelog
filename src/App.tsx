@@ -259,20 +259,21 @@ export default function App() {
   }
 
   async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
-    if (submittingRef.current || (daily.recorded && daily.date === getTodayStr())) return;
-    submittingRef.current = true; // 인터스티셜 표시 중 이중 클릭 방지
-    setSubmitting(true); // 광고 표시 중에도 버튼 로딩 상태 유지
+    if (submittingRef.current) return;
+    submittingRef.current = true;
+    setSubmitting(true);
     showInterstitial(() => {
-      submittingRef.current = false; // handleCloseAdAndSubmit 내부 가드 통과 후 재설정
+      submittingRef.current = false;
       handleCloseAdAndSubmit(items, image);
     });
   }
 
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
-    const today = getTodayStr(); // 제출 시점의 날짜 (자정 이후 앱 재진입 대응)
-    if (submittingRef.current || (daily.recorded && daily.date === today)) return;
+    const today = getTodayStr();
+    if (submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
+    const isFirstRecord = !daily.recorded || daily.date !== today;
     try {
       const total = items.reduce((s, i) => s + i.amount, 0);
       const weekKey = getWeekKey();
@@ -294,56 +295,52 @@ export default function App() {
         return;
       }
 
-      // 미션 확인
-      const mission = getDailyMission(today);
-      let missionCleared = false;
-      if (!mission.completed) {
-        if (mission.category === '기타') {
-          if (total === 0) missionCleared = true;
-        } else if (mission.category === '식비') {
-          const foodSpend = items.filter(x => x.category === '식비').reduce((s, x) => s + x.amount, 0);
-          const hasFoodRecord = items.some(x => x.category === '식비');
-          if (!hasFoodRecord || foodSpend <= 5000) missionCleared = true;
-        } else if (mission.category === '교통') {
-          const transportSpend = items.filter(x => x.category === '교통').reduce((s, x) => s + x.amount, 0);
-          const hasTransportRecord = items.some(x => x.category === '교통');
-          if (!hasTransportRecord || transportSpend <= 2000) missionCleared = true;
-        } else {
-          const categorySpend = items.filter(x => x.category === mission.category).reduce((s, x) => s + x.amount, 0);
-          const hasCategoryRecord = items.some(x => x.category === mission.category);
-          if (!hasCategoryRecord || categorySpend === 0) missionCleared = true;
+      // 첫 기록에만 미션·스트릭·포인트 처리
+      if (isFirstRecord) {
+        const mission = getDailyMission(today);
+        let missionCleared = false;
+        if (!mission.completed) {
+          if (mission.category === '기타') {
+            if (total === 0) missionCleared = true;
+          } else if (mission.category === '식비') {
+            const foodSpend = items.filter(x => x.category === '식비').reduce((s, x) => s + x.amount, 0);
+            const hasFoodRecord = items.some(x => x.category === '식비');
+            if (!hasFoodRecord || foodSpend <= 5000) missionCleared = true;
+          } else if (mission.category === '교통') {
+            const transportSpend = items.filter(x => x.category === '교통').reduce((s, x) => s + x.amount, 0);
+            const hasTransportRecord = items.some(x => x.category === '교통');
+            if (!hasTransportRecord || transportSpend <= 2000) missionCleared = true;
+          } else {
+            const categorySpend = items.filter(x => x.category === mission.category).reduce((s, x) => s + x.amount, 0);
+            const hasCategoryRecord = items.some(x => x.category === mission.category);
+            if (!hasCategoryRecord || categorySpend === 0) missionCleared = true;
+          }
         }
+        if (missionCleared) completeDailyMission(today);
+
+        const newStreak = updateStreak(today);
+        setRecordedDate(today);
+        setStreak(newStreak);
+
+        const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
+        const totalEarn = 3 + (isStreakBonus ? 20 : 0);
+        const prevPending = getPendingPoints();
+        const newPending = addPendingPoints(totalEarn);
+        const actualEarned = newPending - prevPending;
+        setPendingPoints(newPending);
+        if (newPending > 0) preloadReward();
+
+        const toastMsg = isStreakBonus
+          ? (actualEarned > 0 ? `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)` : `🔥 7일 연속 완주! (포인트 한도 도달 — 광고 보고 먼저 받기)`)
+          : (actualEarned > 0 ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기)` : `✅ 기록 완료! (오늘 포인트 한도 도달)`);
+        showToast(toastMsg);
+      } else {
+        showToast('✅ 추가 기록 완료!');
       }
 
-      if (missionCleared) {
-        completeDailyMission(today);
-      }
-
-      // 스트릭 업데이트
-      const newStreak = updateStreak(today);
-      setRecordedDate(today);
-      setStreak(newStreak);
-
-      const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
-
-      // 펜딩 포인트 적립 (기록 기본 3원 + 7일 완주 보너스 20원)
-      const totalEarn = 3 + (isStreakBonus ? 20 : 0);
-
-      // 한도(50원) 적용 후 실제 추가된 양으로 토스트 표시 (한도 도달 시 오표시 방지)
-      const prevPending = getPendingPoints();
-      const newPending = addPendingPoints(totalEarn);
-      const actualEarned = newPending - prevPending;
-      setPendingPoints(newPending);
-      if (newPending > 0) preloadReward();
-
-      // 토스트 조합
-      const toastMsg = isStreakBonus
-        ? (actualEarned > 0 ? `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)` : `🔥 7일 연속 완주! (포인트 한도 도달 — 광고 보고 먼저 받기)`)
-        : (actualEarned > 0 ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기)` : `✅ 기록 완료! (오늘 포인트 한도 도달)`);
-
-      showToast(toastMsg);
-
-      const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: total };
+      // 누적 지출액으로 daily 상태 갱신
+      const prevSpent = (daily.date === today ? daily.spentAmount : 0) ?? 0;
+      const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: prevSpent + total };
       saveDailyState(newDaily);
       setDaily(newDaily);
       setFeedRefreshToken(t => t + 1);
@@ -441,10 +438,7 @@ export default function App() {
             userId={userId}
             pendingPoints={pendingPoints}
             submitting={submitting}
-            onRecord={() => {
-              const today = getTodayStr();
-              if (!daily.recorded || daily.date !== today) setShowRecord(true);
-            }}
+            onRecord={() => setShowRecord(true)}
             onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
             onClaimPending={handleClaimPending}
             pendingClaiming={pendingClaiming}

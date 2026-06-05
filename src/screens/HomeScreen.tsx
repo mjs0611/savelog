@@ -58,14 +58,33 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* ✍️ 핵심 소비/무지출 기록 콘솔 (최상단 전면 배치) */}
       <div className="glass-card primary-record-card" id="tutorial-step-1" style={{ padding: 14, border: '1.5px solid var(--primary)', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.04) 0%, rgba(255,255,255,0.01) 100%)', boxShadow: '0 8px 24px rgba(0, 245, 160, 0.05)' }}>
         {daily.recorded ? (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 20 }}>🌿</span>
-            <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>오늘의 짠내 기록 완료! 🎉</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.3 }}>
-                {(daily.spentAmount ?? 0) === 0 ? '무지출 달성으로 완벽하게 지갑을 철통 방어했습니다!' : `오늘 ${formatAmount(daily.spentAmount ?? 0)} 지출 기록이 피드에 공유되었습니다.`}
-              </p>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <span style={{ fontSize: 20 }}>🌿</span>
+              <div>
+                <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>오늘의 짠내 기록 완료! 🎉</p>
+                <p style={{ margin: '2px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.3 }}>
+                  {(daily.spentAmount ?? 0) === 0 ? '무지출 달성!' : `오늘 ${formatAmount(daily.spentAmount ?? 0)} 기록됨`}
+                </p>
+              </div>
             </div>
+            <button
+              onClick={onRecord}
+              disabled={submitting}
+              style={{
+                flexShrink: 0,
+                padding: '7px 14px',
+                borderRadius: 100,
+                border: '1px solid rgba(0, 245, 160, 0.3)',
+                background: 'rgba(0, 245, 160, 0.08)',
+                color: 'var(--primary)',
+                fontSize: 11,
+                fontWeight: 900,
+                cursor: 'pointer',
+              }}
+            >
+              + 추가 기록
+            </button>
           </div>
         ) : (
           <div>
