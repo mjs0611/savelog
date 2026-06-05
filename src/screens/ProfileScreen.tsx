@@ -309,42 +309,49 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {messages.map((msg) => (
-              <div
-                key={msg.id}
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 6,
-                  padding: 12,
-                  background: 'rgba(255, 255, 255, 0.02)',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
-                  borderRadius: 'var(--radius-sm)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span
-                      style={{
-                        fontSize: 12,
-                        background: `${msg.senderPersonaColor || '#00F5A0'}15`,
-                        color: msg.senderPersonaColor || '#00F5A0',
-                        padding: '2px 6px',
-                        borderRadius: 100,
-                        fontWeight: 700
-                      }}
-                    >
-                      {msg.senderPersonaEmoji || '🐷'} {msg.senderNickname}
-                    </span>
-                    <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>익명 응원</span>
+            {messages.map((msg) => {
+              const isSent = msg.senderNickname === nickname;
+              return (
+                <div
+                  key={msg.id}
+                  style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: 6,
+                    padding: 12,
+                    background: isSent ? 'rgba(255, 255, 255, 0.01)' : 'rgba(255, 255, 255, 0.02)',
+                    border: `1px solid ${isSent ? 'rgba(255,255,255,0.04)' : 'rgba(255, 255, 255, 0.05)'}`,
+                    borderRadius: 'var(--radius-sm)'
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                      {!isSent && (
+                        <span
+                          style={{
+                            fontSize: 12,
+                            background: `${msg.senderPersonaColor || '#00F5A0'}15`,
+                            color: msg.senderPersonaColor || '#00F5A0',
+                            padding: '2px 6px',
+                            borderRadius: 100,
+                            fontWeight: 700
+                          }}
+                        >
+                          {msg.senderPersonaEmoji || '🐷'} {msg.senderNickname}
+                        </span>
+                      )}
+                      <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>
+                        {isSent ? `✉️ ${msg.recipientNickname || '상대방'}님에게 보낸 쪽지` : '익명 응원'}
+                      </span>
+                    </div>
+                    <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
+                  <p style={{ fontSize: 12, color: isSent ? 'var(--text-mute)' : 'var(--text-sub)', lineHeight: 1.4 }}>
+                    {msg.text}
+                  </p>
                 </div>
-                <p style={{ fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.4 }}>
-                  {msg.text}
-                </p>
-              </div>
-            ))}
+              );
+            })}
           </div>
         )}
       </div>

@@ -79,7 +79,7 @@ export default function PersonaTest({ onClose }: Props) {
 
       for (const t of nextAnswers) {
         counts[t] = (counts[t] || 0) + 1;
-        if (counts[t] >= maxCount) {
+        if (counts[t] > maxCount) {
           maxCount = counts[t];
           maxType = t;
         }
