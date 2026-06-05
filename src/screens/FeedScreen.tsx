@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import type { EntryWithReactions } from '../lib/supabase';
-import { fetchFeed, toggleReaction } from '../lib/supabase';
+import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, type BalanceEntry } from '../lib/supabase';
 import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification, getFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
 
@@ -83,13 +83,29 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
   const [selectedReceiptEntry, setSelectedReceiptEntry] = useState<EntryWithReactions | null>(null);
 
+  // 밸런스 게임 상태
+  const [balanceEntry, setBalanceEntry] = useState<BalanceEntry | null | 'loading' | 'empty'>('loading');
+  const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
+  const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
+  const balanceVotingRef = React.useRef(false);
+
   const myPersonaKey = getPersona();
 
   useEffect(() => {
     // 최초 로드는 스켈레톤 표시, 이후 refreshToken/userId 변경은 현재 로드 상태에 따라 갱신
     // userId는 anonymousKey 발급 시 변경될 수 있어 my_reaction 정합성을 위해 포함
     load(initialLoaded.current);
+    loadBalanceEntry();
   }, [refreshToken, userId]);
+
+  async function loadBalanceEntry() {
+    setBalanceEntry('loading');
+    setBalanceVoted(null);
+    setBalanceStats(null);
+    balanceVotingRef.current = false;
+    const entry = await fetchBalanceGameEntry(userId);
+    setBalanceEntry(entry ?? 'empty');
+  }
 
   async function load(silent = false) {
     const loadId = ++loadIdRef.current;
@@ -327,6 +343,108 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           </button>
         ))}
       </div>
+
+      {/* ⚖️ 밸런스 게임 — 실제 유저 기록 기반 */}
+      {balanceEntry !== 'empty' && (
+        <div className="glass-card" style={{ margin: '0 0 4px 0', padding: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
+            <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>⚖️ 이 지출, 합리적일까?</span>
+            {balanceEntry !== 'loading' && typeof balanceEntry === 'object' && (
+              <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>판정 요청 중</span>
+            )}
+          </div>
+
+          {balanceEntry === 'loading' ? (
+            <div style={{ height: 80, background: 'rgba(255,255,255,0.03)', borderRadius: 10, animation: 'pulse 1.5s infinite' }} />
+          ) : typeof balanceEntry === 'object' && balanceEntry !== null ? (() => {
+            const entry = balanceEntry;
+            const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
+            const noteItem = entry.items.find(it => it.category === '한마디');
+            return (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {/* 닉네임 */}
+                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>
+                  {entry.nickname}님의 지출
+                </p>
+
+                {/* 지출 항목 */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                  {spendItems.map((item, i) => (
+                    <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '6px 10px', background: 'rgba(255,255,255,0.03)', borderRadius: 8 }}>
+                      <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{item.emoji} {item.comment || item.category}</span>
+                      <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{item.amount.toLocaleString('ko-KR')}원</span>
+                    </div>
+                  ))}
+                  <div style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 10px', borderTop: '1px solid rgba(255,255,255,0.06)' }}>
+                    <span style={{ fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>합계</span>
+                    <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>{entry.total_amount.toLocaleString('ko-KR')}원</span>
+                  </div>
+                </div>
+
+                {/* 한마디 */}
+                {noteItem && (
+                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', fontStyle: 'italic', paddingLeft: 8, borderLeft: '2px solid var(--primary)', lineHeight: 1.5 }}>
+                    💬 {noteItem.comment}
+                  </p>
+                )}
+
+                {balanceVoted ? (
+                  /* 투표 후 결과 */
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                    <div style={{ display: 'flex', height: 22, borderRadius: 100, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+                      <div style={{ width: `${balanceStats?.over ?? 50}%`, background: 'linear-gradient(90deg, #FF5E62, #FF9966)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#fff', transition: 'width 0.5s ease-out' }}>
+                        과소비 {balanceStats?.over}%
+                      </div>
+                      <div style={{ width: `${balanceStats?.ok ?? 50}%`, background: 'linear-gradient(90deg, #00F5A0, #00D9F5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#090A10', transition: 'width 0.5s ease-out' }}>
+                        합리적 {balanceStats?.ok}%
+                      </div>
+                    </div>
+                    <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'center' }}>
+                      내 판정: {balanceVoted === 'over' ? '💸 과소비' : '🌿 합리적'}
+                    </p>
+                    <button
+                      onClick={loadBalanceEntry}
+                      style={{ width: '100%', padding: '10px 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.06)', color: '#fff', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                    >
+                      다음 지출 판정하기 →
+                    </button>
+                  </div>
+                ) : (
+                  /* 투표 전 버튼 */
+                  <div style={{ display: 'flex', gap: 10 }}>
+                    {(['over', 'ok'] as const).map(v => (
+                      <button
+                        key={v}
+                        onClick={async () => {
+                          if (balanceVotingRef.current) return;
+                          balanceVotingRef.current = true;
+                          setBalanceVoted(v);
+                          const stats = await submitBalanceVote(entry.id, userId, v);
+                          setBalanceStats(stats);
+                          balanceVotingRef.current = false;
+                        }}
+                        style={{
+                          flex: 1,
+                          padding: '11px 0',
+                          borderRadius: 100,
+                          border: 'none',
+                          background: v === 'over' ? 'rgba(255,77,79,0.15)' : 'rgba(0,245,160,0.15)',
+                          color: v === 'over' ? '#FF4D4F' : '#00F5A0',
+                          fontSize: 12,
+                          fontWeight: 900,
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {v === 'over' ? '💸 과소비' : '🌿 합리적'}
+                      </button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            );
+          })() : null}
+        </div>
+      )}
 
       {/* 💪 이번 주 그룹 챌린지 */}
       <div className="glass-card" style={{ margin: '4px 0', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>

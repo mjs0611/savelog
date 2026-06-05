@@ -263,17 +263,17 @@ export default function App() {
     );
   }
 
-  async function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
+  async function handleSubmitRecord(items: SpendingItem[], image?: string, isBalanceGame?: boolean): Promise<void> {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
     showInterstitial(() => {
       submittingRef.current = false;
-      handleCloseAdAndSubmit(items, image);
+      handleCloseAdAndSubmit(items, image, isBalanceGame);
     });
   }
 
-  async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
+  async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string, isBalanceGame?: boolean) {
     const today = getTodayStr();
     if (submittingRef.current) return;
     submittingRef.current = true;
@@ -293,6 +293,7 @@ export default function App() {
         total_amount: total,
         persona: currentPersona,
         image,
+        ...(isBalanceGame ? { is_balance_game: true } : {}),
       });
 
       if (!entryId && isSupabaseConfigured) {

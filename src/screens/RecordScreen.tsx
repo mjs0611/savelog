@@ -18,7 +18,7 @@ const CATEGORIES = [
 ];
 
 interface Props {
-  onSubmit: (items: SpendingItem[], image?: string) => Promise<void>;
+  onSubmit: (items: SpendingItem[], image?: string, isBalanceGame?: boolean) => Promise<void>;
   onClose: () => void;
   submitting: boolean;
   isAdditional?: boolean;
@@ -34,6 +34,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   const [imageError, setImageError] = useState<string | null>(null);
   const [showZeroNote, setShowZeroNote] = useState(false);
   const [zeroNote, setZeroNote] = useState('');
+  const [isBalanceGame, setIsBalanceGame] = useState(false);
 
   const total = items.reduce((s, i) => s + i.amount, 0);
 
@@ -101,7 +102,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
     const withNote: SpendingItem[] = isAdditional
       ? finalItems
       : [{ category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }, ...finalItems];
-    await onSubmit(withNote, image || undefined);
+    await onSubmit(withNote, image || undefined, isBalanceGame);
   }
 
   return (
@@ -281,6 +282,40 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               />
               <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{dailyNote.length}/80 · 5자 이상 입력</p>
             </div>
+          )}
+
+          {/* 밸런스 게임 opt-in — 지출이 있고 첫 기록일 때만 */}
+          {items.length > 0 && total > 0 && !isAdditional && !showZeroNote && (
+            <button
+              type="button"
+              onClick={() => setIsBalanceGame(v => !v)}
+              style={{
+                width: '100%',
+                padding: '12px 16px',
+                borderRadius: 12,
+                border: isBalanceGame ? '1.5px solid rgba(255,200,0,0.5)' : '1px solid rgba(255,255,255,0.1)',
+                background: isBalanceGame ? 'rgba(255,200,0,0.08)' : 'rgba(255,255,255,0.03)',
+                color: isBalanceGame ? '#FFC800' : 'var(--text-mute)',
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: 'pointer',
+                textAlign: 'left',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                transition: 'all 0.2s',
+              }}
+            >
+              <span style={{ fontSize: 18 }}>{isBalanceGame ? '⚖️' : '⚖️'}</span>
+              <div>
+                <p style={{ margin: 0, fontSize: 12, fontWeight: 900 }}>
+                  {isBalanceGame ? '밸런스 게임 등록됨 ✓' : '내 지출, 합리적일까? 다른 사람들한테 물어보기'}
+                </p>
+                <p style={{ margin: '2px 0 0 0', fontSize: 10, color: isBalanceGame ? 'rgba(255,200,0,0.7)' : 'var(--text-mute)' }}>
+                  {isBalanceGame ? '피드 밸런스 게임에 올라가요 · 다시 누르면 취소' : '피드에서 다른 사람들이 과소비 / 합리적 판정을 해줘요'}
+                </p>
+              </div>
+            </button>
           )}
 
           {/* 이미지 업로드 영역 — zero-note 모드에서는 숨김 */}

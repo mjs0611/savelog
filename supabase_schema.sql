@@ -43,3 +43,25 @@ create policy "Anyone can read reactions"   on reactions for select using (true)
 create policy "Anyone can insert reactions" on reactions for insert with check (true);
 create policy "Anyone can delete reactions" on reactions for delete using (true);
 create policy "Anyone can update reactions" on reactions for update using (true);
+
+-- ── 밸런스 게임 (2025-06 추가) ──────────────────────────────────────────────────
+-- entries 테이블에 밸런스 게임 opt-in 컬럼 추가
+alter table entries add column if not exists is_balance_game boolean default false;
+create index if not exists on entries (is_balance_game) where is_balance_game = true;
+
+-- 밸런스 투표 테이블
+create table if not exists balance_votes (
+  id         uuid default gen_random_uuid() primary key,
+  entry_id   uuid references entries(id) on delete cascade,
+  user_id    text not null,
+  vote       text not null check (vote in ('over', 'ok')),
+  created_at timestamptz default now(),
+  unique (entry_id, user_id)
+);
+
+create index if not exists on balance_votes (entry_id);
+
+alter table balance_votes enable row level security;
+create policy "Anyone can read balance_votes"   on balance_votes for select using (true);
+create policy "Anyone can insert balance_votes" on balance_votes for insert with check (true);
+create policy "Anyone can update balance_votes" on balance_votes for update using (true);

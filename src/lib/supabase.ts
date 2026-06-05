@@ -31,6 +31,17 @@ export interface Entry {
   created_at: string;
   persona?: string;
   image?: string;
+  is_balance_game?: boolean;
+}
+
+export interface BalanceEntry {
+  id: string;
+  user_id: string;
+  nickname: string;
+  items: SpendingItem[];
+  total_amount: number;
+  persona?: string;
+  created_at: string;
 }
 
 export interface EntryWithReactions extends Entry {
@@ -193,6 +204,66 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
       return a.earliestDate < b.earliestDate ? -1 : a.earliestDate > b.earliestDate ? 1 : 0;
     })
     .map(({ earliestDate: _ed, ...row }) => row);
+}
+
+export async function fetchBalanceGameEntry(userId: string): Promise<BalanceEntry | null> {
+  if (!supabase) {
+    // mock: 목업 피드에서 지출이 있는 항목 하나 반환
+    const mock = buildMockFeed(userId).find(e => e.total_amount > 0 && e.user_id !== userId);
+    if (!mock) return null;
+    return { id: mock.id, user_id: mock.user_id, nickname: mock.nickname, items: mock.items, total_amount: mock.total_amount, persona: mock.persona, created_at: mock.created_at };
+  }
+
+  // 이미 투표한 entry_id 목록
+  const { data: voted } = await supabase
+    .from('balance_votes')
+    .select('entry_id')
+    .eq('user_id', userId);
+  const votedIds = new Set((voted ?? []).map((v: { entry_id: string }) => v.entry_id));
+
+  const { data, error } = await supabase
+    .from('entries')
+    .select('id, user_id, nickname, items, total_amount, persona, created_at')
+    .eq('is_balance_game', true)
+    .neq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(30);
+
+  if (error || !data || data.length === 0) return null;
+
+  const unvoted = (data as BalanceEntry[]).filter(e => !votedIds.has(e.id));
+  if (unvoted.length === 0) return null;
+
+  return unvoted[Math.floor(Math.random() * unvoted.length)];
+}
+
+export async function submitBalanceVote(
+  entryId: string,
+  userId: string,
+  vote: 'over' | 'ok',
+): Promise<{ over: number; ok: number }> {
+  if (!supabase) {
+    const overPct = 55 + Math.floor(Math.random() * 30);
+    return { over: overPct, ok: 100 - overPct };
+  }
+
+  await supabase
+    .from('balance_votes')
+    .upsert({ entry_id: entryId, user_id: userId, vote }, { onConflict: 'entry_id,user_id' });
+
+  const { data } = await supabase
+    .from('balance_votes')
+    .select('vote')
+    .eq('entry_id', entryId);
+
+  const votes = (data ?? []) as { vote: string }[];
+  const total = votes.length;
+  if (total === 0) return { over: 50, ok: 50 };
+  const overCount = votes.filter(v => v.vote === 'over').length;
+  return {
+    over: Math.round((overCount / total) * 100),
+    ok: Math.round(((total - overCount) / total) * 100),
+  };
 }
 
 export async function fetchMyWeekEntries(userId: string, weekKey: string): Promise<Entry[] | null> {
