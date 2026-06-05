@@ -1,6 +1,8 @@
+import { useState } from 'react';
 import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
+import { sendPokeNotification, getNickname, getPersona } from '../lib/storage';
 
 interface Props {
   userId: string;
@@ -18,6 +20,9 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false, onRetry }: Props) {
   const weekKey = getWeekKey();
+  const [duelSent, setDuelSent] = useState<boolean>(() => {
+    try { return localStorage.getItem(`savelog_duel_${getWeekKey()}`) === 'true'; } catch { return false; }
+  });
 
   // 무지출/유지출 리그 분리
   const spendGroup = weekRank.filter(r => r.total > 0);
@@ -131,6 +136,31 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#FF4D4F' }}>{diffLabel}</span>
                 </div>
                 <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>{hint}</p>
+                <button
+                  disabled={duelSent}
+                  onClick={() => {
+                    const above = spendGroup[mySpendIdx - 1];
+                    const myName = getNickname() || '나';
+                    const myPersona = getPersona();
+                    sendPokeNotification(above.nickname, myName, myPersona, false);
+                    try { localStorage.setItem(`savelog_duel_${weekKey}`, 'true'); } catch {}
+                    setDuelSent(true);
+                  }}
+                  style={{
+                    marginTop: 10,
+                    width: '100%',
+                    padding: '10px 0',
+                    borderRadius: 12,
+                    border: duelSent ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255, 77, 79, 0.3)',
+                    background: duelSent ? 'rgba(255,255,255,0.03)' : 'rgba(255, 77, 79, 0.08)',
+                    color: duelSent ? 'var(--text-mute)' : '#FF4D4F',
+                    fontSize: 12,
+                    fontWeight: 900,
+                    cursor: duelSent ? 'default' : 'pointer',
+                  }}
+                >
+                  {duelSent ? '대결 신청 완료 ✓' : '⚡ 1:1 절약 대결 신청하기'}
+                </button>
               </>
             );
           })()}

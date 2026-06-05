@@ -23,6 +23,8 @@ import {
   cleanupStaleKeys,
   getStreakShields,
   addStreakShield,
+  getMilestonePosted,
+  setMilestonePosted,
   type StreakData,
   type DailyState,
 } from './lib/storage';
@@ -324,6 +326,23 @@ export default function App() {
         const newStreak = updateStreak(today);
         setRecordedDate(today);
         setStreak(newStreak);
+
+        // 7일 완주 마일스톤 자동 피드 공유
+        if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
+          const milestoneKey = `${weekKey}-streak${newStreak.streak}`;
+          if (!getMilestonePosted(milestoneKey)) {
+            setMilestonePosted(milestoneKey);
+            submitEntry({
+              user_id: userId,
+              nickname: nickname!,
+              date: today,
+              week_key: 'milestone-' + weekKey,
+              items: [{ category: '마일스톤', emoji: '🏆', amount: 0, comment: `${newStreak.streak}일 연속 절약 챌린지 달성! 짠내 만렙 등극 🎉` }],
+              total_amount: 0,
+              persona: currentPersona,
+            }).catch(() => {});
+          }
+        }
 
         const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
         const totalEarn = 3 + (isStreakBonus ? 20 : 0);

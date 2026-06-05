@@ -2,8 +2,8 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import type { EntryWithReactions } from '../lib/supabase';
 import { fetchFeed, toggleReaction } from '../lib/supabase';
-import { formatAmount, formatDate, timeAgo, getTodayStr } from '../lib/utils';
-import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification } from '../lib/storage';
+import { formatAmount, formatDate, timeAgo, getTodayStr, getWeekKey } from '../lib/utils';
+import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification, getFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
 
 interface Props {
   userId: string;
@@ -41,6 +41,13 @@ const MOCK_BALANCE_CARDS = [
 
 const COMMENT_CHIPS = ['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'];
 
+const WEEKLY_CHALLENGES = [
+  { id: 'no-delivery', title: '배달 금지 챌린지', desc: '배달 앱 없이 한 주 버티기', emoji: '🍱', participants: 142 },
+  { id: 'no-cafe', title: '카페 금지 챌린지', desc: '카페 지출 0원 7일 도전', emoji: '☕', participants: 89 },
+  { id: 'home-cooking', title: '집밥 챌린지', desc: '식비를 집밥으로만 해결', emoji: '🍳', participants: 67 },
+  { id: 'no-shopping', title: '쇼핑 금지 챌린지', desc: '온라인 쇼핑 0원 7일', emoji: '🛒', participants: 203 },
+];
+
 export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, refreshToken = 0 }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
@@ -71,6 +78,23 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [doubleTappedHearts, setDoubleTappedHearts] = useState<Record<string, boolean>>({});
   // 세션 내 리액션 리워드 지급된 엔트리 추적 — 언리액션 후 재반응 시 중복 지급 방지
   const [reactionRewardedEntries, setReactionRewardedEntries] = useState<Set<string>>(() => new Set());
+
+  // 팔로우 / 탭 필터
+  const [feedTab, setFeedTab] = useState<'all' | 'follow'>('all');
+  const [followedUsers, setFollowedUsers] = useState<Record<string, string>>(() => getFollowedUsers());
+
+  // 자유 텍스트 댓글 입력 상태 (엔트리별)
+  const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+
+  // 그룹 챌린지 참여 상태
+  const [activeChallenge, setActiveChallenge] = useState<string | null>(() => getActiveChallengeId());
+
+  // 이번 주 챌린지 (주차별 결정론적 선택)
+  const weekChallenge = (() => {
+    const wk = getWeekKey();
+    const hash = wk.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+    return WEEKLY_CHALLENGES[Math.abs(hash) % WEEKLY_CHALLENGES.length];
+  })();
 
   // 로컬 댓글 상태 저장 (실제 서비스처럼 동작)
   const [localComments, setLocalComments] = useState<Record<string, { sender: string; text: string }[]>>(() => {
@@ -325,6 +349,36 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     });
   }
 
+  function submitCommentInput(entryId: string) {
+    const text = (commentInputs[entryId] || '').trim();
+    if (!text) return;
+    addComment(entryId, text);
+    setCommentInputs(prev => ({ ...prev, [entryId]: '' }));
+  }
+
+  function handleToggleFollow(entry: EntryWithReactions) {
+    const nowFollowing = toggleFollow(entry.user_id, entry.nickname || '');
+    setFollowedUsers(getFollowedUsers());
+    showFeedToast(nowFollowing ? `${entry.nickname}님을 팔로우했어요 👥` : `${entry.nickname}님 팔로우 해제`);
+  }
+
+  function handleToggleChallenge(id: string) {
+    if (activeChallenge === id) {
+      setActiveChallengeId(null);
+      setActiveChallenge(null);
+      showFeedToast('챌린지에서 나왔어요.');
+    } else {
+      setActiveChallengeId(id);
+      setActiveChallenge(id);
+      showFeedToast('챌린지 참여 완료! 💪 이번 주 함께 버텨봐요');
+    }
+  }
+
+  // 팔로우 탭일 때 필터링
+  const displayedEntries = feedTab === 'follow'
+    ? entries.filter(e => e.user_id === userId || !!followedUsers[e.user_id])
+    : entries;
+
   if (loading) {
     return (
       <div className="screen screen-feed">
@@ -344,6 +398,28 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           <img src="/images/savelog_main_character.png" className="custom-icon" style={{ marginLeft: 5 }} />
         </h2>
         <button className="refresh-btn" onClick={() => load(entries.length > 0)}>↻</button>
+      </div>
+
+      {/* 탭 필터: 전체 / 팔로우 */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+        {(['all', 'follow'] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setFeedTab(t)}
+            style={{
+              padding: '6px 16px',
+              borderRadius: 100,
+              border: feedTab === t ? '1.5px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
+              background: feedTab === t ? 'rgba(0,245,160,0.1)' : 'rgba(255,255,255,0.03)',
+              color: feedTab === t ? 'var(--primary)' : 'var(--text-mute)',
+              fontSize: 12,
+              fontWeight: 800,
+              cursor: 'pointer',
+            }}
+          >
+            {t === 'all' ? '전체' : `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}`}
+          </button>
+        ))}
       </div>
 
       {/* 🎴 짠물 밸런스 게임 (Tinder Swipe Widget) */}
@@ -523,6 +599,41 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         )}
       </div>
 
+      {/* 💪 이번 주 그룹 챌린지 */}
+      <div className="glass-card" style={{ margin: '4px 0', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+          <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>💪 이번 주 그룹 챌린지</span>
+          <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
+            {weekChallenge.participants + (activeChallenge === weekChallenge.id ? 1 : 0)}명 참여 중
+          </span>
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span style={{ fontSize: 26, flexShrink: 0 }}>{weekChallenge.emoji}</span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <p style={{ margin: '0 0 2px 0', fontSize: 13, fontWeight: 900, color: '#fff' }}>{weekChallenge.title}</p>
+            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{weekChallenge.desc}</p>
+          </div>
+          <button
+            onClick={() => handleToggleChallenge(weekChallenge.id)}
+            style={{
+              flexShrink: 0,
+              padding: '8px 14px',
+              borderRadius: 100,
+              border: activeChallenge === weekChallenge.id ? '1px solid rgba(0,245,160,0.3)' : 'none',
+              background: activeChallenge === weekChallenge.id
+                ? 'rgba(0,245,160,0.12)'
+                : 'linear-gradient(135deg, #00F5A0, #00D9F5)',
+              color: activeChallenge === weekChallenge.id ? 'var(--primary)' : '#090A10',
+              fontSize: 11,
+              fontWeight: 900,
+              cursor: 'pointer',
+            }}
+          >
+            {activeChallenge === weekChallenge.id ? '참여 중 ✓' : '참여하기'}
+          </button>
+        </div>
+      </div>
+
       {entries.length === 0 ? (
         <div className="empty-state">
           {loadFailed ? (
@@ -550,7 +661,14 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
               </button>
             </div>
           )}
-          {entries.map((entry) => {
+          {displayedEntries.length === 0 && feedTab === 'follow' && (
+            <div style={{ textAlign: 'center', padding: '32px 0', color: 'var(--text-mute)' }}>
+              <p style={{ fontSize: 24, marginBottom: 8 }}>👥</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700 }}>팔로우한 짠친이 없어요</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: 11 }}>피드에서 팔로우 버튼을 눌러 짠친을 추가해 보세요</p>
+            </div>
+          )}
+          {displayedEntries.map((entry) => {
             const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
             const p = personaKey ? PERSONAS[personaKey] : null;
             
@@ -729,6 +847,19 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       <img src="/images/icon_mailbox.png" className="custom-icon--sm" />
                       쪽지
                     </button>
+
+                    <button
+                      className="reaction-btn"
+                      onClick={() => handleToggleFollow(entry)}
+                      style={{
+                        borderColor: followedUsers[entry.user_id] ? 'rgba(0,245,160,0.3)' : 'rgba(255,255,255,0.08)',
+                        background: followedUsers[entry.user_id] ? 'rgba(0,245,160,0.06)' : 'rgba(255,255,255,0.03)',
+                        color: followedUsers[entry.user_id] ? 'var(--primary)' : 'var(--text-mute)',
+                        fontWeight: 800,
+                      }}
+                    >
+                      {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
+                    </button>
                   </div>
                 )}
 
@@ -760,6 +891,47 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                         );
                       })}
                     </div>
+                  </div>
+                )}
+
+                {/* 자유 텍스트 댓글 입력 */}
+                {entry.user_id !== userId && (
+                  <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
+                    <input
+                      type="text"
+                      value={commentInputs[entry.id] || ''}
+                      onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
+                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
+                      placeholder="한 줄 댓글 달기..."
+                      style={{
+                        flex: 1,
+                        padding: '7px 12px',
+                        background: 'rgba(255,255,255,0.04)',
+                        border: '1px solid rgba(255,255,255,0.08)',
+                        borderRadius: 100,
+                        color: 'var(--text-main)',
+                        fontSize: 12,
+                        outline: 'none',
+                        fontFamily: 'inherit',
+                      }}
+                    />
+                    <button
+                      onClick={() => submitCommentInput(entry.id)}
+                      disabled={!(commentInputs[entry.id] || '').trim()}
+                      style={{
+                        padding: '7px 14px',
+                        borderRadius: 100,
+                        border: 'none',
+                        background: (commentInputs[entry.id] || '').trim() ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
+                        color: (commentInputs[entry.id] || '').trim() ? '#090A10' : 'var(--text-mute)',
+                        fontSize: 11,
+                        fontWeight: 900,
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                      }}
+                    >
+                      전송
+                    </button>
                   </div>
                 )}
 

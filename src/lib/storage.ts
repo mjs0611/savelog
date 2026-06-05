@@ -385,6 +385,52 @@ export function setClaimedRankReward(weekKey: string): void {
   try { localStorage.setItem(`savelog_rank_claimed_${weekKey}`, 'true'); } catch {}
 }
 
+// ── Follow System ───────────────────────────────────────────────────────────
+
+const FOLLOW_KEY = 'savelog_followed_users';
+
+export function getFollowedUsers(): Record<string, string> {
+  try { return JSON.parse(localStorage.getItem(FOLLOW_KEY) ?? '{}'); } catch { return {}; }
+}
+
+export function toggleFollow(userId: string, nickname: string): boolean {
+  const current = getFollowedUsers();
+  if (current[userId]) {
+    delete current[userId];
+    localStorage.setItem(FOLLOW_KEY, JSON.stringify(current));
+    return false; // unfollowed
+  } else {
+    current[userId] = nickname;
+    localStorage.setItem(FOLLOW_KEY, JSON.stringify(current));
+    return true; // followed
+  }
+}
+
+// ── Milestone Tracking ──────────────────────────────────────────────────────
+
+export function getMilestonePosted(key: string): boolean {
+  try { return localStorage.getItem(`savelog_milestone_${key}`) === 'true'; } catch { return false; }
+}
+
+export function setMilestonePosted(key: string): void {
+  try { localStorage.setItem(`savelog_milestone_${key}`, 'true'); } catch {}
+}
+
+// ── Group Challenge ─────────────────────────────────────────────────────────
+
+const CHALLENGE_KEY = 'savelog_active_challenge';
+
+export function getActiveChallengeId(): string | null {
+  return localStorage.getItem(CHALLENGE_KEY);
+}
+
+export function setActiveChallengeId(id: string | null): void {
+  try {
+    if (id === null) localStorage.removeItem(CHALLENGE_KEY);
+    else localStorage.setItem(CHALLENGE_KEY, id);
+  } catch {}
+}
+
 // ── Stale key cleanup (once per day) ────────────────────────────────────────
 
 const CLEANUP_DATE_KEY = 'savelog_last_cleanup';
