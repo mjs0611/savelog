@@ -673,9 +673,12 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
             const p = personaKey ? PERSONAS[personaKey] : null;
             
             // 지출 레벨 파악 (0원 무지출 / 5만원 이상 FLEX)
-            const isZeroSpend = entry.total_amount === 0;
-            const isFlexSpend = entry.total_amount > 50000;
-            const cardClass = isZeroSpend
+            const isMilestone = entry.items.some(it => it.category === '마일스톤');
+            const isZeroSpend = !isMilestone && entry.total_amount === 0;
+            const isFlexSpend = !isMilestone && entry.total_amount > 50000;
+            const cardClass = isMilestone
+              ? 'feed-card--milestone'
+              : isZeroSpend
               ? 'feed-card--zero'
               : isFlexSpend
               ? 'feed-card--flex'
@@ -723,6 +726,9 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                             <span>{p.name}</span>
                           </span>
                         )}
+                        {isMilestone && (
+                          <span className="feed-tier-tag" style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.3)' }}>🏆 마일스톤</span>
+                        )}
                         {isZeroSpend && (
                           <span className="feed-tier-tag zero-tag">👑 무지출</span>
                         )}
@@ -733,10 +739,17 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
                     </div>
                   </div>
-                  <div className={`feed-total ${entry.total_amount === 0 ? 'feed-total--zero' : ''}`}>
-                    {entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
+                  <div className={`feed-total ${!isMilestone && entry.total_amount === 0 ? 'feed-total--zero' : ''}`} style={isMilestone ? { color: '#FFD700', fontSize: 13 } : {}}>
+                    {isMilestone ? '🏆 달성' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
                   </div>
                 </div>
+
+                {/* 마일스톤 달성 메시지 */}
+                {entry.items.filter(it => it.category === '마일스톤').map((it, i) => (
+                  <p key={i} style={{ margin: '4px 0 8px 0', fontSize: 13, color: '#FFD700', lineHeight: 1.5, fontWeight: 800, paddingLeft: 8, borderLeft: '3px solid #FFD700', background: 'rgba(255,215,0,0.04)', borderRadius: '0 6px 6px 0', padding: '6px 8px' }}>
+                    {it.comment}
+                  </p>
+                ))}
 
                 {/* 오늘 한마디 (💬 한마디 특수 항목) */}
                 {entry.items.filter(it => it.category === '한마디').map((it, i) => (
@@ -747,7 +760,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
                 {/* 지출 항목 */}
                 <div className="feed-items">
-                  {entry.items.filter(it => it.category !== '한마디').map((item, i) => (
+                  {entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤').map((item, i) => (
                     <div key={i} className="feed-item">
                       <span className="feed-item-emoji">{item.emoji}</span>
                       <div className="feed-item-info">
@@ -870,8 +883,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                   </div>
                 )}
 
-                {/* 한마디 퀵 코멘트 칩 — 내 게시물에는 표시하지 않음 */}
-                {entry.user_id !== userId && (
+                {/* 한마디 퀵 코멘트 칩 — 내 게시물/마일스톤에는 표시하지 않음 */}
+                {entry.user_id !== userId && !isMilestone && (
                   <div className="feed-comment-chips-container">
                     <span className="comment-chips-label">말 한마디:</span>
                     <div className="comment-chips-scroll">
@@ -895,7 +908,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 )}
 
                 {/* 자유 텍스트 댓글 입력 */}
-                {entry.user_id !== userId && (
+                {entry.user_id !== userId && !isMilestone && (
                   <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
                     <input
                       type="text"
