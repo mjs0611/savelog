@@ -555,7 +555,9 @@ export default function App() {
             >
               {submitting ? '저장 중...' : '무지출 기록 완료'}
             </Button>
-            <p style={{ margin: '10px 0 0 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'center' }}>5자 이상 입력하면 기록할 수 있어요</p>
+            {zeroNoteText.trim().length < 5 && (
+              <p style={{ margin: '10px 0 0 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'center' }}>5자 이상 입력하면 기록할 수 있어요</p>
+            )}
           </div>
         </div>
       )}

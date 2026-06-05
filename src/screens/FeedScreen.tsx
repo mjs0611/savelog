@@ -366,7 +366,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           짠내 피드
           <img src="/images/savelog_main_character.png" className="custom-icon" style={{ marginLeft: 5 }} />
         </h2>
-        <button className="refresh-btn" onClick={() => load(false)}>↻</button>
+        <button className="refresh-btn" onClick={() => load(initialLoaded.current)}>↻</button>
       </div>
 
       {/* 인스타그램 스토리 스타일 영역 */}
