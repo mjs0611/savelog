@@ -178,7 +178,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                   onClick={async () => {
                     await onSubmit([{ category: '기타', emoji: '🌿', amount: 0, comment: zeroNote.trim() }]);
                   }}
-                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, border: 'none', background: zeroNote.trim().length < 5 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)', color: zeroNote.trim().length < 5 ? 'var(--text-mute)' : '#090A10', fontSize: 12, fontWeight: 900, cursor: zeroNote.trim().length < 5 ? 'default' : 'pointer' }}
+                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, border: 'none', background: zeroNote.trim().length < 5 || submitting ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)', color: zeroNote.trim().length < 5 || submitting ? 'var(--text-mute)' : '#090A10', fontSize: 12, fontWeight: 900, cursor: zeroNote.trim().length < 5 || submitting ? 'default' : 'pointer' }}
                 >
                   {submitting ? '저장 중...' : '무지출 기록 완료'}
                 </button>

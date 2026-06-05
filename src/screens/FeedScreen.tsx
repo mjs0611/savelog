@@ -366,7 +366,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           짠내 피드
           <img src="/images/savelog_main_character.png" className="custom-icon" style={{ marginLeft: 5 }} />
         </h2>
-        <button className="refresh-btn" onClick={() => load(initialLoaded.current)}>↻</button>
+        <button className="refresh-btn" onClick={() => load(entries.length > 0)}>↻</button>
       </div>
 
       {/* 인스타그램 스토리 스타일 영역 */}
@@ -1247,25 +1247,29 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
             </div>
 
             <div className="story-modal-footer" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
-              <Button
-                size="large"
-                color="dark"
-                variant="weak"
-                onClick={() => setMessageRecipientEntry(null)}
-                style={{ flex: 1 }}
-              >
-                취소
-              </Button>
-              <Button
-                size="large"
-                color="primary"
-                variant="fill"
-                disabled={!messageText.trim()}
-                onClick={handleSendMessageSubmit}
-                style={{ flex: 1 }}
-              >
-                쪽지 보내기
-              </Button>
+              <div style={{ flex: 1 }}>
+                <Button
+                  size="large"
+                  display="full"
+                  color="dark"
+                  variant="weak"
+                  onClick={() => setMessageRecipientEntry(null)}
+                >
+                  취소
+                </Button>
+              </div>
+              <div style={{ flex: 1 }}>
+                <Button
+                  size="large"
+                  display="full"
+                  color="primary"
+                  variant="fill"
+                  disabled={!messageText.trim()}
+                  onClick={handleSendMessageSubmit}
+                >
+                  쪽지 보내기
+                </Button>
+              </div>
             </div>
           </div>
         </div>

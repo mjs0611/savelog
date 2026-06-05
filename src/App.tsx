@@ -544,6 +544,7 @@ export default function App() {
             <p style={{ margin: '4px 0 20px 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNoteText.length}/80</p>
             <Button
               size="medium"
+              display="full"
               color="primary"
               variant="fill"
               disabled={zeroNoteText.trim().length < 5 || submitting}
@@ -551,7 +552,6 @@ export default function App() {
                 setShowZeroNote(false);
                 handleSubmitRecord([{ category: '기타', emoji: '🌿', amount: 0, comment: zeroNoteText.trim() }]);
               }}
-              style={{ width: '100%' }}
             >
               {submitting ? '저장 중...' : '무지출 기록 완료'}
             </Button>
