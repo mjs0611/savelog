@@ -845,7 +845,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
               <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CED4DA', paddingTop: 6, fontWeight: 900, fontSize: 12, marginBottom: 12 }}>
                 <span>TOTAL SUM</span>
-                <span style={{ color: 'var(--primary)' }}>{formatAmount(selectedReceiptEntry.total_amount)}</span>
+                <span style={{ color: '#059669' }}>{formatAmount(selectedReceiptEntry.total_amount)}</span>
               </div>
 
               <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, marginTop: 8 }}>
@@ -895,7 +895,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
               </div>
             </div>
             
-            <div className="story-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <div className="story-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
               {/* 퀵 템플릿 칩 */}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
                 {[
