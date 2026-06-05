@@ -916,6 +916,11 @@ input { font: inherit; outline: none; border: none; }
   100% { background-position: -200% 0; }
 }
 
+@keyframes pulse {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
+}
+
 .empty-state { text-align: center; padding: 48px 20px; color: var(--text-sub); font-size: 16px; font-weight: 700; }
 .empty-sub { font-size: 13px; color: var(--text-mute); margin-top: 8px; font-weight: 400; }
 

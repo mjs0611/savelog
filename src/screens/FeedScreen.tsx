@@ -602,7 +602,9 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               <div style={{ textAlign: 'center', padding: '24px 0 16px 0', color: 'var(--text-mute)' }}>
                 <p style={{ fontSize: 28, margin: '0 0 8px 0' }}>👥</p>
                 <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>팔로우한 짠친이 없어요</p>
-                <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>아래 추천하는 짠친들을 팔로우해 보세요!</p>
+                <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>
+                {recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
+              </p>
               </div>
 
               {recommendedFriends.length > 0 && (
