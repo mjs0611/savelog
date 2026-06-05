@@ -86,7 +86,6 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   const [particles, setParticles] = useState<{ id: number; emoji: string; x: number; y: number }[]>([]);
 
   const [selectedReceiptEntry, setSelectedReceiptEntry] = useState<EntryWithReactions | null>(null);
-  const [instagramShareMockup, setInstagramShareMockup] = useState(false);
 
   // 🎴 짠물 밸런스 게임 상태 (날짜별 localStorage persist — 같은 날 새로고침 시 재투표 방지)
   const [balanceIndex, setBalanceIndex] = useState<number>(() => {
@@ -700,10 +699,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
                     <button
                       className="reaction-btn"
-                      onClick={() => {
-                        setSelectedReceiptEntry(entry);
-                        setInstagramShareMockup(false);
-                      }}
+                      onClick={() => setSelectedReceiptEntry(entry)}
                       style={{
                         borderColor: 'rgba(0, 245, 160, 0.08)',
                         background: 'rgba(0, 245, 160, 0.03)',
@@ -788,7 +784,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       {selectedReceiptEntry && (
         <div
           className="story-modal-overlay"
-          onClick={() => { setSelectedReceiptEntry(null); setInstagramShareMockup(false); }}
+          onClick={() => setSelectedReceiptEntry(null)}
           style={{
             position: 'fixed',
             top: 0,
@@ -804,236 +800,82 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
             padding: 20
           }}
         >
-          {instagramShareMockup ? (
-            /* 📸 인스타그램 스토리 업로드 피드백 모의 화면 */
+          <div
+            className="story-modal-sheet glass-card"
+            onClick={(e) => e.stopPropagation()}
+            style={{ maxWidth: 330, width: '100%', padding: 22, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(10, 11, 16, 0.95)', borderRadius: 20 }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: 16 }}>
+              <h3 style={{ fontSize: 13, letterSpacing: 4, fontWeight: 900, color: 'var(--primary)', margin: 0 }}>🧾 SAVELOG RECEIPT</h3>
+              <p style={{ fontSize: 9, color: 'var(--text-mute)', margin: '4px 0 0 0', textTransform: 'uppercase' }}>Official spend certification</p>
+            </div>
+
             <div
-              onClick={(e) => e.stopPropagation()}
               style={{
-                width: '100%',
-                maxWidth: 340,
-                height: 580,
-                background: 'linear-gradient(180deg, #E1306C 0%, #C13584 50%, #833AB4 100%)',
-                borderRadius: 24,
-                border: '4px solid #fff',
-                boxShadow: '0 20px 50px rgba(0,0,0,0.5)',
+                background: '#F8F9FA',
+                color: '#1A1A1A',
+                fontFamily: '"Courier New", Courier, monospace',
+                padding: 18,
+                borderRadius: 8,
+                fontSize: 10,
                 position: 'relative',
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-                padding: '24px 20px',
-                overflow: 'hidden'
+                border: '1px solid #E9ECEF',
+                boxShadow: 'inset 0 0 10px rgba(0,0,0,0.03)'
               }}
             >
-              {/* 인스타 스토리 상단바 */}
-              <div style={{ position: 'absolute', top: 12, left: 16, right: 16, display: 'flex', gap: 3, zIndex: 10 }}>
-                <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.8)', borderRadius: 100 }} />
-                <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.3)', borderRadius: 100 }} />
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CED4DA', paddingBottom: 6, marginBottom: 8, fontWeight: 800 }}>
+                <span>지출 항목</span>
+                <span>금액</span>
               </div>
 
-              {/* 인스타 유저 상단바 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4, zIndex: 10 }}>
-                <div style={{ width: 28, height: 28, background: 'rgba(255,255,255,0.2)', borderRadius: 100, border: '1px solid #fff', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                  <span style={{ fontSize: 11 }}>🐷</span>
-                </div>
-                <div>
-                  <h5 style={{ margin: 0, fontSize: 11, fontWeight: 900, color: '#fff' }}>내 인스타 스토리 스티커</h5>
-                  <span style={{ fontSize: 8, color: 'rgba(255,255,255,0.7)', fontWeight: 600 }}>방금 전 • Instagram Story</span>
-                </div>
-              </div>
-
-              {/* 중앙에 비스듬히 배치된 힙스터 유리 영수증 */}
-              <div
-                style={{
-                  background: 'rgba(255, 255, 255, 0.95)',
-                  color: '#111',
-                  borderRadius: 16,
-                  padding: 20,
-                  transform: 'rotate(-4deg) scale(0.92)',
-                  boxShadow: '0 12px 30px rgba(0,0,0,0.3)',
-                  fontFamily: '"Courier New", Courier, monospace',
-                  fontSize: 10,
-                  border: '1px solid rgba(255,255,255,0.5)',
-                  zIndex: 8
-                }}
-              >
-                <div style={{ textAlign: 'center', marginBottom: 12 }}>
-                  <h4 style={{ margin: 0, fontSize: 12, letterSpacing: 2, fontWeight: 900, color: '#00F5A0', textShadow: '0 0 1px #000' }}>🧾 SAVELOG PROOF</h4>
-                  <span style={{ fontSize: 7, color: '#666' }}>OFFICIAL SAVINGS CERTIFICATE</span>
-                </div>
-
-                <div style={{ borderBottom: '1px dashed #999', paddingBottom: 6, marginBottom: 6, display: 'flex', justifyContent: 'space-between', fontWeight: 800 }}>
-                  <span>지출 내역</span>
-                  <span>금액</span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-                  {(selectedReceiptEntry.items || []).filter(it => it.category !== '한마디').map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{item.emoji} {item.comment || item.category}</span>
-                      <span>{formatAmount(item.amount)}</span>
-                    </div>
-                  ))}
-                  {(!selectedReceiptEntry.items || selectedReceiptEntry.items.filter(it => it.category !== '한마디').length === 0) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>무지출 데이 🌿</span>
-                      <span>0원</span>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ borderTop: '1px dashed #999', paddingTop: 6, display: 'flex', justifyContent: 'space-between', fontWeight: 900, fontSize: 11, marginBottom: 10 }}>
-                  <span>TOTAL SAVED</span>
-                  <span style={{ color: '#E1306C' }}>{formatAmount(selectedReceiptEntry.total_amount)}</span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
-                  <div style={{ display: 'flex', height: 18, width: '70%', background: '#fff', gap: 1, alignItems: 'stretch' }}>
-                    {[1,3,1,2,4,1,2,1,3,2,1].map((w, i) => (
-                      <div key={i} style={{ flex: w, background: '#000' }} />
-                    ))}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
+                {(selectedReceiptEntry.items || []).filter(it => it.category !== '한마디').map((item, idx) => (
+                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>{item.emoji} {item.comment || item.category}</span>
+                    <span>{formatAmount(item.amount)}</span>
                   </div>
-                  <span style={{ fontSize: 7, color: '#777' }}>*SVL-STORY-SHARE*</span>
-                </div>
+                ))}
+                {(!selectedReceiptEntry.items || selectedReceiptEntry.items.filter(it => it.category !== '한마디').length === 0) && (
+                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                    <span>무지출 챌린지 성공 🌿</span>
+                    <span>0원</span>
+                  </div>
+                )}
               </div>
 
-              {/* 하단 스토리 업로드 버튼 & 제어 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10, zIndex: 10 }}>
-                <div style={{ background: 'rgba(255,255,255,0.15)', borderRadius: 12, padding: '10px 12px', textAlign: 'center' }}>
-                  <p style={{ fontSize: 11, fontWeight: 800, color: '#fff', margin: 0 }}>
-                    ✨ 스토리에 절약 영수증 공유 준비 완료!
-                  </p>
-                </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CED4DA', paddingTop: 6, fontWeight: 900, fontSize: 12, marginBottom: 12 }}>
+                <span>TOTAL SUM</span>
+                <span style={{ color: 'var(--primary)' }}>{formatAmount(selectedReceiptEntry.total_amount)}</span>
+              </div>
 
-                <div style={{ display: 'flex', gap: 8 }}>
-                  <button
-                    onClick={() => setInstagramShareMockup(false)}
-                    style={{ flex: 1, padding: 12, background: 'rgba(0,0,0,0.5)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff', borderRadius: 100, fontSize: 11, fontWeight: 800, cursor: 'pointer' }}
-                  >
-                    ← 뒤로
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSelectedReceiptEntry(null);
-                      setInstagramShareMockup(false);
-                    }}
-                    style={{ flex: 2, padding: 12, background: '#fff', border: 'none', color: '#C13584', borderRadius: 100, fontSize: 11, fontWeight: 900, cursor: 'pointer', boxShadow: '0 4px 10px rgba(0,0,0,0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 4 }}
-                  >
-                    🚀 스토리 공유하기
-                  </button>
+              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, marginTop: 8 }}>
+                <div style={{ display: 'flex', height: 22, width: '80%', background: '#fff', padding: '2px 4px', gap: 1, alignItems: 'stretch' }}>
+                  {[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2].map((w, i) => (
+                    <div key={i} style={{ flex: w, background: '#000' }} />
+                  ))}
                 </div>
+                <span style={{ fontSize: 7, letterSpacing: 1.5, color: '#868E96' }}>*SVL-{selectedReceiptEntry.id.substring(0, 8).toUpperCase()}*</span>
               </div>
             </div>
-          ) : (
-            /* 🧾 짠내 감성 핀테크 영수증 뷰 */
-            <div
-              className="story-modal-sheet glass-card"
-              onClick={(e) => e.stopPropagation()}
-              style={{ maxWidth: 330, width: '100%', padding: 22, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(10, 11, 16, 0.95)', borderRadius: 20 }}
+
+            <button
+              onClick={() => setSelectedReceiptEntry(null)}
+              style={{
+                width: '100%',
+                marginTop: 18,
+                padding: 12,
+                background: 'rgba(255,255,255,0.05)',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 'var(--radius-sm)',
+                color: 'var(--text-sub)',
+                fontSize: 12,
+                fontWeight: 800,
+                cursor: 'pointer',
+              }}
             >
-              <div style={{ textAlign: 'center', marginBottom: 16 }}>
-                <h3 style={{ fontSize: 13, letterSpacing: 4, fontWeight: 900, color: 'var(--primary)', margin: 0 }}>🧾 SAVELOG RECEIPT</h3>
-                <p style={{ fontSize: 9, color: 'var(--text-mute)', margin: '4px 0 0 0', textTransform: 'uppercase' }}>Official spend certification</p>
-              </div>
-
-              {/* 영수증 종이 룩앤필 */}
-              <div
-                style={{
-                  background: '#F8F9FA',
-                  color: '#1A1A1A',
-                  fontFamily: '"Courier New", Courier, monospace',
-                  padding: 18,
-                  borderRadius: 8,
-                  fontSize: 10,
-                  position: 'relative',
-                  border: '1px solid #E9ECEF',
-                  boxShadow: 'inset 0 0 10px rgba(0,0,0,0.03)'
-                }}
-              >
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CED4DA', paddingBottom: 6, marginBottom: 8, fontWeight: 800 }}>
-                  <span>지출 항목</span>
-                  <span>금액</span>
-                </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-                  {(selectedReceiptEntry.items || []).filter(it => it.category !== '한마디').map((item, idx) => (
-                    <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>{item.emoji} {item.comment || item.category}</span>
-                      <span>{formatAmount(item.amount)}</span>
-                    </div>
-                  ))}
-                  {(!selectedReceiptEntry.items || selectedReceiptEntry.items.filter(it => it.category !== '한마디').length === 0) && (
-                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                      <span>무지출 챌린지 성공 🌿</span>
-                      <span>0원</span>
-                    </div>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CED4DA', paddingTop: 6, fontWeight: 900, fontSize: 12, marginBottom: 12 }}>
-                  <span>TOTAL SUM</span>
-                  <span style={{ color: 'var(--primary)' }}>{formatAmount(selectedReceiptEntry.total_amount)}</span>
-                </div>
-
-                {/* 바코드 목업 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, marginTop: 8 }}>
-                  <div style={{ display: 'flex', height: 22, width: '80%', background: '#fff', padding: '2px 4px', gap: 1, alignItems: 'stretch' }}>
-                    {[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2].map((w, i) => (
-                      <div key={i} style={{ flex: w, background: '#000' }} />
-                    ))}
-                  </div>
-                  <span style={{ fontSize: 7, letterSpacing: 1.5, color: '#868E96' }}>*SVL-{selectedReceiptEntry.id.substring(0, 8).toUpperCase()}*</span>
-                </div>
-              </div>
-
-              {/* 영수증 제어 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginTop: 18 }}>
-                <button
-                  onClick={() => setInstagramShareMockup(true)}
-                  style={{
-                    width: '100%',
-                    padding: 12,
-                    background: 'linear-gradient(135deg, #FF5E62 0%, #FF9966 100%)',
-                    border: 'none',
-                    borderRadius: 'var(--radius-sm)',
-                    color: '#fff',
-                    fontSize: 12,
-                    fontWeight: 900,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    boxShadow: '0 4px 15px rgba(255, 94, 98, 0.25)',
-                    transition: 'transform 0.2s'
-                  }}
-                  onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.97)'}
-                  onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  📸 인스타 스토리 공유하기
-                </button>
-                
-                <button
-                  onClick={() => { setSelectedReceiptEntry(null); setInstagramShareMockup(false); }}
-                  style={{
-                    width: '100%',
-                    padding: 12,
-                    background: 'rgba(255,255,255,0.05)',
-                    border: '1px solid rgba(255,255,255,0.08)',
-                    borderRadius: 'var(--radius-sm)',
-                    color: 'var(--text-sub)',
-                    fontSize: 12,
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
-                  onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
-                  onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'}
-                >
-                  닫기
-                </button>
-              </div>
-            </div>
-          )}
+              닫기
+            </button>
+          </div>
         </div>
       )}
 

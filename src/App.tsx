@@ -503,6 +503,7 @@ export default function App() {
           onSubmit={handleSubmitRecord}
           onClose={() => setShowRecord(false)}
           submitting={submitting}
+          isAdditional={daily.recorded && daily.date === getTodayStr()}
         />
       )}
 
