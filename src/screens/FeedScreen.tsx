@@ -1007,13 +1007,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 4, marginBottom: 8 }}>
-                  {(selectedReceiptEntry.items || []).map((item, idx) => (
+                  {(selectedReceiptEntry.items || []).filter(it => it.category !== '한마디').map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>{item.emoji} {item.comment || item.category}</span>
                       <span>{formatAmount(item.amount)}</span>
                     </div>
                   ))}
-                  {(!selectedReceiptEntry.items || selectedReceiptEntry.items.length === 0) && (
+                  {(!selectedReceiptEntry.items || selectedReceiptEntry.items.filter(it => it.category !== '한마디').length === 0) && (
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>무지출 데이 🌿</span>
                       <span>0원</span>
@@ -1095,13 +1095,13 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-                  {(selectedReceiptEntry.items || []).map((item, idx) => (
+                  {(selectedReceiptEntry.items || []).filter(it => it.category !== '한마디').map((item, idx) => (
                     <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>{item.emoji} {item.comment || item.category}</span>
                       <span>{formatAmount(item.amount)}</span>
                     </div>
                   ))}
-                  {(!selectedReceiptEntry.items || selectedReceiptEntry.items.length === 0) && (
+                  {(!selectedReceiptEntry.items || selectedReceiptEntry.items.filter(it => it.category !== '한마디').length === 0) && (
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                       <span>무지출 챌린지 성공 🌿</span>
                       <span>0원</span>

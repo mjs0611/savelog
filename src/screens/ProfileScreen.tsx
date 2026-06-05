@@ -431,7 +431,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <div key={entry.id} className="week-entry-row">
                 <span className="week-entry-date">{formatDate(entry.date)}</span>
                 <div className="week-entry-items">
-                  {entry.items.map((item, i) => (
+                  {entry.items.filter(it => it.category !== '한마디').map((item, i) => (
                     <span key={i} className="week-entry-item-chip">
                       {item.emoji} {item.category}
                     </span>
