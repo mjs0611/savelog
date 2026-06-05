@@ -582,6 +582,17 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         </div>
       ) : (
         <div className="feed-list">
+          {loadFailed && (
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', marginBottom: 8, background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 10 }}>
+              <span style={{ fontSize: 11, color: 'rgba(255,200,0,0.9)', fontWeight: 700 }}>⚠ 피드 갱신 실패 · 마지막 데이터 표시 중</span>
+              <button
+                onClick={() => load(false)}
+                style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,200,0,0.9)', background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 100, padding: '3px 10px', cursor: 'pointer' }}
+              >
+                재시도
+              </button>
+            </div>
+          )}
           {entries.map((entry) => {
             const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
             const p = personaKey ? PERSONAS[personaKey] : null;
