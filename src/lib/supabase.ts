@@ -260,10 +260,8 @@ export async function submitBalanceVote(
   const total = votes.length;
   if (total === 0) return { over: 50, ok: 50 };
   const overCount = votes.filter(v => v.vote === 'over').length;
-  return {
-    over: Math.round((overCount / total) * 100),
-    ok: Math.round(((total - overCount) / total) * 100),
-  };
+  const overPct = Math.round((overCount / total) * 100);
+  return { over: overPct, ok: 100 - overPct };
 }
 
 // ── Follow ────────────────────────────────────────────────────────────────────

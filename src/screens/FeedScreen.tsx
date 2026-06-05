@@ -679,7 +679,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 )}
 
                 {/* 신뢰도 경고 */}
-                {entry.doubt_count > 0 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
+                {entry.doubt_count >= 3 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
                   <div className="doubt-warning">
                     🚨 일부 사용자가 의심하고 있어요 ({Math.round(entry.doubt_count / (entry.trust_count + entry.doubt_count) * 100)}%)
                   </div>
