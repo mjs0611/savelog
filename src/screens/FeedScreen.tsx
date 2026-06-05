@@ -173,11 +173,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     if (isAdding) {
       setReactionRewardedEntries(prev => new Set(prev).add(entry.id));
       onGrantFeedReward?.();
-      showFeedToast('👃 +1원 즉시 지급!');
+      showFeedToast('❤️ +1원 즉시 지급!');
     }
 
     // 파티클 생성
-    spawnParticles(type === 'trust' ? '👃' : '🤔', e);
+    spawnParticles(type === 'trust' ? '❤️' : '🤔', e);
 
     // optimistic update
     setEntries((prev) =>

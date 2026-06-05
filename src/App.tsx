@@ -569,7 +569,7 @@ export default function App() {
               disabled={zeroNoteText.trim().length < 5 || submitting}
               onClick={() => {
                 setShowZeroNote(false);
-                handleSubmitRecord([{ category: '기타', emoji: '🌿', amount: 0, comment: zeroNoteText.trim() }]);
+                handleSubmitRecord([{ category: '한마디', emoji: '💬', amount: 0, comment: zeroNoteText.trim() }]);
               }}
             >
               {submitting ? '저장 중...' : '무지출 기록 완료'}
