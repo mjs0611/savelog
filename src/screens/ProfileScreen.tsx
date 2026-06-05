@@ -37,6 +37,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [myEntries, setMyEntries] = useState<Entry[]>([]);
   const [entriesLoading, setEntriesLoading] = useState(true);
   const [entriesError, setEntriesError] = useState(false);
+  const [entriesRetry, setEntriesRetry] = useState(0);
   const [messages, setMessages] = useState<CheeringMessage[]>([]);
   const [clearConfirm, setClearConfirm] = useState(false);
   const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -63,7 +64,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     })();
     setMessages(getCheeringMessages());
     return () => { cancelled = true; };
-  }, [userId, refreshToken]);
+  }, [userId, refreshToken, entriesRetry]);
 
   useEffect(() => {
     return () => {
@@ -399,7 +400,15 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         {entriesLoading ? (
           <p className="week-entries-empty" style={{ color: 'var(--text-mute)' }}>불러오는 중...</p>
         ) : entriesError ? (
-          <p className="week-entries-empty" style={{ color: '#FF4D4F' }}>기록을 불러오지 못했어요</p>
+          <div style={{ textAlign: 'center', padding: '8px 0' }}>
+            <p className="week-entries-empty" style={{ color: '#FF4D4F', marginBottom: 8 }}>기록을 불러오지 못했어요</p>
+            <button
+              onClick={() => setEntriesRetry((n) => n + 1)}
+              style={{ fontSize: 12, color: 'var(--text-sub)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '6px 16px', cursor: 'pointer' }}
+            >
+              다시 시도
+            </button>
+          </div>
         ) : myEntries.length === 0 ? (
           <p className="week-entries-empty">아직 기록이 없어요</p>
         ) : (

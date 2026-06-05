@@ -206,8 +206,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
             </div>
           )}
 
-          {/* 항목 추가 폼 */}
-          {showForm ? (
+          {/* 항목 추가 폼 — zero-note 모드일 때 숨김 */}
+          {!showZeroNote && (showForm ? (
             <div className="item-form">
               <p className="form-label">카테고리</p>
               <div className="cat-grid">
@@ -250,7 +250,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
             <button className="add-more-btn" onClick={() => setShowForm(true)}>
               + 항목 추가하기
             </button>
-          )}
+          ))}
 
           {/* 이미지 업로드 영역 */}
           <div className="image-upload-section">
