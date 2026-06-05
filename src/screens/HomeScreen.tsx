@@ -14,6 +14,7 @@ interface Props {
   pendingPoints: number;
   submitting?: boolean;
   pendingClaiming?: boolean;
+  streakShields?: number;
   onRecord: () => void;
   onQuickZeroSpend: () => void;
   onClaimPending: () => void;
@@ -21,7 +22,7 @@ interface Props {
 
 const WEEK_DAYS = 7;
 
-export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, pendingClaiming = false, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
+export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, pendingClaiming = false, streakShields = 0, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
   const spendGroup = weekRank.filter((r) => r.total > 0);
@@ -267,12 +268,17 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       <div className="glass-card streak-card">
         <div className="streak-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
           <span className="streak-title" style={{ fontSize: 13, fontWeight: 800 }}>연속 기록</span>
-          {streak.streak > 0 && (
-            <Badge size="small" color="red" variant="weak">
-              <img src="/images/icon_flame.png" className="custom-icon--sm" style={{ marginRight: 3, verticalAlign: 'middle' }} />
-              {streak.streak}일
-            </Badge>
-          )}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+            {streakShields > 0 && (
+              <Badge size="small" color="blue" variant="weak">🛡️ 보호권 {streakShields}개</Badge>
+            )}
+            {streak.streak > 0 && (
+              <Badge size="small" color="red" variant="weak">
+                <img src="/images/icon_flame.png" className="custom-icon--sm" style={{ marginRight: 3, verticalAlign: 'middle' }} />
+                {streak.streak}일
+              </Badge>
+            )}
+          </div>
         </div>
         <div className="streak-roadmap">
           {Array.from({ length: WEEK_DAYS }, (_, i) => {

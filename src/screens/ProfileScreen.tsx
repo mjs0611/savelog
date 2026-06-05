@@ -1,5 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
+import { contactsViral } from '@apps-in-toss/web-framework';
 
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
   if (!open) return null;
@@ -24,9 +25,10 @@ interface Props {
   onNicknameChange: (name: string) => void;
   onStartTest: () => void;
   refreshToken?: number;
+  onShieldEarned?: () => void;
 }
 
-export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0 }: Props) {
+export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
 
@@ -43,6 +45,34 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
+  const viralCleanupRef = useRef<(() => void) | null>(null);
+
+  function handleShare() {
+    if (viralCleanupRef.current) return;
+    try {
+      viralCleanupRef.current = contactsViral({
+        options: { moduleId: 'f92f08bb-0044-4762-bbdd-25d8458a1a07' },
+        onEvent: (event) => {
+          if (event.type === 'sendViral') {
+            onShieldEarned?.();
+          } else if (event.type === 'close') {
+            viralCleanupRef.current?.();
+            viralCleanupRef.current = null;
+          }
+        },
+        onError: () => {
+          viralCleanupRef.current?.();
+          viralCleanupRef.current = null;
+        },
+      });
+    } catch {
+      viralCleanupRef.current = null;
+    }
+  }
+
+  useEffect(() => {
+    return () => { viralCleanupRef.current?.(); };
+  }, []);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -152,6 +182,26 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <span className="profile-persona-btn">시작하기</span>
         </div>
       )}
+
+      {/* 🛡️ 친구 공유하고 스트릭 보호권 받기 */}
+      <div
+        className="glass-card"
+        style={{ padding: '14px 16px', border: '1px solid rgba(99,179,237,0.25)', background: 'linear-gradient(135deg, rgba(99,179,237,0.06) 0%, rgba(255,255,255,0.01) 100%)', cursor: 'pointer' }}
+        onClick={handleShare}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <span style={{ fontSize: 24 }}>🛡️</span>
+            <div>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#63B3ED' }}>친구에게 공유하고 보호권 받기</p>
+              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4 }}>
+                하루 기록을 빠뜨려도 스트릭이 끊기지 않아요
+              </p>
+            </div>
+          </div>
+          <span style={{ fontSize: 20, color: '#63B3ED', fontWeight: 900 }}>›</span>
+        </div>
+      </div>
 
       {/* 📊 소비 성향 육각형 레이더 차트 Widget */}
       {(() => {

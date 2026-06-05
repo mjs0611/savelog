@@ -21,6 +21,8 @@ import {
   getClaimedRankReward,
   setClaimedRankReward,
   cleanupStaleKeys,
+  getStreakShields,
+  addStreakShield,
   type StreakData,
   type DailyState,
 } from './lib/storage';
@@ -80,6 +82,7 @@ export default function App() {
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
+  const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
   const rankClaimingRef = useRef(false);
@@ -438,6 +441,7 @@ export default function App() {
             userId={userId}
             pendingPoints={pendingPoints}
             submitting={submitting}
+            streakShields={streakShields}
             onRecord={() => setShowRecord(true)}
             onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
             onClaimPending={handleClaimPending}
@@ -479,6 +483,11 @@ export default function App() {
             refreshToken={profileRefreshToken}
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
+            onShieldEarned={() => {
+              addStreakShield(1);
+              setStreakShields(getStreakShields());
+              showToast('🛡️ 공유 완료! 스트릭 보호권 +1 적립');
+            }}
           />
         </div>
       </div>

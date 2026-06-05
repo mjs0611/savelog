@@ -46,7 +46,31 @@ export function loadStreak(): StreakData {
   }
 }
 
+// ── Streak Shields (공유 리워드로 받는 스트릭 보호권) ──────────────────────────
+const SHIELD_KEY = 'savelog_streak_shields';
+
+export function getStreakShields(): number {
+  try {
+    const n = Number(localStorage.getItem(SHIELD_KEY) ?? '0');
+    return isNaN(n) ? 0 : Math.max(0, n);
+  } catch { return 0; }
+}
+
+export function addStreakShield(count = 1): number {
+  const next = getStreakShields() + count;
+  try { localStorage.setItem(SHIELD_KEY, String(next)); } catch {}
+  return next;
+}
+
+function consumeStreakShield(): boolean {
+  const shields = getStreakShields();
+  if (shields <= 0) return false;
+  try { localStorage.setItem(SHIELD_KEY, String(shields - 1)); } catch {}
+  return true;
+}
+
 // 오늘 또는 어제 기록이 없으면 streak을 0으로 반환 (stale 표시 방지)
+// 정확히 하루만 빠진 경우 + 보호권이 있으면 자동 소비하여 streak 유지
 export function getEffectiveStreak(): StreakData {
   const data = loadStreak();
   if (!data.lastDate || data.streak === 0) return data;
@@ -59,7 +83,17 @@ export function getEffectiveStreak(): StreakData {
 
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
-  if (data.lastDate === fmt(yesterday)) return data;
+  const yesterdayStr = fmt(yesterday);
+  if (data.lastDate === yesterdayStr) return data;
+
+  // 정확히 어제 하루만 빠진 경우(2일 전이 마지막) + 보호권 있으면 자동 사용
+  const twoDaysAgo = new Date(today);
+  twoDaysAgo.setDate(today.getDate() - 2);
+  if (data.lastDate === fmt(twoDaysAgo) && consumeStreakShield()) {
+    const shielded = { ...data, lastDate: yesterdayStr };
+    localStorage.setItem(STREAK_KEY, JSON.stringify(shielded));
+    return shielded;
+  }
 
   // 마지막 기록이 이틀 이상 전 → streak 끊김
   return { ...data, streak: 0 };
