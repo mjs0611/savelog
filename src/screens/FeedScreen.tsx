@@ -95,8 +95,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     // 최초 로드는 스켈레톤 표시, 이후 refreshToken/userId 변경은 현재 로드 상태에 따라 갱신
     // userId는 anonymousKey 발급 시 변경될 수 있어 my_reaction 정합성을 위해 포함
     load(initialLoaded.current);
-    loadBalanceEntry();
   }, [refreshToken, userId]);
+
+  useEffect(() => {
+    // 밸런스 게임은 userId 변경 시에만 리셋 (피드 새로고침마다 리셋되지 않도록)
+    loadBalanceEntry();
+  }, [userId]);
 
   async function loadBalanceEntry() {
     setBalanceEntry('loading');
