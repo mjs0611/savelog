@@ -555,6 +555,7 @@ input { font: inherit; outline: none; border: none; }
 .action-icon-btn--warn { color: #FF4D4F; border-color: rgba(255,77,79,0.25); background: rgba(255,77,79,0.06); }
 .action-icon-btn--receipt { color: #00F5A0; border-color: rgba(0,245,160,0.12); background: rgba(0,245,160,0.04); }
 .action-icon-btn--following { color: var(--primary); border-color: rgba(0,245,160,0.35); background: rgba(0,245,160,0.09); }
+.feed-reaction-counts { display: flex; gap: 10px; font-size: 12px; font-weight: 700; color: var(--text-mute); padding-bottom: 2px; }
 
 /* Reactions as modern pill tags */
 .reaction-btn {

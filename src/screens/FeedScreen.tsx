@@ -83,7 +83,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   // 플로팅 이모지 파티클 상태
   const [particles, setParticles] = useState<{ id: number; emoji: string; x: number; y: number }[]>([]);
 
-  const [selectedReceiptEntry, setSelectedReceiptEntry] = useState<EntryWithReactions | null>(null);
 
   // 밸런스 게임 상태
   const [balanceEntry, setBalanceEntry] = useState<BalanceEntry | null | 'loading' | 'empty'>('loading');
@@ -642,24 +641,32 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   </div>
                 )}
 
-                {/* 리액션 + 액션 버튼 */}
+                {/* 리액션 카운트 — 정보 표시 라인 (인스타 스타일) */}
+                {entry.user_id !== userId && (entry.trust_count > 0 || entry.doubt_count > 0) && (
+                  <div className="feed-reaction-counts">
+                    {entry.trust_count > 0 && <span>👃 {entry.trust_count}명</span>}
+                    {entry.doubt_count > 0 && <span>🤔 {entry.doubt_count}명</span>}
+                  </div>
+                )}
+
+                {/* 액션 버튼 행 */}
                 {entry.user_id !== userId && (
                   <div className="feed-actions-row">
-                    {/* 왼쪽: 감정 리액션 */}
+                    {/* 왼쪽: 감정 리액션 버튼 (카운트 없음) */}
                     <div className="feed-reactions-group">
                       <button
                         className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
                         onClick={(e) => handleReact(entry, 'trust', e)}
                         disabled={toggling.has(entry.id)}
                       >
-                        👃 {entry.trust_count > 0 && <span className="reaction-count">{entry.trust_count}</span>}
+                        👃 짠내난다
                       </button>
                       <button
                         className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
                         onClick={(e) => handleReact(entry, 'doubt', e)}
                         disabled={toggling.has(entry.id)}
                       >
-                        🤔 {entry.doubt_count > 0 && <span className="reaction-count">{entry.doubt_count}</span>}
+                        🤔 진짜야?
                       </button>
                     </div>
 
@@ -683,17 +690,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                       >
                         {pokedEntries.has(entry.id) ? '✓' : '⚡'}
                       </button>
-
-                      {/* 지출 내역 */}
-                      {!isMilestone && (
-                        <button
-                          className="action-icon-btn action-icon-btn--receipt"
-                          onClick={() => setSelectedReceiptEntry(entry)}
-                          title="지출 내역 보기"
-                        >
-                          🧾
-                        </button>
-                      )}
 
                       {/* 응원 쪽지 */}
                       <button
@@ -794,105 +790,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               </div>
             );
           })}
-        </div>
-      )}
-
-      {/* 🧾 영수증 모달 */}
-      {selectedReceiptEntry && (
-        <div
-          className="story-modal-overlay"
-          onClick={() => setSelectedReceiptEntry(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: 'rgba(9, 10, 16, 0.85)',
-            backdropFilter: 'blur(12px)',
-            zIndex: 4000,
-            display: 'flex',
-            justifyContent: 'center',
-            alignItems: 'center',
-            padding: 20
-          }}
-        >
-          <div
-            className="story-modal-sheet glass-card"
-            onClick={(e) => e.stopPropagation()}
-            style={{ maxWidth: 330, width: '100%', padding: 22, border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(10, 11, 16, 0.95)', borderRadius: 20 }}
-          >
-            <div style={{ textAlign: 'center', marginBottom: 16 }}>
-              <h3 style={{ fontSize: 13, letterSpacing: 4, fontWeight: 900, color: 'var(--primary)', margin: 0 }}>🧾 SAVELOG RECEIPT</h3>
-              <p style={{ fontSize: 9, color: 'var(--text-mute)', margin: '4px 0 0 0', textTransform: 'uppercase' }}>Official spend certification</p>
-            </div>
-
-            <div
-              style={{
-                background: '#F8F9FA',
-                color: '#1A1A1A',
-                fontFamily: '"Courier New", Courier, monospace',
-                padding: 18,
-                borderRadius: 8,
-                fontSize: 10,
-                position: 'relative',
-                border: '1px solid #E9ECEF',
-                boxShadow: 'inset 0 0 10px rgba(0,0,0,0.03)'
-              }}
-            >
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderBottom: '1px dashed #CED4DA', paddingBottom: 6, marginBottom: 8, fontWeight: 800 }}>
-                <span>지출 항목</span>
-                <span>금액</span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 5, marginBottom: 10 }}>
-                {(selectedReceiptEntry.items || []).filter(it => it.category !== '한마디').map((item, idx) => (
-                  <div key={idx} style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>{item.emoji} {item.comment || item.category}</span>
-                    <span>{formatAmount(item.amount)}</span>
-                  </div>
-                ))}
-                {(!selectedReceiptEntry.items || selectedReceiptEntry.items.filter(it => it.category !== '한마디').length === 0) && (
-                  <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                    <span>무지출 챌린지 성공 🌿</span>
-                    <span>0원</span>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px dashed #CED4DA', paddingTop: 6, fontWeight: 900, fontSize: 12, marginBottom: 12 }}>
-                <span>TOTAL SUM</span>
-                <span style={{ color: '#059669' }}>{formatAmount(selectedReceiptEntry.total_amount)}</span>
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 3, marginTop: 8 }}>
-                <div style={{ display: 'flex', height: 22, width: '80%', background: '#fff', padding: '2px 4px', gap: 1, alignItems: 'stretch' }}>
-                  {[2,1,3,1,2,4,1,2,1,3,2,1,4,1,2].map((w, i) => (
-                    <div key={i} style={{ flex: w, background: '#000' }} />
-                  ))}
-                </div>
-                <span style={{ fontSize: 7, letterSpacing: 1.5, color: '#868E96' }}>*SVL-{selectedReceiptEntry.id.substring(0, 8).toUpperCase()}*</span>
-              </div>
-            </div>
-
-            <button
-              onClick={() => setSelectedReceiptEntry(null)}
-              style={{
-                width: '100%',
-                marginTop: 18,
-                padding: 12,
-                background: 'rgba(255,255,255,0.05)',
-                border: '1px solid rgba(255,255,255,0.08)',
-                borderRadius: 'var(--radius-sm)',
-                color: 'var(--text-sub)',
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              닫기
-            </button>
-          </div>
         </div>
       )}
 
