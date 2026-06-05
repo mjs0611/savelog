@@ -320,9 +320,9 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
         {/* 제출 */}
         <div className="modal-footer">
-          {items.length === 0 ? (
+          {items.length === 0 && !showZeroNote ? (
             <p className="submit-hint">항목을 1개 이상 추가해 주세요</p>
-          ) : (
+          ) : items.length > 0 ? (
             <Button
               size="xlarge"
               display="full"
@@ -333,7 +333,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
             >
               {submitting ? '저장 중...' : `오늘 기록 완료 🌿`}
             </Button>
-          )}
+          ) : null}
         </div>
       </div>
     </div>

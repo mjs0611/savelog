@@ -513,7 +513,7 @@ export default function App() {
 
       {/* 무지출 한마디 모달 */}
       {showZeroNote && (
-        <div className="modal-overlay" onClick={() => setShowZeroNote(false)} style={{ zIndex: 9999 }}>
+        <div className="modal-overlay" onClick={() => { if (!submitting) setShowZeroNote(false); }} style={{ zIndex: 9999 }}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0))', gap: 0 }}>
             <p style={{ margin: '0 0 6px 0', fontSize: 15, fontWeight: 900, color: '#fff' }}>🌿 무지출 기록하기</p>
             <p style={{ margin: '0 0 16px 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.5 }}>

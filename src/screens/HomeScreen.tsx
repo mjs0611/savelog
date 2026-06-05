@@ -694,7 +694,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             case 1:
               return {
                 title: "1. 간편 지출 및 무지출 기록하기 🌿",
-                desc: "오늘 아낀 돈이나 소비 내역을 최상단에서 손쉽게 기록해 보세요! 단 한 번의 터치로 무지출 기록이 끝납니다.",
+                desc: "오늘 아낀 돈이나 소비 내역을 최상단에서 기록해 보세요! 무지출 버튼을 누르면 달성 이유를 한 줄 입력 후 피드에 공유돼요.",
                 icon: "✍️",
                 targetId: "tutorial-step-1"
               };
