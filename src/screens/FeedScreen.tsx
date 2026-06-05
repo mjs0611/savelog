@@ -181,10 +181,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       const data = await fetchFeed(userId);
       if (loadId !== loadIdRef.current) return; // 더 최신 요청이 진행 중 → 결과 버림
       if (data === null) {
-        if (!silent) {
-          setLoadFailed(true);
-          showFeedToast('피드를 불러오지 못했어요. 다시 시도해 주세요.');
-        }
+        setLoadFailed(true);
+        if (!silent) showFeedToast('피드를 불러오지 못했어요. 다시 시도해 주세요.');
         return; // 네트워크 오류 — 기존 피드 그대로 유지
       }
       setLoadFailed(false);
@@ -212,10 +210,8 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       }
     } catch {
       if (loadId !== loadIdRef.current) return;
-      if (!silent) {
-        setLoadFailed(true);
-        showFeedToast('피드를 불러오지 못했어요. 다시 시도해 주세요.');
-      }
+      setLoadFailed(true);
+      if (!silent) showFeedToast('피드를 불러오지 못했어요. 다시 시도해 주세요.');
     } finally {
       if (loadId === loadIdRef.current) {
         if (!silent) setLoading(false);

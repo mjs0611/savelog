@@ -31,6 +31,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
   const [comment, setComment] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [showZeroNote, setShowZeroNote] = useState(false);
+  const [zeroNote, setZeroNote] = useState('');
 
   const total = items.reduce((s, i) => s + i.amount, 0);
 
@@ -113,14 +115,11 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
         <div className="modal-body">
           {/* 오늘 지출 없음 (무지출 인증) */}
-          {items.length === 0 && (
+          {items.length === 0 && !showZeroNote && (
             <button
               className="no-spend-quick-btn"
               disabled={submitting}
-              onClick={async () => {
-                const noSpendItems = [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 지출 없음 (무지출 인증)!' }];
-                await onSubmit(noSpendItems);
-              }}
+              onClick={() => setShowZeroNote(true)}
               style={{
                 width: '100%',
                 padding: '16px',
@@ -135,8 +134,55 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
                 transition: 'all 0.2s ease',
               }}
             >
-              {submitting ? '제출 중...' : '🎉 오늘 돈 한 푼도 안 썼어요 (무지출 인증!)'}
+              🌿 오늘 돈 한 푼도 안 썼어요 (무지출 인증)
             </button>
+          )}
+
+          {/* 무지출 한마디 입력 */}
+          {items.length === 0 && showZeroNote && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.06), rgba(0, 245, 160, 0.02))', border: '1.5px dashed var(--primary)', borderRadius: 'var(--radius-md)' }}>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>🌿 무지출 인증</p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.5 }}>오늘 어떻게 무지출을 달성했나요? 피드에 공유돼요.</p>
+              <textarea
+                value={zeroNote}
+                onChange={e => setZeroNote(e.target.value)}
+                placeholder="예) 도시락 싸서 점심 해결, 배달 참기 성공 🎉"
+                maxLength={80}
+                rows={3}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: '1px solid rgba(255,255,255,0.12)',
+                  borderRadius: 10,
+                  color: '#fff',
+                  fontSize: 13,
+                  padding: '10px 12px',
+                  resize: 'none',
+                  outline: 'none',
+                  lineHeight: 1.6,
+                  fontFamily: 'inherit',
+                }}
+              />
+              <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNote.length}/80 · 5자 이상 입력</p>
+              <div style={{ display: 'flex', gap: 8 }}>
+                <button
+                  onClick={() => { setShowZeroNote(false); setZeroNote(''); }}
+                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-mute)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
+                >
+                  취소
+                </button>
+                <button
+                  disabled={zeroNote.trim().length < 5 || submitting}
+                  onClick={async () => {
+                    await onSubmit([{ category: '기타', emoji: '🌿', amount: 0, comment: zeroNote.trim() }]);
+                  }}
+                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, border: 'none', background: zeroNote.trim().length < 5 ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)', color: zeroNote.trim().length < 5 ? 'var(--text-mute)' : '#090A10', fontSize: 12, fontWeight: 900, cursor: zeroNote.trim().length < 5 ? 'default' : 'pointer' }}
+                >
+                  {submitting ? '저장 중...' : '무지출 기록 완료'}
+                </button>
+              </div>
+            </div>
           )}
 
           {/* 기록된 항목 목록 */}
