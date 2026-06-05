@@ -104,6 +104,7 @@ export default function App() {
         const currentDay = getTodayStr();
         setDaily(prev => prev.date !== currentDay ? loadDailyState(currentDay) : prev);
         setStreak(getEffectiveStreak());
+        loadRank();
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);

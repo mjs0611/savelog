@@ -167,6 +167,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
               <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNote.length}/80 · 5자 이상 입력</p>
               <div style={{ display: 'flex', gap: 8 }}>
                 <button
+                  disabled={submitting}
                   onClick={() => { setShowZeroNote(false); setZeroNote(''); }}
                   style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-mute)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
                 >
