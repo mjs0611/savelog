@@ -469,6 +469,7 @@ input { font: inherit; outline: none; border: none; }
 /* ── Feed Screen ────────────────────────────────────────────────────────────── */
 
 .screen-feed { gap: 16px; }
+.screen-home { gap: 16px; }
 .feed-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
 .feed-title  { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
 .refresh-btn { font-size: 22px; color: var(--primary); padding: 4px; transition: transform 0.2s; }
@@ -695,6 +696,7 @@ input { font: inherit; outline: none; border: none; }
 .stat-label { font-size: 11px; color: var(--text-mute); font-weight: 700; text-transform: uppercase; }
 
 .week-entries-card {}
+.mailbox-card {}
 .week-entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .week-entries-title  { font-size: 15px; font-weight: 800; }
 .week-entries-empty  { font-size: 14px; color: var(--text-mute); text-align: center; padding: 24px 0; }
@@ -1607,6 +1609,7 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* 🎁 토스포인트 럭키 박스 애니메이션 */
+.lucky-chest-img { object-fit: contain; flex-shrink: 0; }
 .lucky-chest-bob {
   animation: lucky-chest-bob 2.2s infinite ease-in-out;
 }
