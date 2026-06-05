@@ -464,6 +464,24 @@ export function cleanupStaleKeys(): void {
           if (start < cutoff) toRemove.push(key);
         } catch {}
       }
+      if (key.startsWith('savelog_duel_')) {
+        const weekKey = key.slice('savelog_duel_'.length);
+        try {
+          const { start } = getWeekRange(weekKey);
+          if (start < cutoff) toRemove.push(key);
+        } catch {}
+      }
+      if (key.startsWith('savelog_milestone_')) {
+        const milestoneKey = key.slice('savelog_milestone_'.length);
+        const streakIdx = milestoneKey.indexOf('-streak');
+        if (streakIdx > 0) {
+          const weekKey = milestoneKey.slice(0, streakIdx);
+          try {
+            const { start } = getWeekRange(weekKey);
+            if (start < cutoff) toRemove.push(key);
+          } catch {}
+        }
+      }
     }
     toRemove.forEach((k) => localStorage.removeItem(k));
     localStorage.setItem(CLEANUP_DATE_KEY, today);

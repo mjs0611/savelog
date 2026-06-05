@@ -63,5 +63,11 @@ if (fs.existsSync(publicDir)) {
   copyDirSync(publicDir, outDir);
 }
 
+// Write build manifest to force unique ZIP hash on each deploy (prevents AIT 4097 error)
+fs.writeFileSync(
+  path.join(outDir, '_build.json'),
+  JSON.stringify({ buildAt: Date.now(), ts: new Date().toISOString() })
+);
+
 console.log('Built ' + outputs.length + ' files to dist/');
 process.exit(0);

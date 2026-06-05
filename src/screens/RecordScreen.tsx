@@ -233,6 +233,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 suffix="원"
                 inputMode="numeric"
                 onChange={(e: any) => handleAmountChange(e.target.value)}
+                onKeyDown={(e: any) => { if (e.key === 'Enter') addItem(); }}
               />
 
               <TextField
@@ -242,6 +243,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 value={comment}
                 maxLength={40}
                 onChange={(e: any) => setComment(e.target.value)}
+                onKeyDown={(e: any) => { if (e.key === 'Enter') addItem(); }}
               />
 
               <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr || (amountStr === '0' && !comment.trim())}>
