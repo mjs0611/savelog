@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { Badge, Button } from '@toss/tds-mobile';
+import { Badge } from '@toss/tds-mobile';
 import type { DailyState, StreakData } from '../lib/storage';
-import { getDailyMission, getNickname, getPersona, PERSONAS, sendPokeNotification } from '../lib/storage';
+import { getDailyMission, getPersona, PERSONAS } from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
 
@@ -21,19 +21,6 @@ interface Props {
 
 const WEEK_DAYS = 7;
 
-function getCompatibilityScore(userPersona: string, myPersona: string) {
-  if (!userPersona || !myPersona) return 72;
-  const hash = (userPersona.charCodeAt(0) + myPersona.charCodeAt(0)) % 29;
-  return 72 + hash;
-}
-
-const MOCK_ONLINE_USERS = [
-  { id: 'user-1', nickname: '시발비용맨', spentAmount: 12500, personaKey: 'flexer', isOnline: true, hasPoked: false },
-  { id: 'user-2', nickname: '자린고비 햄스터', spentAmount: 0, personaKey: 'hamster', isOnline: true, hasPoked: false },
-  { id: 'user-3', nickname: '가성비 AI', spentAmount: 4500, personaKey: 'cost_ai', isOnline: false, hasPoked: false },
-  { id: 'user-4', nickname: '장바구니 키퍼', spentAmount: 0, personaKey: 'keeper', isOnline: true, hasPoked: false }
-];
-
 export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, pendingClaiming = false, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
@@ -44,9 +31,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const myZeroIdx = zeroGroup.findIndex((r) => r.user_id === userId);
   const inSpendGroup = mySpendIdx >= 0;
   const inZeroGroup = myZeroIdx >= 0;
-
-  const [onlineUsers, setOnlineUsers] = useState(MOCK_ONLINE_USERS);
-  const [selectedAffinityUser, setSelectedAffinityUser] = useState<typeof MOCK_ONLINE_USERS[number] | null>(null);
 
   const [tutorialStep, setTutorialStep] = useState<number | null>(() => {
     try {
@@ -60,13 +44,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const doneCount = daily.recorded
     ? (streak.streak > 0 && streak.streak % WEEK_DAYS === 0 ? WEEK_DAYS : streak.streak % WEEK_DAYS)
     : (streak.streak % WEEK_DAYS);
-
-  function handlePokeUser(id: string, targetNickname: string, isPraise: boolean) {
-    setOnlineUsers(prev => prev.map(u => u.id === id ? { ...u, hasPoked: true } : u));
-    const myName = getNickname() || '나';
-    const myPersona = getPersona();
-    sendPokeNotification(targetNickname, myName, myPersona, isPraise);
-  }
 
   return (
     <div className="screen screen-home">
@@ -341,85 +318,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         );
       })()}
 
-      {/* ⚡ 실시간 절약 배틀 콕 찌르기 (Social Loop Widget) */}
-      <div className="glass-card battle-card" style={{ padding: '12px 14px' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
-            실시간 절약 배틀
-            <span style={{ fontSize: 12, color: 'var(--primary)' }}>⚡</span>
-          </span>
-          <span style={{ fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>
-            절약 중인 친구들과 소통해요
-          </span>
-        </div>
-        
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {onlineUsers.map((u) => {
-            const p = PERSONAS[u.personaKey];
-            const isZero = u.spentAmount === 0;
-            return (
-              <div key={u.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.04)', padding: '8px 10px', borderRadius: 'var(--radius-sm)' }}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <div style={{ width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(255,255,255,0.05)', borderRadius: 100, border: `1px solid ${p?.color ?? '#fff'}40` }}>
-                    <img src={p?.icon} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
-                  </div>
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-start' }}>
-                    <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                      {u.nickname}
-                      {u.isOnline && <span style={{ width: 5, height: 5, background: '#00F5A0', borderRadius: 100, display: 'inline-block' }} />}
-                      
-                      {/* 💖 짠친 궁합 매칭 칩 */}
-                      <span
-                        onClick={() => setSelectedAffinityUser(u)}
-                        style={{
-                          fontSize: 8,
-                          fontWeight: 900,
-                          background: 'linear-gradient(135deg, rgba(255,94,98,0.15) 0%, rgba(255,153,102,0.15) 100%)',
-                          color: '#FF5E62',
-                          border: '0.5px solid rgba(255,94,98,0.25)',
-                          borderRadius: 100,
-                          padding: '1px 5px',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 2,
-                          marginLeft: 4,
-                          boxShadow: '0 0 6px rgba(255,94,98,0.1)'
-                        }}
-                      >
-                        💖 궁합 {getCompatibilityScore(u.personaKey, getPersona() || 'hamster')}%
-                      </span>
-                    </span>
-                    <span style={{ fontSize: 10, color: isZero ? 'var(--primary)' : 'var(--text-mute)', fontWeight: 700 }}>
-                      {isZero ? '무지출 👑' : `오늘 ${formatAmount(u.spentAmount)}`}
-                    </span>
-                  </div>
-                </div>
-
-                <button
-                  disabled={u.hasPoked}
-                  onClick={() => handlePokeUser(u.id, u.nickname, isZero)}
-                  style={{
-                    padding: '5px 12px',
-                    borderRadius: 100,
-                    border: 'none',
-                    background: u.hasPoked ? 'rgba(255,255,255,0.05)' : isZero ? 'rgba(0, 245, 160, 0.15)' : 'rgba(255, 77, 79, 0.15)',
-                    color: u.hasPoked ? 'var(--text-mute)' : isZero ? '#00F5A0' : '#FF4D4F',
-                    fontSize: 10,
-                    fontWeight: 800,
-                    cursor: u.hasPoked ? 'default' : 'pointer',
-                    transition: 'all 0.2s',
-                    boxShadow: u.hasPoked ? 'none' : `0 0 8px ${isZero ? 'rgba(0,245,160,0.1)' : 'rgba(255,77,79,0.1)'}`
-                  }}
-                >
-                  {u.hasPoked ? '콕 찌름 ✓' : isZero ? '칭찬 ⚡' : '일침 ⚡'}
-                </button>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
       {/* 이번 주 내 현황 */}
       {myRow && (
         <div className="glass-card week-summary-card" style={{ padding: '12px 14px' }}>
@@ -488,204 +386,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         </div>
         <span style={{ fontSize: 9, fontWeight: 900, background: 'rgba(255,255,255,0.1)', color: 'var(--text-mute)', padding: '2px 5px', borderRadius: 2 }}>AD</span>
       </div>
-
-      {/* 💖 짠친 MBTI 궁합 분석 모달 */}
-      {selectedAffinityUser && (() => {
-        const myPersonaKey = getPersona() || 'hamster';
-        const myPersonaObj = PERSONAS[myPersonaKey];
-        const targetPersonaObj = PERSONAS[selectedAffinityUser.personaKey];
-        const score = getCompatibilityScore(selectedAffinityUser.personaKey, myPersonaKey);
-        const isZero = selectedAffinityUser.spentAmount === 0;
-
-        return (
-          <div
-            className="story-modal-overlay"
-            onClick={() => setSelectedAffinityUser(null)}
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(9, 10, 16, 0.8)',
-              backdropFilter: 'blur(12px)',
-              zIndex: 4000,
-              display: 'flex',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: 20
-            }}
-          >
-            <div
-              className="story-modal-sheet glass-card"
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                maxWidth: 340,
-                width: '100%',
-                padding: 24,
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                background: 'rgba(10, 11, 16, 0.95)',
-                borderRadius: 24,
-                textAlign: 'center'
-              }}
-            >
-              <div style={{ marginBottom: 20 }}>
-                <span style={{ fontSize: 24 }}>💖</span>
-                <h3 style={{ fontSize: 16, fontWeight: 900, color: '#fff', margin: '6px 0 2px 0' }}>짠친 궁합 분석</h3>
-                <p style={{ fontSize: 11, color: 'var(--text-mute)', margin: 0 }}>서로의 소비 페르소나 화학 결합도</p>
-              </div>
-
-              {/* 매칭 매개체 비주얼화 */}
-              <div style={{ display: 'flex', justifyContent: 'space-around', alignItems: 'center', margin: '24px 0', position: 'relative' }}>
-                {/* 나 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 80 }}>
-                  <div style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.03)', border: `2px solid ${myPersonaObj?.color || '#fff'}`, borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={myPersonaObj?.icon} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: '#fff', fontWeight: 800 }}>나 ({myPersonaObj?.name})</span>
-                </div>
-
-                {/* 중앙 점수 링 */}
-                <div
-                  style={{
-                    width: 76,
-                    height: 76,
-                    borderRadius: 100,
-                    background: 'linear-gradient(135deg, rgba(255,94,98,0.1) 0%, rgba(255,153,102,0.1) 100%)',
-                    border: '3px solid #FF5E62',
-                    boxShadow: '0 0 20px rgba(255,94,98,0.3)',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    zIndex: 2
-                  }}
-                >
-                  <span style={{ fontSize: 18, fontWeight: 900, color: '#FF5E62' }}>{score}%</span>
-                  <span style={{ fontSize: 8, color: '#FF9966', fontWeight: 900, letterSpacing: 0.5 }}>MATCH</span>
-                </div>
-
-                {/* 상대방 */}
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 6, width: 80 }}>
-                  <div style={{ width: 48, height: 48, background: 'rgba(255,255,255,0.03)', border: `2px solid ${targetPersonaObj?.color || '#fff'}`, borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <img src={targetPersonaObj?.icon} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
-                  </div>
-                  <span style={{ fontSize: 11, color: '#fff', fontWeight: 800 }}>{selectedAffinityUser.nickname}</span>
-                </div>
-              </div>
-
-              {/* 📊 양자 소비 성향 비교 레이더 차트 */}
-              {(() => {
-                const myScores = [75, 80, 85, 70, 90];
-                const targetScores = selectedAffinityUser.personaKey === 'hamster' ? [85, 90, 80, 60, 95] : selectedAffinityUser.personaKey === 'keeper' ? [80, 85, 75, 70, 85] : selectedAffinityUser.personaKey === 'cost_ai' ? [90, 95, 85, 55, 90] : [55, 60, 50, 90, 60];
-
-                const getRadarPt = (score: number, idx: number, maxRadius = 40) => {
-                  const angle = (Math.PI * 2 / 5) * idx - Math.PI / 2;
-                  const r = (score / 100) * maxRadius;
-                  const x = 70 + r * Math.cos(angle);
-                  const y = 62 + r * Math.sin(angle);
-                  return `${x.toFixed(1)},${y.toFixed(1)}`;
-                };
-
-                const myPoints = [0, 1, 2, 3, 4].map(i => getRadarPt(myScores[i], i)).join(' ');
-                const targetPoints = [0, 1, 2, 3, 4].map(i => getRadarPt(targetScores[i], i)).join(' ');
-                const gridPoints = [0.4, 0.7, 1.0].map((ratio) => {
-                  return [0, 1, 2, 3, 4].map(i => getRadarPt(100 * ratio, i)).join(' ');
-                });
-
-                const labels = ['자제', '절약', '생존', '사교', '짠내'];
-
-                return (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', margin: '0 0 20px 0', background: 'rgba(255,255,255,0.01)', border: '1px solid rgba(255,255,255,0.04)', borderRadius: 16, padding: '14px 10px' }}>
-                    <p style={{ margin: '0 0 10px 0', fontSize: 10, color: 'var(--text-mute)', fontWeight: 800 }}>성향 능력치 화학 구조 비교 📊</p>
-                    <svg width="140" height="124" style={{ overflow: 'visible' }}>
-                      {/* Grid */}
-                      {gridPoints.map((pts, idx) => (
-                        <polygon key={idx} points={pts} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth="0.8" />
-                      ))}
-                      
-                      {/* Axis */}
-                      {[0, 1, 2, 3, 4].map((i) => {
-                        const pt = getRadarPt(100, i);
-                        return (
-                          <line key={i} x1="70" y1="62" x2={pt.split(',')[0]} y2={pt.split(',')[1]} stroke="rgba(255,255,255,0.03)" strokeWidth="0.8" />
-                        );
-                      })}
-
-                      {/* My polygon */}
-                      <polygon points={myPoints} fill="rgba(168, 85, 247, 0.22)" stroke="#A855F7" strokeWidth="1.5" />
-
-                      {/* Target polygon */}
-                      <polygon points={targetPoints} fill={`${targetPersonaObj?.color || '#00F5A0'}18`} stroke={targetPersonaObj?.color || '#00F5A0'} strokeWidth="1.5" strokeDasharray="2,2" />
-
-                      {/* Labels */}
-                      {labels.map((name, i) => {
-                        const pt = getRadarPt(115, i);
-                        const [x, y] = pt.split(',').map(Number);
-                        return (
-                          <text key={i} x={x} y={y + 3} fill="var(--text-mute)" fontSize="8" fontWeight="900" textAnchor="middle">
-                            {name}
-                          </text>
-                        );
-                      })}
-                    </svg>
-
-                    {/* 범례 */}
-                    <div style={{ display: 'flex', gap: 10, marginTop: 10 }}>
-                      <span style={{ fontSize: 9, color: '#A855F7', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 6, height: 6, background: '#A855F7', borderRadius: 100 }} /> 나
-                      </span>
-                      <span style={{ fontSize: 9, color: targetPersonaObj?.color || '#00F5A0', fontWeight: 900, display: 'flex', alignItems: 'center', gap: 4 }}>
-                        <span style={{ width: 6, height: 6, background: targetPersonaObj?.color || '#00F5A0', borderRadius: 100 }} /> {selectedAffinityUser.nickname}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* 궁합 설명 복사본 */}
-              <div style={{ background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)', borderRadius: 14, padding: 14, marginBottom: 24 }}>
-                <p style={{ fontSize: 12, color: 'var(--text-sub)', margin: 0, lineHeight: 1.5, textAlign: 'left' }}>
-                  {score > 85 ? (
-                    `✨ 두 분은 절약의 소울메이트입니다! 소비 욕구를 함께 억제하며 서로에게 최고의 긍정적인 시너지를 주는 완벽한 파트너입니다. 서로 응원을 남겨 힘을 불어넣어주세요!`
-                  ) : score > 75 ? (
-                    `🌱 균형 잡힌 짠친 사이입니다. 서로 다른 매력의 소비 가치관을 가지고 있지만, 지갑을 지키겠다는 목표 하에선 훌륭한 시너지를 이뤄내고 있습니다.`
-                  ) : (
-                    `⚡ 충돌 위험! 두 분의 궁합은 파멸적입니다! 한 분의 충동 구매가 다른 한 분의 지갑까지 뒤흔들 수 있으니, 지금 당장 일침 콕 찌르기로 상대의 정신을 똑바로 깨워주세요!`
-                  )}
-                </p>
-              </div>
-
-              {/* 제어 버튼 */}
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <Button
-                  size="large"
-                  display="full"
-                  color="primary"
-                  variant="fill"
-                  disabled={selectedAffinityUser.hasPoked}
-                  onClick={() => {
-                    handlePokeUser(selectedAffinityUser.id, selectedAffinityUser.nickname, isZero);
-                    setSelectedAffinityUser(null);
-                  }}
-                >
-                  {selectedAffinityUser.hasPoked ? '오늘의 궁합 콕 완료 ✓' : '⚡ 궁합 콕 찌르기'}
-                </Button>
-
-                <Button
-                  size="large"
-                  display="full"
-                  color="dark"
-                  variant="weak"
-                  onClick={() => setSelectedAffinityUser(null)}
-                >
-                  닫기
-                </Button>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
 
       {/* 🎓 신규 사용자를 위한 고품격 안내 튜토리얼 Overlay */}
       {tutorialStep !== null && (() => {

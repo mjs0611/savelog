@@ -43,7 +43,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
-  const [showRival, setShowRival] = useState(false);
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -165,7 +164,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         const salty = personaKey === 'hamster' ? 95 : personaKey === 'keeper' ? 80 : personaKey === 'cost_ai' ? 90 : 60;
 
         const scores = [selfControl, savings, survival, social, salty];
-        const rivalScores = [85, 90, 80, 60, 95]; // 절약왕민지 스탯
 
         const getPoint = (score: number, idx: number, maxRadius = 64) => {
           const angle = (Math.PI * 2 / 5) * idx - Math.PI / 2;
@@ -176,7 +174,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         };
 
         const myPoints = [0, 1, 2, 3, 4].map(i => getPoint(scores[i], i)).join(' ');
-        const rivalPoints = [0, 1, 2, 3, 4].map(i => getPoint(rivalScores[i], i)).join(' ');
 
         // 가이드 격자 레이어
         const gridPoints = [0.2, 0.4, 0.6, 0.8, 1.0].map((ratio) => {
@@ -193,24 +190,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
         return (
           <div className="glass-card radar-chart-card" style={{ padding: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+            <div style={{ marginBottom: 14 }}>
               <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-main)' }}>소비 오각형 스탯 📊</span>
-              <button
-                onClick={() => setShowRival(!showRival)}
-                style={{
-                  padding: '3px 8px',
-                  borderRadius: 100,
-                  border: showRival ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
-                  background: showRival ? 'rgba(0, 245, 160, 0.1)' : 'transparent',
-                  color: showRival ? 'var(--primary)' : 'var(--text-mute)',
-                  fontSize: 10,
-                  fontWeight: 800,
-                  cursor: 'pointer',
-                  transition: 'all 0.25s'
-                }}
-              >
-                {showRival ? '비교 해제 ✓' : '⚡ 라이벌과 비교'}
-              </button>
             </div>
 
             <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
@@ -260,19 +241,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                   );
                 })}
 
-                {/* 4. Rival Polygon (Overlay) */}
-                {showRival && (
-                  <polygon
-                    points={rivalPoints}
-                    fill="rgba(0, 245, 160, 0.12)"
-                    stroke="var(--primary)"
-                    strokeWidth="2"
-                    strokeDasharray="3,3"
-                    style={{ transition: 'all 0.5s' }}
-                  />
-                )}
-
-                {/* 5. My Polygon */}
+                {/* 4. My Polygon */}
                 <polygon
                   points={myPoints}
                   fill="rgba(168, 85, 247, 0.28)"
@@ -298,28 +267,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                 ))}
               </svg>
             </div>
-            
-            {showRival && (() => {
-              const dimLabels = ['자제력', '절약력', '생존력', '사교력', '짠내력'];
-              const diffs = scores.map((s, i) => s - rivalScores[i]);
-              const maxIdx = diffs.reduce((bi, d, i) => d > diffs[bi] ? i : bi, 0);
-              const minIdx = diffs.reduce((wi, d, i) => d < diffs[wi] ? i : wi, 0);
-              let insight: string;
-              if (diffs[maxIdx] > 0 && diffs[minIdx] < 0) {
-                insight = `🏆 라이벌보다 ${dimLabels[maxIdx]}이 높지만 ${dimLabels[minIdx]} 보완이 필요합니다!`;
-              } else if (diffs[minIdx] >= 0) {
-                insight = `🎉 라이벌보다 전체적으로 앞서 있어요! ${dimLabels[maxIdx]}이 특히 강해요.`;
-              } else {
-                insight = `📈 라이벌을 따라잡으려면 ${dimLabels[minIdx]} 강화가 필요합니다!`;
-              }
-              return (
-                <div style={{ marginTop: 12, padding: 10, background: 'rgba(0,245,160,0.03)', border: '1px solid rgba(0,245,160,0.1)', borderRadius: 10, textAlign: 'center' }}>
-                  <p style={{ margin: 0, fontSize: 10, color: 'var(--primary)', fontWeight: 800 }}>
-                    {insight}
-                  </p>
-                </div>
-              );
-            })()}
           </div>
         );
       })()}

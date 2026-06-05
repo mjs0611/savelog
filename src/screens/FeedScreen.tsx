@@ -40,15 +40,6 @@ const MOCK_BALANCE_CARDS = [
 ];
 
 const COMMENT_CHIPS = ['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'];
-const STORY_EMOJI_REACTIONS = ['❤️', '👏', '🔥', '😮', '😢', '💸', '👑'];
-
-const MOCK_STORIES = [
-  { id: '1', name: '자린고비', icon: '/images/mbti_hamster.png', color: '#FF9500', spent: '0원', text: '점심 동료가 사줌 개이득!', recorded: true },
-  { id: '2', name: '가성비킹', icon: '/images/mbti_robot.png', color: '#00F5A0', spent: '4,500원', text: '편의점 학식 정식 얌얌', recorded: true },
-  { id: '3', name: '장바요정', icon: '/images/mbti_cart.png', color: '#3182F6', spent: '0원', text: '오늘도 지름신 참았다', recorded: false },
-  { id: '4', name: '시발비용맨', icon: '/images/icon_flame.png', color: '#FF4D4F', spent: '12,500원', text: '부장님 땜에 매운 떡볶이 흡입 ㅠ', recorded: true },
-  { id: '5', name: '탕진러', icon: '/images/mbti_unicorn.png', color: '#E0A0FF', spent: '148,000원', text: '헤어샵에서 플렉스했어용', recorded: false },
-];
 
 export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, refreshToken = 0 }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
@@ -66,8 +57,6 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       return new Set();
     }
   });
-  const [selectedStory, setSelectedStory] = useState<typeof MOCK_STORIES[number] | null>(null);
-  
   // 쪽지 및 하트 인터랙션 관련 상태
   const [messageRecipientEntry, setMessageRecipientEntry] = useState<EntryWithReactions | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -96,8 +85,6 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
   // 플로팅 이모지 파티클 상태
   const [particles, setParticles] = useState<{ id: number; emoji: string; x: number; y: number }[]>([]);
 
-  // ⚡ 인스타그램 감성 특화 상태 추가
-  const [risingHearts, setRisingHearts] = useState<{ id: number; emoji: string; left: number }[]>([]);
   const [selectedReceiptEntry, setSelectedReceiptEntry] = useState<EntryWithReactions | null>(null);
   const [instagramShareMockup, setInstagramShareMockup] = useState(false);
 
@@ -234,15 +221,6 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
     }, 1000);
   }
 
-  function handleAddRisingHeart(emoji: string) {
-    const id = Date.now() + Math.random();
-    const left = 20 + Math.random() * 60; // 20% to 80% from left
-    setRisingHearts((prev) => [...prev, { id, emoji, left }]);
-    setTimeout(() => {
-      setRisingHearts((prev) => prev.filter((h) => h.id !== id));
-    }, 2000);
-  }
-
   async function handleReact(entry: EntryWithReactions, type: 'trust' | 'doubt', e: React.MouseEvent<HTMLButtonElement>) {
     if (entry.user_id === userId) return;
     if (togglingRef.current.has(entry.id)) return;
@@ -367,22 +345,6 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
           <img src="/images/savelog_main_character.png" className="custom-icon" style={{ marginLeft: 5 }} />
         </h2>
         <button className="refresh-btn" onClick={() => load(entries.length > 0)}>↻</button>
-      </div>
-
-      {/* 인스타그램 스토리 스타일 영역 */}
-      <div className="feed-stories-container">
-        {MOCK_STORIES.map((s) => (
-          <div key={s.id} className="story-avatar-wrap" onClick={() => s.recorded && setSelectedStory(s)} style={{ opacity: s.recorded ? 1 : 0.4 }}>
-            <div className="story-ring" style={s.recorded ? { borderImage: `linear-gradient(45deg, ${s.color}, #000) 1` } : { border: '2px solid rgba(255,255,255,0.15)' }}>
-              <div className="story-circle">
-                <img src={s.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-              </div>
-            </div>
-            <span className="story-name" style={{ color: s.recorded ? 'var(--text-sub)' : 'var(--text-mute)' }}>
-              {s.recorded ? s.name : `${s.name} 👀`}
-            </span>
-          </div>
-        ))}
       </div>
 
       {/* 🎴 짠물 밸런스 게임 (Tinder Swipe Widget) */}
@@ -822,109 +784,7 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         </div>
       )}
 
-      {/* 스토리 디테일 팝업 (인스타그램 라이브 스타일 오버레이) */}
-      {selectedStory && (
-        <div
-          className="story-modal-overlay"
-          onClick={() => setSelectedStory(null)}
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            background: '#090A10',
-            zIndex: 5000,
-            display: 'flex',
-            flexDirection: 'column',
-            justifyContent: 'space-between',
-            overflow: 'hidden'
-          }}
-        >
-          {/* 상단 프로그레스 바 */}
-          <div style={{ display: 'flex', gap: 4, padding: '12px 16px 4px 16px', zIndex: 10 }}>
-            <div style={{ flex: 1, height: 2, background: 'var(--primary)', borderRadius: 100 }} />
-            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.2)', borderRadius: 100 }} />
-            <div style={{ flex: 1, height: 2, background: 'rgba(255,255,255,0.2)', borderRadius: 100 }} />
-          </div>
-
-          {/* 상단 프로필 영역 */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 16px', zIndex: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <div style={{ width: 36, height: 36, background: 'rgba(255,255,255,0.05)', borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center', border: `2px solid ${selectedStory.color}` }}>
-                <img src={selectedStory.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain' }} />
-              </div>
-              <div>
-                <h4 style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#fff' }}>{selectedStory.name}</h4>
-                <span style={{ fontSize: 10, color: 'rgba(255,255,255,0.5)', fontWeight: 700 }}>오늘 지출: {selectedStory.spent}</span>
-              </div>
-            </div>
-            <button
-              onClick={() => setSelectedStory(null)}
-              style={{ background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', fontSize: 18, cursor: 'pointer', width: 28, height: 28, borderRadius: 100, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              ×
-            </button>
-          </div>
-
-          {/* 실시간 이모지 비구름 (Canvas 대체 Rising Hearts) */}
-          <div style={{ position: 'absolute', top: 0, left: 0, right: 0, bottom: 80, overflow: 'hidden', pointerEvents: 'none', zIndex: 5 }}>
-            {risingHearts.map((heart) => (
-              <span
-                key={heart.id}
-                className="rising-heart"
-                style={{ left: `${heart.left}%` }}
-              >
-                {heart.emoji}
-              </span>
-            ))}
-          </div>
-
-          {/* 메인 스토리 이미지 & 한마디 내용 */}
-          <div style={{ display: 'flex', flex: 1, flexDirection: 'column', justifyContent: 'center', alignItems: 'center', padding: 24, zIndex: 6 }}>
-            <div style={{ width: 140, height: 140, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 28, boxShadow: `0 0 35px ${selectedStory.color}15`, animation: 'floating 4s infinite ease-in-out' }}>
-              <img src={selectedStory.icon} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
-            </div>
-            <p style={{ fontSize: 21, fontWeight: 900, color: '#fff', margin: 0, lineHeight: 1.6, padding: '0 20px', textAlign: 'center', textShadow: '0 2px 10px rgba(0,0,0,0.6)' }}>
-              “ {selectedStory.text} ”
-            </p>
-          </div>
-
-          {/* 하단 리액션 전송 바 (인스타그램 스타일) */}
-          <div style={{ padding: '16px 16px 36px 16px', background: 'linear-gradient(to top, rgba(0,0,0,0.9) 0%, rgba(0,0,0,0) 100%)', display: 'flex', flexDirection: 'column', gap: 12, zIndex: 10 }}>
-            <div style={{ display: 'flex', gap: 6, overflowX: 'auto', paddingBottom: 4 }}>
-              {STORY_EMOJI_REACTIONS.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleAddRisingHeart(emoji);
-                  }}
-                  style={{
-                    background: 'rgba(255,255,255,0.1)',
-                    border: 'none',
-                    borderRadius: 100,
-                    minWidth: 40,
-                    height: 40,
-                    fontSize: 20,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    transition: 'transform 0.1s'
-                  }}
-                  onMouseDown={(e) => e.currentTarget.style.transform = 'scale(0.9)'}
-                  onMouseUp={(e) => e.currentTarget.style.transform = 'scale(1)'}
-                >
-                  {emoji}
-                </button>
-              ))}
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 🧾 인스타그램 특화 감성 영수증 & 스토리 공유 모달 */}
+      {/* 🧾 영수증 모달 */}
       {selectedReceiptEntry && (
         <div
           className="story-modal-overlay"
