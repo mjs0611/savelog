@@ -299,13 +299,27 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               </svg>
             </div>
             
-            {showRival && (
-              <div style={{ marginTop: 12, padding: 10, background: 'rgba(0,245,160,0.03)', border: '1px solid rgba(0,245,160,0.1)', borderRadius: 10, textAlign: 'center' }}>
-                <p style={{ margin: 0, fontSize: 10, color: 'var(--primary)', fontWeight: 800 }}>
-                  🏆 라이벌 '절약왕민지'님보다 <span style={{ color: '#fff' }}>자제력</span>이 다소 높으나 <span style={{ color: '#fff' }}>절약력</span> 보완이 필요합니다!
-                </p>
-              </div>
-            )}
+            {showRival && (() => {
+              const dimLabels = ['자제력', '절약력', '생존력', '사교력', '짠내력'];
+              const diffs = scores.map((s, i) => s - rivalScores[i]);
+              const maxIdx = diffs.reduce((bi, d, i) => d > diffs[bi] ? i : bi, 0);
+              const minIdx = diffs.reduce((wi, d, i) => d < diffs[wi] ? i : wi, 0);
+              let insight: string;
+              if (diffs[maxIdx] > 0 && diffs[minIdx] < 0) {
+                insight = `🏆 라이벌보다 ${dimLabels[maxIdx]}이 높지만 ${dimLabels[minIdx]} 보완이 필요합니다!`;
+              } else if (diffs[minIdx] >= 0) {
+                insight = `🎉 라이벌보다 전체적으로 앞서 있어요! ${dimLabels[maxIdx]}이 특히 강해요.`;
+              } else {
+                insight = `📈 라이벌을 따라잡으려면 ${dimLabels[minIdx]} 강화가 필요합니다!`;
+              }
+              return (
+                <div style={{ marginTop: 12, padding: 10, background: 'rgba(0,245,160,0.03)', border: '1px solid rgba(0,245,160,0.1)', borderRadius: 10, textAlign: 'center' }}>
+                  <p style={{ margin: 0, fontSize: 10, color: 'var(--primary)', fontWeight: 800 }}>
+                    {insight}
+                  </p>
+                </div>
+              );
+            })()}
           </div>
         );
       })()}
