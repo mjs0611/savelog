@@ -231,7 +231,12 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.06) 0%, rgba(255,255,255,0.01) 100%)', display: 'flex', flexDirection: 'column', gap: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20 }}>🎁</span>
+              <img
+                src={pendingClaiming ? "/images/lucky_chest_opened.png" : "/images/lucky_chest_closed.png"}
+                alt="Lucky Chest"
+                className="lucky-chest-img lucky-chest-bob"
+                style={{ width: 42, height: 42, objectFit: 'contain', flexShrink: 0 }}
+              />
               <div>
                 <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#FFC800' }}>적립된 토스포인트</p>
                 <p style={{ margin: '3px 0 0 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4, wordBreak: 'keep-all' }}>
@@ -289,10 +294,16 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               <div key={i} className={`streak-node-wrap ${isDone ? 'past' : isCurrent ? 'current' : 'future'}`}>
                 <div className="streak-line" />
                 <div className="streak-node">
-                  {isDone ? (
-                    '✔️'
-                  ) : isGift ? (
-                    <img src="/images/icon_target.png" className="custom-icon" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain' }} />
+                  {isGift ? (
+                    isDone ? (
+                      <img src="/images/lucky_chest_opened.png" className="custom-icon" style={{ width: '1.4em', height: '1.4em', objectFit: 'contain' }} />
+                    ) : (
+                      <img src="/images/lucky_chest_closed.png" className="custom-icon" style={{ width: '1.4em', height: '1.4em', objectFit: 'contain', filter: 'grayscale(0.2)' }} />
+                    )
+                  ) : isDone ? (
+                    <svg width="12" height="9" viewBox="0 0 12 9" fill="none" style={{ color: 'var(--primary)' }}>
+                      <path d="M1 4.5L4 7.5L11 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
                   ) : isCurrent ? (
                     <img src="/images/icon_flame.png" className="custom-icon" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain' }} />
                   ) : (
@@ -333,7 +344,13 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               </div>
               <div>
                 {mission.completed ? (
-                  <span className="mission-completed-row" style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)' }}>✅ 달성</span>
+                  <span className="mission-completed-row" style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ color: 'var(--primary)' }}>
+                      <circle cx="6" cy="6" r="5.25" fill="rgba(0, 245, 160, 0.1)" stroke="currentColor" strokeWidth="1.5"/>
+                      <path d="M4 6L5.5 7.5L8 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+                    </svg>
+                    달성
+                  </span>
                 ) : (
                   <span className="mission-reward" style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-mute)' }}>도전 중</span>
                 )}

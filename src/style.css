@@ -1596,3 +1596,133 @@ input { font: inherit; outline: none; border: none; }
   transform: translateY(-2px);
 }
 
+/* 🎁 토스포인트 럭키 박스 애니메이션 */
+.lucky-chest-bob {
+  animation: lucky-chest-bob 2.2s infinite ease-in-out;
+}
+
+@keyframes lucky-chest-bob {
+  0%, 100% {
+    transform: translateY(0) scale(1);
+    filter: drop-shadow(0 4px 6px rgba(255, 200, 0, 0.15));
+  }
+  50% {
+    transform: translateY(-4px) scale(1.05);
+    filter: drop-shadow(0 12px 16px rgba(255, 200, 0, 0.35));
+  }
+}
+
+/* 👥 Header Follow Button */
+.header-follow-btn {
+  background: var(--primary);
+  color: #07070a;
+  border: none;
+  font-family: inherit;
+}
+.header-follow-btn:hover {
+  transform: scale(1.05);
+}
+.header-follow-btn:active {
+  transform: scale(0.95);
+}
+.header-follow-btn.following {
+  background: rgba(255, 255, 255, 0.05) !important;
+  color: var(--text-sub) !important;
+  border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+.header-follow-btn.following:hover {
+  background: rgba(255, 255, 255, 0.08) !important;
+  border-color: rgba(255, 255, 255, 0.2) !important;
+}
+
+/* 👥 Recommended Friends Suggestion Box */
+.recommended-friends-box {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
+  border: 1px solid rgba(0, 245, 160, 0.12) !important;
+  box-shadow: 0 8px 32px rgba(0, 245, 160, 0.04) !important;
+}
+
+/* ⚖️ 밸런스 게임 VS 배틀 카드 글로우 효과 */
+.balance-game-card-glow {
+  position: relative;
+  transition: all 0.3s ease;
+}
+.balance-game-card-glow::before {
+  content: '';
+  position: absolute;
+  inset: -1.5px;
+  border-radius: inherit;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.35), rgba(0, 245, 160, 0.35));
+  z-index: -1;
+  opacity: 0.8;
+  filter: blur(4px);
+  pointer-events: none;
+}
+
+/* 🎴 밸런스 게임 선택지 카드 */
+.balance-vote-card {
+  flex: 1;
+  padding: 16px 12px;
+  border-radius: var(--radius-md);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(255, 255, 255, 0.02);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.25s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+  cursor: pointer;
+}
+.balance-vote-card:hover {
+  transform: translateY(-4px);
+}
+.balance-vote-card:active {
+  transform: scale(0.95);
+}
+.balance-vote-card--over {
+  border-color: rgba(255, 77, 79, 0.15);
+}
+.balance-vote-card--over:hover {
+  border-color: rgba(255, 77, 79, 0.4);
+  background: rgba(255, 77, 79, 0.05);
+  box-shadow: 0 8px 20px rgba(255, 77, 79, 0.15);
+}
+.balance-vote-card--ok {
+  border-color: rgba(0, 245, 160, 0.15);
+}
+.balance-vote-card--ok:hover {
+  border-color: rgba(0, 245, 160, 0.4);
+  background: rgba(0, 245, 160, 0.05);
+  box-shadow: 0 8px 20px rgba(0, 245, 160, 0.15);
+}
+.balance-vote-card .vote-emoji {
+  font-size: 24px;
+  margin-bottom: 2px;
+}
+.balance-vote-card .vote-title {
+  font-size: 13px;
+  font-weight: 900;
+}
+.balance-vote-card--over .vote-title { color: #FF4D4F; }
+.balance-vote-card--ok .vote-title { color: #00F5A0; }
+.balance-vote-card .vote-desc {
+  font-size: 9px;
+  color: var(--text-mute);
+  font-weight: 700;
+}
+
+/* 📊 밸런스 게임 결과 진행바 채우기 */
+.balance-bar-fill {
+  transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ⚖️ 밸런스 게임 다음 배틀 버튼 */
+.next-battle-btn:hover {
+  background: rgba(0, 245, 160, 0.12) !important;
+  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.15);
+  transform: translateY(-1px);
+}
+.next-battle-btn:active {
+  transform: translateY(0);
+}
+
