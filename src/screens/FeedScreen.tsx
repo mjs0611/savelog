@@ -105,8 +105,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     setBalanceVoted(null);
     setBalanceStats(null);
     balanceVotingRef.current = false;
-    const entry = await fetchBalanceGameEntry(userId);
-    setBalanceEntry(entry ?? 'empty');
+    try {
+      const entry = await fetchBalanceGameEntry(userId);
+      setBalanceEntry(entry ?? 'empty');
+    } catch {
+      setBalanceEntry('empty');
+    }
   }
 
   async function load(silent = false) {

@@ -87,6 +87,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             setMyEntries(data);
           }
         }
+      } catch {
+        if (!cancelled) setEntriesError(true);
       } finally {
         if (!cancelled) setEntriesLoading(false);
       }
