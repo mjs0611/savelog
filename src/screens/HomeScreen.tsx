@@ -37,8 +37,13 @@ const MOCK_ONLINE_USERS = [
 export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, pendingClaiming = false, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
-  const myRank = weekRank.findIndex((r) => r.user_id === userId);
+  const spendGroup = weekRank.filter((r) => r.total > 0);
+  const zeroGroup = weekRank.filter((r) => r.total === 0);
   const myRow = weekRank.find((r) => r.user_id === userId);
+  const mySpendIdx = spendGroup.findIndex((r) => r.user_id === userId);
+  const myZeroIdx = zeroGroup.findIndex((r) => r.user_id === userId);
+  const inSpendGroup = mySpendIdx >= 0;
+  const inZeroGroup = myZeroIdx >= 0;
 
   const [onlineUsers, setOnlineUsers] = useState(MOCK_ONLINE_USERS);
   const [selectedAffinityUser, setSelectedAffinityUser] = useState<typeof MOCK_ONLINE_USERS[number] | null>(null);
@@ -422,21 +427,26 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           <p className="week-summary-amount" style={{ margin: '4px 0 8px 0', fontSize: 18, fontWeight: 900, color: 'var(--text-main)' }}>{formatAmount(myRow.total)}</p>
           <div className="week-summary-meta" style={{ display: 'flex', gap: 6 }}>
             <Badge size="small" color="blue" variant="weak">{myRow.days}일 기록</Badge>
-            {myRank >= 0 && (
-              <Badge size="small" color={myRank === 0 ? 'yellow' : 'elephant'} variant="weak">
-                {myRank === 0 ? '👑 ' : ''}{myRank + 1}위 / {weekRank.length}명
+            {inSpendGroup && (
+              <Badge size="small" color={mySpendIdx === 0 ? 'yellow' : 'elephant'} variant="weak">
+                {mySpendIdx === 0 ? '👑 ' : ''}{mySpendIdx + 1}위 / {spendGroup.length}명
+              </Badge>
+            )}
+            {inZeroGroup && (
+              <Badge size="small" color="green" variant="weak">
+                👑 무지출 {myZeroIdx + 1}번째
               </Badge>
             )}
           </div>
         </div>
       )}
 
-      {/* 순위 미리보기 (상위 3명) */}
-      {weekRank.length > 0 && (
+      {/* 순위 미리보기 — 유지출 그룹 상위 3명 */}
+      {spendGroup.length > 0 && (
         <div className="glass-card rank-preview-card" style={{ padding: '12px 14px' }}>
           <p className="rank-preview-title" style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 800 }}>이번 주 절약왕 🏆</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-            {weekRank.slice(0, 3).map((row, i) => (
+            {spendGroup.slice(0, 3).map((row, i) => (
               <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className="rank-medal" style={{ fontSize: 14 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
@@ -446,6 +456,11 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               </div>
             ))}
           </div>
+          {zeroGroup.length > 0 && (
+            <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
+              👑 무지출 인증단 {zeroGroup.length}명 참여 중
+            </p>
+          )}
         </div>
       )}
 

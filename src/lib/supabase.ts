@@ -217,7 +217,7 @@ function localDateStr(d: Date): string {
   return `${y}-${m}-${day}`;
 }
 
-function buildMockFeed(userId: string): EntryWithReactions[] {
+function buildMockFeed(_userId: string): EntryWithReactions[] {
   const today = localDateStr(new Date());
   const yesterday = localDateStr(new Date(Date.now() - 86400000));
   return [

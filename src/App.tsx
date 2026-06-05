@@ -543,7 +543,8 @@ export default function App() {
             <p style={{ margin: '4px 0 20px 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNoteText.length}/80</p>
             <Button
               size="medium"
-              variant="primary"
+              color="primary"
+              variant="fill"
               disabled={zeroNoteText.trim().length < 5 || submitting}
               onClick={() => {
                 setShowZeroNote(false);

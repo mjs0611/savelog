@@ -5,7 +5,7 @@ import './style.css';
 import App from './App';
 
 declare const __BUILD_ID__: string;
-(window as Record<string, unknown>).__build__ = __BUILD_ID__;
+(window as unknown as Record<string, unknown>).__build__ = __BUILD_ID__;
 
 class ErrorBoundary extends React.Component<
   { children: React.ReactNode },
