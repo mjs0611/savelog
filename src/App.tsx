@@ -70,6 +70,8 @@ export default function App() {
   const [rankLoading, setRankLoading] = useState(true);
   const [rankLoadFailed, setRankLoadFailed] = useState(false);
   const [showRecord, setShowRecord] = useState(false);
+  const [showZeroNote, setShowZeroNote] = useState(false);
+  const [zeroNoteText, setZeroNoteText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [rankClaiming, setRankClaiming] = useState(false);
   const [pendingClaiming, setPendingClaiming] = useState(false);
@@ -316,18 +318,15 @@ export default function App() {
         completeDailyMission(today);
       }
 
-      // 펜딩 포인트 적립 (max 50원, 광고 보고 수령)
-      const dailyEarn = 3;
-      let totalEarn = dailyEarn;
-      if (missionCleared) totalEarn += 5;
-
       // 스트릭 업데이트
       const newStreak = updateStreak(today);
       setRecordedDate(today);
       setStreak(newStreak);
 
       const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
-      if (isStreakBonus) totalEarn += 20; // 7일 완주 보너스를 펜딩에 합산 (광고 보고 수령)
+
+      // 펜딩 포인트 적립 (기록 기본 3원 + 7일 완주 보너스 20원)
+      const totalEarn = 3 + (isStreakBonus ? 20 : 0);
 
       // 한도(50원) 적용 후 실제 추가된 양으로 토스트 표시 (한도 도달 시 오표시 방지)
       const prevPending = getPendingPoints();
@@ -337,17 +336,9 @@ export default function App() {
       if (newPending > 0) preloadReward();
 
       // 토스트 조합
-      let toastMsg = actualEarned > 0
-        ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기)`
-        : `✅ 기록 완료! (오늘 포인트 한도 도달)`;
-      if (missionCleared && actualEarned > 0) {
-        toastMsg = `🎯 미션 달성! +${actualEarned}원 대기 중 (광고 보고 받기)`;
-      }
-      if (isStreakBonus) {
-        toastMsg = actualEarned > 0
-          ? `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)`
-          : `🔥 7일 연속 완주! (포인트 한도 도달 — 광고 보고 먼저 받기)`;
-      }
+      const toastMsg = isStreakBonus
+        ? (actualEarned > 0 ? `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)` : `🔥 7일 연속 완주! (포인트 한도 도달 — 광고 보고 먼저 받기)`)
+        : (actualEarned > 0 ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기)` : `✅ 기록 완료! (오늘 포인트 한도 도달)`);
 
       showToast(toastMsg);
 
@@ -453,9 +444,7 @@ export default function App() {
               const today = getTodayStr();
               if (!daily.recorded || daily.date !== today) setShowRecord(true);
             }}
-            onQuickZeroSpend={() => handleSubmitRecord(
-              [{ category: '기타', emoji: '🎉', amount: 0, comment: '오늘 무지출 달성!' }],
-            )}
+            onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
             onClaimPending={handleClaimPending}
             pendingClaiming={pendingClaiming}
           />
@@ -520,6 +509,53 @@ export default function App() {
           onClose={() => setShowRecord(false)}
           submitting={submitting}
         />
+      )}
+
+      {/* 무지출 한마디 모달 */}
+      {showZeroNote && (
+        <div className="modal-overlay" onClick={() => setShowZeroNote(false)} style={{ zIndex: 9999 }}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0))', gap: 0 }}>
+            <p style={{ margin: '0 0 6px 0', fontSize: 15, fontWeight: 900, color: '#fff' }}>🌿 무지출 기록하기</p>
+            <p style={{ margin: '0 0 16px 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.5 }}>
+              오늘 어떻게 무지출을 달성했나요? 한 줄로 남겨보세요.<br />피드에 공유되어 다른 사람들과 나눌 수 있어요.
+            </p>
+            <textarea
+              value={zeroNoteText}
+              onChange={e => setZeroNoteText(e.target.value)}
+              placeholder="예) 집에 있는 재료로 밥해먹고 커피도 참았어요 ☕"
+              maxLength={80}
+              rows={3}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                background: 'rgba(255,255,255,0.06)',
+                border: '1px solid rgba(255,255,255,0.12)',
+                borderRadius: 12,
+                color: '#fff',
+                fontSize: 13,
+                padding: '12px 14px',
+                resize: 'none',
+                outline: 'none',
+                lineHeight: 1.6,
+                fontFamily: 'inherit',
+              }}
+            />
+            <p style={{ margin: '4px 0 20px 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNoteText.length}/80</p>
+            <Button
+              size="medium"
+              variant="primary"
+              disabled={zeroNoteText.trim().length < 5 || submitting}
+              onClick={() => {
+                setShowZeroNote(false);
+                handleSubmitRecord([{ category: '기타', emoji: '🌿', amount: 0, comment: zeroNoteText.trim() }]);
+              }}
+              style={{ width: '100%' }}
+            >
+              {submitting ? '저장 중...' : '무지출 기록 완료'}
+            </Button>
+            <p style={{ margin: '10px 0 0 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'center' }}>5자 이상 입력하면 기록할 수 있어요</p>
+          </div>
+        </div>
       )}
 
       {/* 소비 성향 테스트 모달 */}

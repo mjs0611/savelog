@@ -18,18 +18,26 @@ const MEDAL = ['🥇', '🥈', '🥉'];
 
 export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false, onRetry }: Props) {
   const weekKey = getWeekKey();
-  const myIdx = weekRank.findIndex((r) => r.user_id === userId);
-  const totalParticipants = weekRank.length;
+
+  // 무지출/유지출 리그 분리
+  const spendGroup = weekRank.filter(r => r.total > 0);
+  const zeroGroup = weekRank.filter(r => r.total === 0);
+
+  const mySpendIdx = spendGroup.findIndex(r => r.user_id === userId);
+  const myZeroIdx = zeroGroup.findIndex(r => r.user_id === userId);
+  const inSpendGroup = mySpendIdx >= 0;
+  const inZeroGroup = myZeroIdx >= 0;
 
   // 의심 반응 3개 이상이면 리워드 수령 불가
-  const myRow = myIdx >= 0 ? weekRank[myIdx] : null;
+  const myRow = inSpendGroup ? spendGroup[mySpendIdx] : (inZeroGroup ? zeroGroup[myZeroIdx] : null);
   const isSuspicious = myRow ? (myRow.total === 0 && myRow.doubtCount >= 3) : false;
 
   // 수령 가능한 순위 리워드 계산 (의심됨 상태면 0, 최소 3일 기록 필요)
   const myDays = myRow?.days ?? 0;
   const rankRewardAmount = isSuspicious ? 0
-    : myIdx === 0 && myDays >= 3 ? 100
-    : myIdx >= 0 && myDays >= 3 && totalParticipants > 0 && (myIdx + 1) / totalParticipants <= 0.1 ? 30
+    : inSpendGroup && mySpendIdx === 0 && myDays >= 3 ? 50
+    : inSpendGroup && myDays >= 3 && spendGroup.length > 0 && (mySpendIdx + 1) / spendGroup.length <= 0.1 ? 30
+    : inZeroGroup && myZeroIdx === 0 && myDays >= 3 ? 50
     : 0;
 
   return (
@@ -46,18 +54,32 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       </div>
 
       {/* 내 순위 요약 */}
-      {myIdx >= 0 && (
-        <div className="glass-card my-rank-card" style={isSuspicious ? { border: '1px solid rgba(255,77,79,0.3)', background: 'rgba(255,77,79,0.04)' } : {}}>
+      {(inSpendGroup || inZeroGroup) && myRow && (
+        <div className="glass-card my-rank-card" style={isSuspicious ? { border: '1px solid rgba(255,77,79,0.3)', background: 'rgba(255,77,79,0.04)' } : inZeroGroup ? { border: '1px solid rgba(0,245,160,0.2)', background: 'rgba(0,245,160,0.03)' } : {}}>
           <div className="my-rank-left">
-            <span className="my-rank-pos">{myIdx + 1}위</span>
-            <span className="my-rank-label">/ {totalParticipants}명</span>
+            {inSpendGroup ? (
+              <>
+                <span className="my-rank-pos">{mySpendIdx + 1}위</span>
+                <span className="my-rank-label">/ {spendGroup.length}명</span>
+              </>
+            ) : (
+              <>
+                <span className="my-rank-pos" style={{ fontSize: 13 }}>무지출</span>
+                <span className="my-rank-label">{myZeroIdx + 1}번째</span>
+              </>
+            )}
           </div>
           <div className="my-rank-right">
-            <p className="my-rank-amount">{formatAmount(weekRank[myIdx].total)}</p>
-            <Badge size="small" color="blue" variant="weak">{weekRank[myIdx].days}일 기록</Badge>
-            {weekRank[myIdx].days > 0 && (
+            <p className="my-rank-amount">{inZeroGroup ? '0원 🎉' : formatAmount(myRow.total)}</p>
+            <Badge size="small" color={inZeroGroup ? 'green' : 'blue'} variant="weak">{myRow.days}일 기록</Badge>
+            {myRow.days > 0 && myRow.total > 0 && (
               <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--text-mute)' }}>
-                일평균 {formatAmount(Math.round(weekRank[myIdx].total / weekRank[myIdx].days))}
+                일평균 {formatAmount(Math.round(myRow.total / myRow.days))}
+              </p>
+            )}
+            {inZeroGroup && (
+              <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--primary)', fontWeight: 700 }}>
+                👑 무지출 인증단
               </p>
             )}
             {isSuspicious && (
@@ -69,13 +91,13 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
         </div>
       )}
 
-      {/* 도발 카드: 바로 위 순위 */}
-      {myIdx > 0 && (
+      {/* 도발 카드: 바로 위 순위 (유지출 그룹만) */}
+      {inSpendGroup && mySpendIdx > 0 && (
         <div className="glass-card" style={{ padding: '12px 16px', border: '1px solid rgba(255, 77, 79, 0.2)', background: 'rgba(255, 77, 79, 0.04)' }}>
           <p style={{ margin: 0, fontSize: 11, color: '#FF4D4F', fontWeight: 800, marginBottom: 6 }}>🔥 지금 역전 가능해요</p>
           {(() => {
-            const above = weekRank[myIdx - 1];
-            const me = weekRank[myIdx];
+            const above = spendGroup[mySpendIdx - 1];
+            const me = spendGroup[mySpendIdx];
             const amountDiff = me.total - above.total;
             const daysDiff = above.days - me.days;
             const isTotalTied = amountDiff === 0;
@@ -104,7 +126,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                   <div>
                     <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)' }}>{above.nickname}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-mute)', marginLeft: 6 }}>({myIdx}위)</span>
+                    <span style={{ fontSize: 11, color: 'var(--text-mute)', marginLeft: 6 }}>({mySpendIdx}위)</span>
                   </div>
                   <span style={{ fontSize: 12, fontWeight: 800, color: '#FF4D4F' }}>{diffLabel}</span>
                 </div>
@@ -119,18 +141,22 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       <div className="glass-card reward-info-card">
         <p className="reward-info-title">주간 리워드</p>
         <div className="reward-rows">
-          <div className="reward-row">🥇 1위 (3일↑) <span>+100원</span></div>
-          <div className="reward-row">📊 상위 10% (3일↑) <span>+30원</span></div>
+          <div className="reward-row" style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 900, marginBottom: 2 }}>💸 절약 순위 리워드 (유료 지출 그룹)</div>
+          <div className="reward-row" style={{ paddingLeft: 8 }}>🥇 1위 (3일↑) <span>+50원</span></div>
+          <div className="reward-row" style={{ paddingLeft: 8 }}>📊 상위 10% (3일↑) <span>+30원</span></div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <div className="reward-row" style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 900, marginBottom: 2 }}>🌿 무지출 인증단 순위 리워드</div>
+          <div className="reward-row" style={{ paddingLeft: 8 }}>🥇 1위 (3일↑) <span>+50원</span></div>
+          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
           <div className="reward-row">🔥 7일 완주 <span>+20원</span></div>
           <div className="reward-row">📝 매일 기록 <span>+3원</span></div>
-          <div className="reward-row">🎯 일일 미션 달성 <span>+5원</span></div>
           <div className="reward-row">👃 게시글 반응 <span>+1원</span></div>
           <div className="reward-row">⚖️ 밸런스 투표 <span>+1원</span></div>
         </div>
         <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.5 }}>
           👃 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령
         </p>
-        {myIdx >= 0 && rankRewardAmount === 0 && !isSuspicious && myDays > 0 && myDays < 3 && (
+        {(inSpendGroup || inZeroGroup) && rankRewardAmount === 0 && !isSuspicious && myDays > 0 && myDays < 3 && (
           <p style={{ margin: '10px 0 0 0', fontSize: 11, color: 'var(--text-mute)', textAlign: 'center' }}>
             📅 순위 리워드는 3일 이상 기록 후 수령 가능해요 ({myDays}/3일)
           </p>
@@ -210,24 +236,16 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
               )}
             </div>
           )}
-          {weekRank.map((row, i) => {
-            const isZero = row.total === 0;
-            // 0원 그룹과 유료 그룹 사이 구분선 삽입
-            const prevIsZero = i > 0 && weekRank[i - 1].total === 0;
-            const showDivider = !isZero && prevIsZero;
-            return (
-              <div key={row.user_id}>
-                {showDivider && (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0' }}>
-                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                    <span style={{ fontSize: 9, color: 'var(--text-mute)', fontWeight: 700, whiteSpace: 'nowrap' }}>유료 지출 구간</span>
-                    <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                  </div>
-                )}
-                <div
-                  className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`}
-                  style={isZero ? { border: '1px solid rgba(0, 245, 160, 0.15)', background: 'rgba(0,245,160,0.03)' } : {}}
-                >
+          {/* 💸 유지출 절약 순위 */}
+          {spendGroup.length > 0 && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 8px 0' }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+                <span style={{ fontSize: 9, color: 'var(--text-mute)', fontWeight: 700, whiteSpace: 'nowrap' }}>💸 절약 순위</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              </div>
+              {spendGroup.map((row, i) => (
+                <div key={row.user_id} className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`}>
                   <span className="rank-pos">
                     {i < 3 ? MEDAL[i] : <span className="rank-num">{i + 1}</span>}
                   </span>
@@ -237,25 +255,51 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
                       {row.user_id === userId && (
                         <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
                       )}
-                      {isZero && (
-                        <Badge size="xsmall" color="green" variant="weak" style={{ marginLeft: 6 }}>무지출</Badge>
+                    </span>
+                    <span className="rank-row-days">{row.days}일 기록</span>
+                  </div>
+                  <div className="rank-row-right">
+                    <span className="rank-row-amount">{formatAmount(row.total)}</span>
+                    {i === 0 && <span className="rank-crown">👑</span>}
+                  </div>
+                </div>
+              ))}
+            </>
+          )}
+
+          {/* 👑 무지출 인증단 */}
+          {zeroGroup.length > 0 && (
+            <>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: `${spendGroup.length > 0 ? '12px' : '4px'} 0 8px 0` }}>
+                <div style={{ flex: 1, height: 1, background: 'rgba(0,245,160,0.15)' }} />
+                <span style={{ fontSize: 9, color: 'var(--primary)', fontWeight: 700, whiteSpace: 'nowrap' }}>👑 무지출 인증단</span>
+                <div style={{ flex: 1, height: 1, background: 'rgba(0,245,160,0.15)' }} />
+              </div>
+              {zeroGroup.map((row, i) => (
+                <div key={row.user_id} className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`} style={{ border: '1px solid rgba(0, 245, 160, 0.15)', background: 'rgba(0,245,160,0.03)' }}>
+                  <span className="rank-pos">
+                    {i < 3 ? MEDAL[i] : <span className="rank-num">{i + 1}</span>}
+                  </span>
+                  <div className="rank-row-info">
+                    <span className="rank-row-nickname">
+                      {row.nickname}
+                      {row.user_id === userId && (
+                        <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
                       )}
-                      {isZero && row.doubtCount >= 3 && (
+                      {row.doubtCount >= 3 && (
                         <Badge size="xsmall" color="red" variant="weak" style={{ marginLeft: 4 }}>⚠ 의심됨</Badge>
                       )}
                     </span>
                     <span className="rank-row-days">{row.days}일 기록</span>
                   </div>
                   <div className="rank-row-right">
-                    <span className={`rank-row-amount ${isZero ? 'rank-row-amount--zero' : ''}`}>
-                      {formatAmount(row.total)}
-                    </span>
+                    <span className="rank-row-amount rank-row-amount--zero">0원</span>
                     {i === 0 && <span className="rank-crown">👑</span>}
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              ))}
+            </>
+          )}
         </div>
       )}
 
