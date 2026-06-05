@@ -471,11 +471,6 @@ export default function App() {
           <FeedScreen
             userId={userId}
             refreshToken={feedRefreshToken}
-            onEarnPending={(amount) => {
-              const next = addPendingPoints(amount);
-              setPendingPoints(next);
-              if (next > 0) preloadReward();
-            }}
             onGrantFeedReward={() => {
               grantFeedReward(1).catch(() => {});
             }}

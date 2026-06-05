@@ -181,7 +181,6 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <div className="reward-row">🔥 7일 완주 <span>+20원</span></div>
           <div className="reward-row">📝 매일 기록 <span>+3원</span></div>
           <div className="reward-row">👃 게시글 반응 <span>+1원</span></div>
-          <div className="reward-row">⚖️ 밸런스 투표 <span>+1원</span></div>
         </div>
         <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.5 }}>
           👃 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령

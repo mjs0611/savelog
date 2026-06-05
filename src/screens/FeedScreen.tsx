@@ -2,53 +2,25 @@ import React, { useEffect, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import type { EntryWithReactions } from '../lib/supabase';
 import { fetchFeed, toggleReaction } from '../lib/supabase';
-import { formatAmount, formatDate, timeAgo, getTodayStr, getWeekKey } from '../lib/utils';
+import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification, getFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
 
 interface Props {
   userId: string;
-  onEarnPending?: (amount: number) => void;
   onGrantFeedReward?: () => void;
   refreshToken?: number;
 }
 
-const MOCK_BALANCE_CARDS = [
-  {
-    id: 1,
-    nickname: '시발비용맨 🦄',
-    spent: '스타벅스 시그니처 핫초코',
-    amount: 6500,
-    emoji: '☕',
-    description: '스트레스 잔뜩 받아서 당 충전용으로 벤티 사이즈 주문함 ㅠ'
-  },
-  {
-    id: 2,
-    nickname: '자린고비 햄스터 🐹',
-    spent: '지각 방지용 카카오 택시',
-    amount: 14200,
-    emoji: '🚕',
-    description: '9시 정각 출근 세이프를 위해 어쩔 수 없이 지른 시발비용...'
-  },
-  {
-    id: 3,
-    nickname: '가성비 AI 🤖',
-    spent: '삼성 초고속 무선 충전기',
-    amount: 28000,
-    emoji: '🔌',
-    description: '충전 속도 너무 답답해서 지르긴 했는데 이거 과소비일까요?'
-  }
-];
-
 const COMMENT_CHIPS = ['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'];
 
 const WEEKLY_CHALLENGES = [
-  { id: 'no-delivery', title: '배달 금지 챌린지', desc: '배달 앱 없이 한 주 버티기', emoji: '🍱', participants: 142 },
-  { id: 'no-cafe', title: '카페 금지 챌린지', desc: '카페 지출 0원 7일 도전', emoji: '☕', participants: 89 },
-  { id: 'home-cooking', title: '집밥 챌린지', desc: '식비를 집밥으로만 해결', emoji: '🍳', participants: 67 },
-  { id: 'no-shopping', title: '쇼핑 금지 챌린지', desc: '온라인 쇼핑 0원 7일', emoji: '🛒', participants: 203 },
+  { id: 'no-delivery', title: '배달 금지 챌린지', desc: '배달 앱 없이 한 주 버티기', emoji: '🍱' },
+  { id: 'no-cafe', title: '카페 금지 챌린지', desc: '카페 지출 0원 7일 도전', emoji: '☕' },
+  { id: 'home-cooking', title: '집밥 챌린지', desc: '식비를 집밥으로만 해결', emoji: '🍳' },
+  { id: 'no-shopping', title: '쇼핑 금지 챌린지', desc: '온라인 쇼핑 0원 7일', emoji: '🛒' },
 ];
 
-export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, refreshToken = 0 }: Props) {
+export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0 }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const initialLoaded = React.useRef(false);
@@ -111,74 +83,9 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
 
   const [selectedReceiptEntry, setSelectedReceiptEntry] = useState<EntryWithReactions | null>(null);
 
-  // 🎴 짠물 밸런스 게임 상태 (날짜별 localStorage persist — 같은 날 새로고침 시 재투표 방지)
-  const [balanceIndex, setBalanceIndex] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem('savelog_balance_idx_' + getTodayStr());
-      return saved ? parseInt(saved, 10) : 0;
-    } catch {
-      return 0;
-    }
-  });
-  const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(() => {
-    try {
-      const todayStr = getTodayStr();
-      const idxStr = localStorage.getItem('savelog_balance_idx_' + todayStr);
-      const idx = idxStr ? parseInt(idxStr, 10) : 0;
-      const s = localStorage.getItem(`savelog_balance_voted_${todayStr}_${idx}`);
-      return (s === 'over' || s === 'ok') ? s : null;
-    } catch { return null; }
-  });
-  const balanceVotingRef = React.useRef(false);
-  const balanceDateRef = React.useRef(getTodayStr());
-  const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(() => {
-    try {
-      const todayStr = getTodayStr();
-      const idxStr = localStorage.getItem('savelog_balance_idx_' + todayStr);
-      const idx = idxStr ? parseInt(idxStr, 10) : 0;
-      const voted = localStorage.getItem(`savelog_balance_voted_${todayStr}_${idx}`);
-      if (!voted) return null;
-      // 투표 시 저장한 stats 우선 로드 (재로드 시 % 수치 일관성 보장)
-      const savedStats = localStorage.getItem(`savelog_balance_stats_${todayStr}_${idx}`);
-      if (savedStats) {
-        const parsed = JSON.parse(savedStats) as { over: number; ok: number };
-        if (typeof parsed.over === 'number' && typeof parsed.ok === 'number') return parsed;
-      }
-      // fallback: hash 기반 결정론적 값
-      const hash = (todayStr + idx).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
-      const overPct = 65 + Math.abs(hash) % 20;
-      return { over: overPct, ok: 100 - overPct };
-    } catch { return null; }
-  });
-
   const myPersonaKey = getPersona();
 
   useEffect(() => {
-    // 날짜가 바뀌면 밸런스 게임 상태를 오늘 날짜 기준으로 초기화 (자정 넘어 앱이 열려있을 때 대비)
-    const today = getTodayStr();
-    if (balanceDateRef.current !== today) {
-      balanceDateRef.current = today;
-      try {
-        const savedIdx = localStorage.getItem('savelog_balance_idx_' + today);
-        const newIdx = savedIdx ? parseInt(savedIdx, 10) : 0;
-        const votedRaw = localStorage.getItem(`savelog_balance_voted_${today}_${newIdx}`);
-        const newVoted = (votedRaw === 'over' || votedRaw === 'ok') ? votedRaw as 'over' | 'ok' : null;
-        let newStats: { over: number; ok: number } | null = null;
-        if (newVoted) {
-          const raw = localStorage.getItem(`savelog_balance_stats_${today}_${newIdx}`);
-          if (raw) {
-            try {
-              const parsed = JSON.parse(raw) as { over: number; ok: number };
-              if (typeof parsed.over === 'number' && typeof parsed.ok === 'number') newStats = parsed;
-            } catch { /* ignore */ }
-          }
-        }
-        setBalanceIndex(newIdx);
-        setBalanceVoted(newVoted);
-        setBalanceStats(newStats);
-        balanceVotingRef.current = false;
-      } catch { /* ignore */ }
-    }
     // 최초 로드는 스켈레톤 표시, 이후 refreshToken/userId 변경은 현재 로드 상태에 따라 갱신
     // userId는 anonymousKey 발급 시 변경될 수 있어 my_reaction 정합성을 위해 포함
     load(initialLoaded.current);
@@ -421,190 +328,10 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
         ))}
       </div>
 
-      {/* 🎴 짠물 밸런스 게임 (Tinder Swipe Widget) */}
-      <div className="glass-card balance-game-card" style={{ margin: '0 0 4px 0', padding: 18, border: '1px solid rgba(255,255,255,0.08)', background: 'linear-gradient(135deg, rgba(255,255,255,0.03) 0%, rgba(255,255,255,0.01) 100%)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.05)', paddingBottom: 8 }}>
-          <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 5 }}>
-            🎴 짠물 밸런스 게임
-          </span>
-          <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
-            {balanceIndex < MOCK_BALANCE_CARDS.length ? `${balanceIndex + 1} / ${MOCK_BALANCE_CARDS.length}` : '완료 🏆'}
-          </span>
-        </div>
-
-        {balanceIndex < MOCK_BALANCE_CARDS.length ? (() => {
-          const card = MOCK_BALANCE_CARDS[balanceIndex];
-          return (
-            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', textAlign: 'center' }}>
-              <span style={{ fontSize: 32, marginBottom: 8, animation: 'floating 3s infinite ease-in-out' }}>{card.emoji}</span>
-              <h4 style={{ margin: '0 0 4px 0', fontSize: 13, color: '#fff', fontWeight: 800, lineHeight: 1.4 }}>
-                {card.nickname}님이 <span style={{ color: '#FF5E62' }}>{card.spent}</span>에 <span style={{ color: '#00F5A0' }}>{formatAmount(card.amount)}</span>을 소비했습니다!
-              </h4>
-              <p style={{ margin: '8px 0 16px 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4, background: 'rgba(255,255,255,0.02)', padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,0.04)' }}>
-                “ {card.description} ”
-              </p>
-
-              {balanceVoted ? (
-                /* 투표 후 결과 바 */
-                <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: 10 }}>
-                  <div style={{ display: 'flex', height: 22, borderRadius: 100, overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div style={{ width: `${balanceStats?.over}%`, background: 'linear-gradient(90deg, #FF5E62, #FF9966)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#fff', transition: 'width 0.4s ease-out' }}>
-                      과소비 {balanceStats?.over}%
-                    </div>
-                    <div style={{ width: `${balanceStats?.ok}%`, background: 'linear-gradient(90deg, #00F5A0, #00D9F5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 9, fontWeight: 900, color: '#090A10', transition: 'width 0.4s ease-out' }}>
-                      합리적 {balanceStats?.ok}%
-                    </div>
-                  </div>
-                  <button
-                    onClick={() => {
-                      const next = balanceIndex + 1;
-                      const todayStr = getTodayStr();
-                      try { localStorage.setItem('savelog_balance_idx_' + todayStr, String(next)); } catch {}
-
-                      // 다음 카드의 기존 투표 여부를 복원하여 중복 포인트 지급 방지
-                      const nextVotedRaw = localStorage.getItem(`savelog_balance_voted_${todayStr}_${next}`);
-                      const nextVoted = (nextVotedRaw === 'over' || nextVotedRaw === 'ok') ? nextVotedRaw : null;
-                      let nextStats: { over: number; ok: number } | null = null;
-                      if (nextVoted) {
-                        try {
-                          const raw = localStorage.getItem(`savelog_balance_stats_${todayStr}_${next}`);
-                          if (raw) {
-                            const parsed = JSON.parse(raw) as { over: number; ok: number };
-                            if (typeof parsed.over === 'number' && typeof parsed.ok === 'number') nextStats = parsed;
-                          }
-                        } catch {}
-                        if (!nextStats) {
-                          const hash = (todayStr + next).split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
-                          const overPct = 65 + Math.abs(hash) % 20;
-                          nextStats = { over: overPct, ok: 100 - overPct };
-                        }
-                      }
-
-                      setBalanceIndex(next);
-                      setBalanceVoted(nextVoted);
-                      setBalanceStats(nextStats);
-                      balanceVotingRef.current = nextVoted !== null;
-                    }}
-                    style={{
-                      width: '100%',
-                      padding: '12px 0',
-                      borderRadius: 12,
-                      background: 'rgba(255,255,255,0.08)',
-                      border: '1px solid rgba(255,255,255,0.1)',
-                      color: '#fff',
-                      fontSize: 12,
-                      fontWeight: 800,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    다음 지출 판정하기 →
-                  </button>
-                </div>
-              ) : (
-                /* 투표 전 버튼 */
-                <div style={{ display: 'flex', gap: 10, width: '100%' }}>
-                  <button
-                    onClick={(e) => {
-                      if (balanceVotingRef.current) return;
-                      balanceVotingRef.current = true;
-                      const overPct = 65 + Math.floor(Math.random() * 20);
-                      const overStats = { over: overPct, ok: 100 - overPct };
-                      setBalanceStats(overStats);
-                      setBalanceVoted('over');
-                      try {
-                        localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'over');
-                        localStorage.setItem(`savelog_balance_stats_${getTodayStr()}_${balanceIndex}`, JSON.stringify(overStats));
-                      } catch {}
-                      onEarnPending?.(1);
-                      showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
-
-                      // spawn emoji particles
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const fakeEvent = {
-                        currentTarget: {
-                          getBoundingClientRect: () => rect
-                        }
-                      } as unknown as React.MouseEvent<HTMLButtonElement>;
-                      spawnParticles('💸', fakeEvent);
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: '12px 0',
-                      borderRadius: 100,
-                      border: 'none',
-                      background: 'rgba(255, 77, 79, 0.15)',
-                      color: '#FF4D4F',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 10px rgba(255, 77, 79, 0.05)',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    과소비 💸
-                  </button>
-
-                  <button
-                    onClick={(e) => {
-                      if (balanceVotingRef.current) return;
-                      balanceVotingRef.current = true;
-                      const okPct = 60 + Math.floor(Math.random() * 25);
-                      const okStats = { over: 100 - okPct, ok: okPct };
-                      setBalanceStats(okStats);
-                      setBalanceVoted('ok');
-                      try {
-                        localStorage.setItem(`savelog_balance_voted_${getTodayStr()}_${balanceIndex}`, 'ok');
-                        localStorage.setItem(`savelog_balance_stats_${getTodayStr()}_${balanceIndex}`, JSON.stringify(okStats));
-                      } catch {}
-                      onEarnPending?.(1);
-                      showFeedToast('⚖️ +1원 대기 중 (광고 보고 받기)');
-
-                      // spawn emoji particles
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      const fakeEvent = {
-                        currentTarget: {
-                          getBoundingClientRect: () => rect
-                        }
-                      } as unknown as React.MouseEvent<HTMLButtonElement>;
-                      spawnParticles('🌿', fakeEvent);
-                    }}
-                    style={{
-                      flex: 1,
-                      padding: '12px 0',
-                      borderRadius: 100,
-                      border: 'none',
-                      background: 'rgba(0, 245, 160, 0.15)',
-                      color: '#00F5A0',
-                      fontSize: 12,
-                      fontWeight: 900,
-                      cursor: 'pointer',
-                      boxShadow: '0 4px 10px rgba(0, 245, 160, 0.05)',
-                      transition: 'all 0.2s'
-                    }}
-                  >
-                    합리적 🌿
-                  </button>
-                </div>
-              )}
-            </div>
-          );
-        })() : (
-          <div style={{ textAlign: 'center', padding: '12px 0' }}>
-            <span style={{ fontSize: 28, animation: 'floating 4s infinite ease-in-out', display: 'inline-block' }}>🏆</span>
-            <h4 style={{ margin: '8px 0 2px 0', fontSize: 13, color: 'var(--primary)', fontWeight: 900 }}>오늘의 밸런스 완료!</h4>
-            <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)' }}>내일 더 핫한 과소비 의심 영수증이 도착합니다.</p>
-          </div>
-        )}
-      </div>
-
       {/* 💪 이번 주 그룹 챌린지 */}
       <div className="glass-card" style={{ margin: '4px 0', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
+        <div style={{ marginBottom: 10 }}>
           <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>💪 이번 주 그룹 챌린지</span>
-          <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
-            {weekChallenge.participants + (activeChallenge === weekChallenge.id ? 1 : 0)}명 참여 중
-          </span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <span style={{ fontSize: 26, flexShrink: 0 }}>{weekChallenge.emoji}</span>

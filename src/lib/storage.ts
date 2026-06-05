@@ -264,31 +264,7 @@ const MESSAGES_KEY = 'savelog_user_messages';
 export function getCheeringMessages(): CheeringMessage[] {
   try {
     const raw = localStorage.getItem(MESSAGES_KEY);
-    if (!raw) {
-      // Seed initial mock messages so the mailbox is not empty on start
-      const seed: CheeringMessage[] = [
-        {
-          id: 'seed-1',
-          senderNickname: '시발비용맨',
-          senderPersonaEmoji: '🔥',
-          senderPersonaColor: '#FF7A00',
-          text: '회원님의 무지출 기록에 깊은 감명을 받아서 저도 오늘 스타벅스 패스했습니다! 화이팅! ☕🔥',
-          timestamp: '1시간 전',
-          recipientNickname: '나'
-        },
-        {
-          id: 'seed-2',
-          senderNickname: '자린고비 햄스터',
-          senderPersonaEmoji: '🐹',
-          senderPersonaColor: '#FF9500',
-          text: '점심 학식으로 대충 퉁치다니 엄청난 내공이십니다 ㄷㄷ 이번 주 절약왕 1위 달리시죠!',
-          timestamp: '어제',
-          recipientNickname: '나'
-        }
-      ];
-      localStorage.setItem(MESSAGES_KEY, JSON.stringify(seed));
-      return seed;
-    }
+    if (!raw) return [];
     return JSON.parse(raw) as CheeringMessage[];
   } catch {
     return [];
@@ -452,9 +428,6 @@ export function cleanupStaleKeys(): void {
       const dateStr =
         key.startsWith('savelog_mission_completed_') ? key.slice('savelog_mission_completed_'.length)
         : key.startsWith('savelog_recorded_date_') ? key.slice('savelog_recorded_date_'.length)
-        : key.startsWith('savelog_balance_idx_') ? key.slice('savelog_balance_idx_'.length)
-        : key.startsWith('savelog_balance_voted_') ? key.slice('savelog_balance_voted_'.length, 'savelog_balance_voted_'.length + 10)
-        : key.startsWith('savelog_balance_stats_') ? key.slice('savelog_balance_stats_'.length, 'savelog_balance_stats_'.length + 10)
         : null;
       if (dateStr && new Date(dateStr + 'T00:00:00') < cutoff) { toRemove.push(key); continue; }
       if (key.startsWith('savelog_rank_claimed_')) {
