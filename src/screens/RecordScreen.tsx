@@ -25,10 +25,10 @@ interface Props {
 
 export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
   const [items, setItems] = useState<SpendingItem[]>([]);
-  const [showForm, setShowForm] = useState(true);
   const [selCat, setSelCat] = useState(CATEGORIES[0]);
   const [amountStr, setAmountStr] = useState('');
   const [comment, setComment] = useState('');
+  const [dailyNote, setDailyNote] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [showZeroNote, setShowZeroNote] = useState(false);
@@ -39,7 +39,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
   function addItem() {
     const amount = parseInt(amountStr.replace(/,/g, '')) || 0;
     if (amount < 0) return;
-    // 0원 항목은 메모가 있을 때만 허용 (버튼 disabled 조건과 일치)
     if (amount === 0 && !comment.trim()) return;
     setItems((prev) => [
       ...prev,
@@ -47,13 +46,10 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
     ]);
     setAmountStr('');
     setComment('');
-    setShowForm(false);
   }
 
   function removeItem(idx: number) {
     setItems((prev) => prev.filter((_, i) => i !== idx));
-    // 마지막 항목을 삭제하면 폼을 다시 열어서 바로 입력할 수 있게 함
-    if (items.length === 1) setShowForm(true);
   }
 
   function handleAmountChange(val: string) {
@@ -87,9 +83,10 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
 
   async function handleSubmit() {
     if (items.length === 0) return;
-    // 폼에 금액을 입력했지만 "항목 추가"를 누르지 않은 경우 자동으로 추가
+    if (dailyNote.trim().length < 5) return;
+    // 금액을 입력했지만 "항목 추가"를 누르지 않은 경우 자동으로 추가
     let finalItems = items;
-    if (showForm && amountStr) {
+    if (amountStr) {
       const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
       if (amount > 0 || (amount === 0 && comment.trim())) {
         const autoItem = { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() };
@@ -97,10 +94,14 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
         setItems(finalItems);
         setAmountStr('');
         setComment('');
-        setShowForm(false);
       }
     }
-    await onSubmit(finalItems, image || undefined);
+    // 오늘 한마디를 특수 항목으로 앞에 추가
+    const withNote: SpendingItem[] = [
+      { category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() },
+      ...finalItems,
+    ];
+    await onSubmit(withNote, image || undefined);
   }
 
   return (
@@ -208,7 +209,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
           )}
 
           {/* 항목 추가 폼 — zero-note 모드일 때 숨김 */}
-          {!showZeroNote && (showForm ? (
+          {!showZeroNote && (
             <div className="item-form">
               <p className="form-label">카테고리</p>
               <div className="cat-grid">
@@ -244,14 +245,41 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
               />
 
               <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr || (amountStr === '0' && !comment.trim())}>
-                항목 추가
+                {items.length > 0 ? '+ 항목 추가' : '항목 추가'}
               </Button>
             </div>
-          ) : (
-            <button className="add-more-btn" onClick={() => setShowForm(true)}>
-              + 항목 추가하기
-            </button>
-          ))}
+          )}
+
+          {/* 오늘 한마디 (항목이 1개 이상일 때 표시) */}
+          {items.length > 0 && !showZeroNote && (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+              <p className="form-label" style={{ margin: 0 }}>오늘 한마디 <span style={{ color: 'var(--primary)', fontWeight: 900 }}>*</span></p>
+              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4 }}>오늘 지출에 대한 한 줄 일기를 남겨요. 피드에 공유됩니다.</p>
+              <textarea
+                value={dailyNote}
+                onChange={e => setDailyNote(e.target.value)}
+                placeholder="예) 친구 생일이라 어쩔 수 없었어... 다음엔 아껴야지 😅"
+                maxLength={80}
+                rows={2}
+                style={{
+                  width: '100%',
+                  boxSizing: 'border-box',
+                  background: 'rgba(255,255,255,0.06)',
+                  border: `1px solid ${dailyNote.trim().length >= 5 ? 'var(--primary)' : 'rgba(255,255,255,0.12)'}`,
+                  borderRadius: 10,
+                  color: '#fff',
+                  fontSize: 13,
+                  padding: '10px 12px',
+                  resize: 'none',
+                  outline: 'none',
+                  lineHeight: 1.6,
+                  fontFamily: 'inherit',
+                  transition: 'border-color 0.2s',
+                }}
+              />
+              <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{dailyNote.length}/80 · 5자 이상 입력</p>
+            </div>
+          )}
 
           {/* 이미지 업로드 영역 */}
           <div className="image-upload-section">
@@ -324,16 +352,22 @@ export default function RecordScreen({ onSubmit, onClose, submitting }: Props) {
           {items.length === 0 && !showZeroNote ? (
             <p className="submit-hint">항목을 1개 이상 추가해 주세요</p>
           ) : items.length > 0 ? (
-            <Button
-              size="xlarge"
-              display="full"
-              color="primary"
-              variant="fill"
-              onClick={handleSubmit}
-              loading={submitting}
-            >
-              {submitting ? '저장 중...' : `오늘 기록 완료 🌿`}
-            </Button>
+            <>
+              {dailyNote.trim().length < 5 && (
+                <p className="submit-hint" style={{ marginBottom: 8 }}>오늘 한마디를 5자 이상 입력해 주세요</p>
+              )}
+              <Button
+                size="xlarge"
+                display="full"
+                color="primary"
+                variant="fill"
+                onClick={handleSubmit}
+                loading={submitting}
+                disabled={dailyNote.trim().length < 5}
+              >
+                {submitting ? '저장 중...' : `오늘 기록 완료 🌿`}
+              </Button>
+            </>
           ) : null}
         </div>
       </div>

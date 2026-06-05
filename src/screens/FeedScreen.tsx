@@ -659,9 +659,16 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                   </div>
                 </div>
 
+                {/* 오늘 한마디 (💬 한마디 특수 항목) */}
+                {entry.items.filter(it => it.category === '한마디').map((it, i) => (
+                  <p key={i} style={{ margin: '4px 0 8px 0', fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5, fontStyle: 'italic', paddingLeft: 4, borderLeft: '2px solid var(--primary)' }}>
+                    💬 {it.comment}
+                  </p>
+                ))}
+
                 {/* 지출 항목 */}
                 <div className="feed-items">
-                  {entry.items.map((item, i) => (
+                  {entry.items.filter(it => it.category !== '한마디').map((item, i) => (
                     <div key={i} className="feed-item">
                       <span className="feed-item-emoji">{item.emoji}</span>
                       <div className="feed-item-info">
