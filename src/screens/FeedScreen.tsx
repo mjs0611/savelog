@@ -1,9 +1,9 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import type { EntryWithReactions } from '../lib/supabase';
-import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, type BalanceEntry } from '../lib/supabase';
+import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, type BalanceEntry } from '../lib/supabase';
 import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
-import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification, getFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
+import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification, getFollowedUsers, saveFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
 
 interface Props {
   userId: string;
@@ -100,6 +100,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   useEffect(() => {
     // 밸런스 게임은 userId 변경 시에만 리셋 (피드 새로고침마다 리셋되지 않도록)
     loadBalanceEntry();
+    // Supabase에서 팔로우 목록 동기화 (로컬캐시 덮어쓰기)
+    fetchFollows(userId).then((remote) => {
+      saveFollowedUsers(remote);
+      setFollowedUsers(remote);
+    }).catch(() => {/* 오류 시 로컬캐시 유지 */});
   }, [userId]);
 
   async function loadBalanceEntry() {
@@ -283,9 +288,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   }
 
   function handleToggleFollow(entry: EntryWithReactions) {
+    // 낙관적 로컬 업데이트
     const nowFollowing = toggleFollow(entry.user_id, entry.nickname || '');
     setFollowedUsers(getFollowedUsers());
     showFeedToast(nowFollowing ? `${entry.nickname}님을 팔로우했어요 👥` : `${entry.nickname}님 팔로우 해제`);
+    // Supabase 동기화 (best-effort, 실패해도 로컬 상태 유지)
+    toggleFollowSupabase(userId, entry.user_id, entry.nickname || '').catch(() => {});
   }
 
   function handleToggleChallenge(id: string) {

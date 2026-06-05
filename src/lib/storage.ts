@@ -369,6 +369,10 @@ export function getFollowedUsers(): Record<string, string> {
   try { return JSON.parse(localStorage.getItem(FOLLOW_KEY) ?? '{}'); } catch { return {}; }
 }
 
+export function saveFollowedUsers(follows: Record<string, string>): void {
+  try { localStorage.setItem(FOLLOW_KEY, JSON.stringify(follows)); } catch {}
+}
+
 export function toggleFollow(userId: string, nickname: string): boolean {
   const current = getFollowedUsers();
   if (current[userId]) {

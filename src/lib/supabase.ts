@@ -266,6 +266,42 @@ export async function submitBalanceVote(
   };
 }
 
+// ── Follow ────────────────────────────────────────────────────────────────────
+
+export async function fetchFollows(userId: string): Promise<Record<string, string>> {
+  if (!supabase) return {};
+  const { data, error } = await supabase
+    .from('follows')
+    .select('followed_id, followed_nickname')
+    .eq('follower_id', userId);
+  if (error || !data) return {};
+  return Object.fromEntries(
+    (data as { followed_id: string; followed_nickname: string }[]).map(r => [r.followed_id, r.followed_nickname])
+  );
+}
+
+export async function toggleFollowSupabase(
+  followerId: string,
+  followedId: string,
+  followedNickname: string,
+): Promise<boolean> {
+  if (!supabase) return false;
+  const { data: existing } = await supabase
+    .from('follows')
+    .select('id')
+    .eq('follower_id', followerId)
+    .eq('followed_id', followedId)
+    .maybeSingle();
+
+  if (existing) {
+    await supabase.from('follows').delete().eq('id', (existing as { id: string }).id);
+    return false;
+  } else {
+    await supabase.from('follows').insert({ follower_id: followerId, followed_id: followedId, followed_nickname: followedNickname });
+    return true;
+  }
+}
+
 export async function fetchMyWeekEntries(userId: string, weekKey: string): Promise<Entry[] | null> {
   if (!supabase) return [];
 
