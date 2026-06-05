@@ -199,25 +199,24 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
       setEntries(data);
 
       // 현재 피드에 없는 엔트리의 댓글 및 콕 찌르기를 localStorage에서 정리
-      if (data.length > 0) {
-        const validIds = new Set(data.map((e) => e.id));
-        setLocalComments((prev) => {
-          const pruned = Object.fromEntries(
-            Object.entries(prev).filter(([id]) => validIds.has(id))
-          );
-          if (Object.keys(pruned).length < Object.keys(prev).length) {
-            localStorage.setItem('feed_comments', JSON.stringify(pruned));
-          }
-          return pruned;
-        });
-        setPokedEntries((prev) => {
-          const cleaned = new Set([...prev].filter((id) => validIds.has(id)));
-          if (cleaned.size !== prev.size) {
-            try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...cleaned])); } catch {}
-          }
-          return cleaned;
-        });
-      }
+      // data가 빈 배열이어도 정리 실행 (validIds가 빈 Set이면 고아 키 전체 제거)
+      const validIds = new Set(data.map((e) => e.id));
+      setLocalComments((prev) => {
+        const pruned = Object.fromEntries(
+          Object.entries(prev).filter(([id]) => validIds.has(id))
+        );
+        if (Object.keys(pruned).length < Object.keys(prev).length) {
+          localStorage.setItem('feed_comments', JSON.stringify(pruned));
+        }
+        return pruned;
+      });
+      setPokedEntries((prev) => {
+        const cleaned = new Set([...prev].filter((id) => validIds.has(id)));
+        if (cleaned.size !== prev.size) {
+          try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...cleaned])); } catch {}
+        }
+        return cleaned;
+      });
     } catch {
       if (loadId !== loadIdRef.current) return;
       setLoadFailed(true);
@@ -828,20 +827,22 @@ export default function FeedScreen({ userId, onEarnPending, onGrantFeedReward, r
                       {pokedEntries.has(entry.id) ? '콕 찌름 ✓' : isZeroSpend ? '칭찬 ⚡' : '일침 ⚡'}
                     </button>
 
-                    <button
-                      className="reaction-btn"
-                      onClick={() => setSelectedReceiptEntry(entry)}
-                      style={{
-                        borderColor: 'rgba(0, 245, 160, 0.08)',
-                        background: 'rgba(0, 245, 160, 0.03)',
-                        color: '#00F5A0',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      🧾 영수증
-                    </button>
+                    {!isMilestone && (
+                      <button
+                        className="reaction-btn"
+                        onClick={() => setSelectedReceiptEntry(entry)}
+                        style={{
+                          borderColor: 'rgba(0, 245, 160, 0.08)',
+                          background: 'rgba(0, 245, 160, 0.03)',
+                          color: '#00F5A0',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: 4
+                        }}
+                      >
+                        🧾 영수증
+                      </button>
+                    )}
 
                     <button
                       className="reaction-btn"
