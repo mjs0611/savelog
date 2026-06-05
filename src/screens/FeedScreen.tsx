@@ -417,9 +417,14 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           if (balanceVotingRef.current) return;
                           balanceVotingRef.current = true;
                           setBalanceVoted(v);
-                          const stats = await submitBalanceVote(entry.id, userId, v);
-                          setBalanceStats(stats);
-                          balanceVotingRef.current = false;
+                          try {
+                            const stats = await submitBalanceVote(entry.id, userId, v);
+                            setBalanceStats(stats);
+                          } catch {
+                            setBalanceStats({ over: 50, ok: 50 });
+                          } finally {
+                            balanceVotingRef.current = false;
+                          }
                         }}
                         style={{
                           flex: 1,
