@@ -543,9 +543,20 @@ input { font: inherit; outline: none; border: none; }
 .feed-item-amount { font-size: 13px; font-weight: 800; color: var(--text-main); }
 .feed-item-amount--zero { color: var(--zero); }
 
+/* ── 액션 행 (반응 + 아이콘 버튼) ─────────────────────────────────────────── */
+.feed-actions-row { display: flex; align-items: center; justify-content: space-between; border-top: 1px solid var(--divider); padding-top: 10px; }
+.feed-reactions-group { display: flex; gap: 6px; }
+.feed-actions-group { display: flex; gap: 6px; align-items: center; }
+.action-icon-btn { width: 34px; height: 34px; display: flex; align-items: center; justify-content: center; border-radius: 50%; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.07); font-size: 16px; cursor: pointer; transition: all 0.18s; flex-shrink: 0; color: var(--text-sub); font-weight: 800; }
+.action-icon-btn:active { transform: scale(0.88); }
+.action-icon-btn:disabled { opacity: 0.35; cursor: default; }
+.action-icon-btn--done { opacity: 0.35; font-size: 13px; }
+.action-icon-btn--praise { color: #00F5A0; border-color: rgba(0,245,160,0.25); background: rgba(0,245,160,0.06); }
+.action-icon-btn--warn { color: #FF4D4F; border-color: rgba(255,77,79,0.25); background: rgba(255,77,79,0.06); }
+.action-icon-btn--receipt { color: #00F5A0; border-color: rgba(0,245,160,0.12); background: rgba(0,245,160,0.04); }
+.action-icon-btn--following { color: var(--primary); border-color: rgba(0,245,160,0.35); background: rgba(0,245,160,0.09); }
+
 /* Reactions as modern pill tags */
-.feed-reactions { display: flex; gap: 8px; border-top: 1px solid var(--divider); padding-top: 12px; overflow-x: auto; scrollbar-width: none; }
-.feed-reactions::-webkit-scrollbar { display: none; }
 .reaction-btn {
   display: flex;
   align-items: center;
@@ -1198,30 +1209,23 @@ input { font: inherit; outline: none; border: none; }
   border: 1.5px solid rgba(255, 69, 58, 0.3);
 }
 
-/* ── 한마디 퀵 코멘트 칩 및 댓글창 ────────────────────────────────────────── */
-.feed-comment-chips-container {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-  margin-top: 12px;
-  padding-top: 12px;
-  border-top: 1px solid rgba(255, 255, 255, 0.05);
-}
-.comment-chips-label {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-mute);
-  text-align: left;
-}
-.comment-chips-scroll {
-  display: flex;
-  gap: 8px;
-  overflow-x: auto;
-  scrollbar-width: none;
-}
-.comment-chips-scroll::-webkit-scrollbar {
-  display: none;
-}
+/* ── SNS 스레드 스타일 댓글 영역 ────────────────────────────────────────────── */
+.feed-thread-section { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
+.feed-thread-list { display: flex; flex-direction: column; gap: 8px; }
+.feed-thread-row { display: flex; align-items: flex-start; gap: 8px; }
+.feed-thread-avatar { width: 22px; height: 22px; border-radius: 50%; background: rgba(0,245,160,0.12); color: var(--primary); font-size: 10px; font-weight: 900; display: flex; align-items: center; justify-content: center; flex-shrink: 0; }
+.feed-thread-content { display: flex; gap: 5px; flex-wrap: wrap; line-height: 1.5; align-items: baseline; }
+.feed-thread-name { font-size: 11px; font-weight: 800; color: var(--text-main); flex-shrink: 0; }
+.feed-thread-text { font-size: 12px; color: var(--text-sub); }
+.feed-thread-more { font-size: 11px; color: var(--text-mute); font-weight: 700; background: none; border: none; padding: 0 0 0 30px; cursor: pointer; text-align: left; }
+.feed-thread-chips { display: flex; gap: 6px; overflow-x: auto; scrollbar-width: none; }
+.feed-thread-chips::-webkit-scrollbar { display: none; }
+.feed-thread-input-row { display: flex; gap: 8px; align-items: center; }
+.feed-thread-input { flex: 1; padding: 7px 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08); border-radius: 100px; color: var(--text-main); font-size: 12px; outline: none; font-family: inherit; }
+.feed-thread-submit { padding: 7px 14px; border-radius: 100px; border: none; background: rgba(255,255,255,0.06); color: var(--text-mute); font-size: 11px; font-weight: 900; cursor: pointer; flex-shrink: 0; }
+.feed-thread-submit:not(:disabled) { background: var(--primary); color: #090A10; }
+
+/* ── 퀵 코멘트 칩 ────────────────────────────────────────────────────────── */
 .comment-chip-btn {
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);

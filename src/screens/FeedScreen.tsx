@@ -57,6 +57,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
   // 자유 텍스트 댓글 입력 상태 (엔트리별)
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
+  // 댓글 스레드 펼침 상태 (2개 초과 시)
+  const [commentExpanded, setCommentExpanded] = useState<Record<string, boolean>>({});
 
   // 그룹 챌린지 참여 상태
   const [activeChallenge, setActiveChallenge] = useState<string | null>(() => getActiveChallengeId());
@@ -640,97 +642,77 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   </div>
                 )}
 
-                {/* 리액션 버튼 */}
+                {/* 리액션 + 액션 버튼 */}
                 {entry.user_id !== userId && (
-                  <div className="feed-reactions">
-                    <button
-                      className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
-                      onClick={(e) => handleReact(entry, 'trust', e)}
-                      disabled={toggling.has(entry.id)}
-                    >
-                      👃 짠내난다 {entry.trust_count > 0 && <span className="reaction-count">{entry.trust_count}</span>}
-                    </button>
-                    <button
-                      className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
-                      onClick={(e) => handleReact(entry, 'doubt', e)}
-                      disabled={toggling.has(entry.id)}
-                    >
-                      🤔 진짜야? {entry.doubt_count > 0 && <span className="reaction-count">{entry.doubt_count}</span>}
-                    </button>
-                    
-                    {/* 콕 찌르기 단축 단추 */}
-                    <button
-                      className="reaction-btn"
-                      disabled={pokedEntries.has(entry.id)}
-                      onClick={(e) => {
-                        if (pokedEntries.has(entry.id)) return;
-                        setPokedEntries(prev => {
-                          const next = new Set(prev).add(entry.id);
-                          try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...next])); } catch {}
-                          return next;
-                        });
-                        spawnParticles('⚡', e);
-                        const myName = getNickname() || '나';
-                        sendPokeNotification(entry.nickname || '익명', myName, myPersonaKey, isZeroSpend);
-                      }}
-                      style={{
-                        borderColor: pokedEntries.has(entry.id) ? 'rgba(255,255,255,0.08)' : isZeroSpend ? 'rgba(0, 245, 160, 0.2)' : 'rgba(255, 77, 79, 0.2)',
-                        background: pokedEntries.has(entry.id) ? 'rgba(255,255,255,0.03)' : isZeroSpend ? 'rgba(0, 245, 160, 0.05)' : 'rgba(255, 77, 79, 0.05)',
-                        color: pokedEntries.has(entry.id) ? 'var(--text-mute)' : isZeroSpend ? '#00F5A0' : '#FF4D4F',
-                        fontWeight: 800,
-                        cursor: pokedEntries.has(entry.id) ? 'default' : 'pointer',
-                      }}
-                    >
-                      {pokedEntries.has(entry.id) ? '콕 찌름 ✓' : isZeroSpend ? '칭찬 ⚡' : '일침 ⚡'}
-                    </button>
-
-                    {!isMilestone && (
+                  <div className="feed-actions-row">
+                    {/* 왼쪽: 감정 리액션 */}
+                    <div className="feed-reactions-group">
                       <button
-                        className="reaction-btn"
-                        onClick={() => setSelectedReceiptEntry(entry)}
-                        style={{
-                          borderColor: 'rgba(0, 245, 160, 0.08)',
-                          background: 'rgba(0, 245, 160, 0.03)',
-                          color: '#00F5A0',
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: 4
+                        className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
+                        onClick={(e) => handleReact(entry, 'trust', e)}
+                        disabled={toggling.has(entry.id)}
+                      >
+                        👃 {entry.trust_count > 0 && <span className="reaction-count">{entry.trust_count}</span>}
+                      </button>
+                      <button
+                        className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
+                        onClick={(e) => handleReact(entry, 'doubt', e)}
+                        disabled={toggling.has(entry.id)}
+                      >
+                        🤔 {entry.doubt_count > 0 && <span className="reaction-count">{entry.doubt_count}</span>}
+                      </button>
+                    </div>
+
+                    {/* 오른쪽: 아이콘 액션 */}
+                    <div className="feed-actions-group">
+                      {/* 콕 찌르기 */}
+                      <button
+                        className={`action-icon-btn${pokedEntries.has(entry.id) ? ' action-icon-btn--done' : isZeroSpend ? ' action-icon-btn--praise' : ' action-icon-btn--warn'}`}
+                        disabled={pokedEntries.has(entry.id)}
+                        title={pokedEntries.has(entry.id) ? '콕 찌름 완료' : isZeroSpend ? '칭찬 콕!' : '일침 콕!'}
+                        onClick={(e) => {
+                          if (pokedEntries.has(entry.id)) return;
+                          setPokedEntries(prev => {
+                            const next = new Set(prev).add(entry.id);
+                            try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...next])); } catch {}
+                            return next;
+                          });
+                          spawnParticles('⚡', e);
+                          sendPokeNotification(entry.nickname || '익명', getNickname() || '나', myPersonaKey, isZeroSpend);
                         }}
                       >
-                        🧾 영수증
+                        {pokedEntries.has(entry.id) ? '✓' : '⚡'}
                       </button>
-                    )}
 
-                    <button
-                      className="reaction-btn"
-                      onClick={() => {
-                        setMessageRecipientEntry(entry);
-                        setMessageText('');
-                      }}
-                      style={{
-                        borderColor: 'rgba(255, 255, 255, 0.08)',
-                        background: 'rgba(255, 255, 255, 0.03)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      <img src="/images/icon_mailbox.png" className="custom-icon--sm" />
-                      쪽지
-                    </button>
+                      {/* 지출 내역 */}
+                      {!isMilestone && (
+                        <button
+                          className="action-icon-btn action-icon-btn--receipt"
+                          onClick={() => setSelectedReceiptEntry(entry)}
+                          title="지출 내역 보기"
+                        >
+                          🧾
+                        </button>
+                      )}
 
-                    <button
-                      className="reaction-btn"
-                      onClick={() => handleToggleFollow(entry)}
-                      style={{
-                        borderColor: followedUsers[entry.user_id] ? 'rgba(0,245,160,0.3)' : 'rgba(255,255,255,0.08)',
-                        background: followedUsers[entry.user_id] ? 'rgba(0,245,160,0.06)' : 'rgba(255,255,255,0.03)',
-                        color: followedUsers[entry.user_id] ? 'var(--primary)' : 'var(--text-mute)',
-                        fontWeight: 800,
-                      }}
-                    >
-                      {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
-                    </button>
+                      {/* 응원 쪽지 */}
+                      <button
+                        className="action-icon-btn"
+                        title="응원 쪽지 보내기"
+                        onClick={() => { setMessageRecipientEntry(entry); setMessageText(''); }}
+                      >
+                        ✉️
+                      </button>
+
+                      {/* 팔로우 */}
+                      <button
+                        className={`action-icon-btn${followedUsers[entry.user_id] ? ' action-icon-btn--following' : ''}`}
+                        onClick={() => handleToggleFollow(entry)}
+                        title={followedUsers[entry.user_id] ? '팔로잉' : '팔로우'}
+                      >
+                        {followedUsers[entry.user_id] ? '👥' : '👤'}
+                      </button>
+                    </div>
                   </div>
                 )}
 
@@ -741,82 +723,74 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   </div>
                 )}
 
-                {/* 한마디 퀵 코멘트 칩 — 내 게시물/마일스톤에는 표시하지 않음 */}
-                {entry.user_id !== userId && !isMilestone && (
-                  <div className="feed-comment-chips-container">
-                    <span className="comment-chips-label">말 한마디:</span>
-                    <div className="comment-chips-scroll">
-                      {COMMENT_CHIPS.map((cmt) => {
-                        const used = (localComments[entry.id] || []).some(
-                          (c) => c.sender === '나' && c.text === cmt
-                        );
-                        return (
-                          <button
-                            key={cmt}
-                            className={`comment-chip-btn${used ? ' comment-chip-btn--used' : ''}`}
-                            onClick={() => addComment(entry.id, cmt)}
-                            disabled={used}
-                          >
-                            {cmt}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
+                {/* 댓글 스레드 — SNS 스타일 */}
+                {entry.user_id !== userId && !isMilestone && (() => {
+                  const comments = localComments[entry.id] || [];
+                  const isExpanded = !!commentExpanded[entry.id];
+                  const visible = isExpanded ? comments : comments.slice(0, 2);
+                  return (
+                    <div className="feed-thread-section">
+                      {/* 댓글 목록 */}
+                      {comments.length > 0 && (
+                        <div className="feed-thread-list">
+                          {visible.map((c, i) => (
+                            <div key={i} className="feed-thread-row">
+                              <div className="feed-thread-avatar">{c.sender[0] ?? '나'}</div>
+                              <div className="feed-thread-content">
+                                <span className="feed-thread-name">{c.sender}</span>
+                                <span className="feed-thread-text">{c.text}</span>
+                              </div>
+                            </div>
+                          ))}
+                          {comments.length > 2 && !isExpanded && (
+                            <button
+                              className="feed-thread-more"
+                              onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: true }))}
+                            >
+                              댓글 {comments.length - 2}개 더 보기
+                            </button>
+                          )}
+                        </div>
+                      )}
 
-                {/* 자유 텍스트 댓글 입력 */}
-                {entry.user_id !== userId && !isMilestone && (
-                  <div style={{ display: 'flex', gap: 8, marginTop: 8, alignItems: 'center' }}>
-                    <input
-                      type="text"
-                      value={commentInputs[entry.id] || ''}
-                      onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
-                      onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
-                      placeholder="한 줄 댓글 달기..."
-                      style={{
-                        flex: 1,
-                        padding: '7px 12px',
-                        background: 'rgba(255,255,255,0.04)',
-                        border: '1px solid rgba(255,255,255,0.08)',
-                        borderRadius: 100,
-                        color: 'var(--text-main)',
-                        fontSize: 12,
-                        outline: 'none',
-                        fontFamily: 'inherit',
-                      }}
-                    />
-                    <button
-                      onClick={() => submitCommentInput(entry.id)}
-                      disabled={!(commentInputs[entry.id] || '').trim()}
-                      style={{
-                        padding: '7px 14px',
-                        borderRadius: 100,
-                        border: 'none',
-                        background: (commentInputs[entry.id] || '').trim() ? 'var(--primary)' : 'rgba(255,255,255,0.06)',
-                        color: (commentInputs[entry.id] || '').trim() ? '#090A10' : 'var(--text-mute)',
-                        fontSize: 11,
-                        fontWeight: 900,
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                      }}
-                    >
-                      전송
-                    </button>
-                  </div>
-                )}
-
-                {/* 한마디 코멘트 목록 */}
-                {(localComments[entry.id] || []).length > 0 && (
-                  <div className="feed-comments-box">
-                    {(localComments[entry.id] || []).map((c, i) => (
-                      <div key={i} className="feed-comment-row">
-                        <span className="feed-comment-sender">{c.sender}</span>
-                        <span className="feed-comment-text">{c.text}</span>
+                      {/* 퀵 칩 */}
+                      <div className="feed-thread-chips">
+                        {COMMENT_CHIPS.map((cmt) => {
+                          const used = comments.some(c => c.sender === '나' && c.text === cmt);
+                          return (
+                            <button
+                              key={cmt}
+                              className={`comment-chip-btn${used ? ' comment-chip-btn--used' : ''}`}
+                              onClick={() => addComment(entry.id, cmt)}
+                              disabled={used}
+                            >
+                              {cmt}
+                            </button>
+                          );
+                        })}
                       </div>
-                    ))}
-                  </div>
-                )}
+
+                      {/* 댓글 직접 입력 */}
+                      <div className="feed-thread-input-row">
+                        <input
+                          type="text"
+                          value={commentInputs[entry.id] || ''}
+                          onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
+                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
+                          placeholder="댓글 달기..."
+                          className="feed-thread-input"
+                        />
+                        <button
+                          onClick={() => submitCommentInput(entry.id)}
+                          disabled={!(commentInputs[entry.id] || '').trim()}
+                          className="feed-thread-submit"
+                        >
+                          게시
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             );
           })}
