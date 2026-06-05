@@ -115,8 +115,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
         </div>
 
         <div className="modal-body">
-          {/* 오늘 지출 없음 (무지출 인증) */}
-          {items.length === 0 && !showZeroNote && (
+          {/* 오늘 지출 없음 (무지출 인증) — 추가 기록 모드에서는 숨김 */}
+          {items.length === 0 && !showZeroNote && !isAdditional && (
             <button
               className="no-spend-quick-btn"
               disabled={submitting}
@@ -139,8 +139,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
             </button>
           )}
 
-          {/* 무지출 한마디 입력 */}
-          {items.length === 0 && showZeroNote && (
+          {/* 무지출 한마디 입력 — 추가 기록 모드에서는 숨김 */}
+          {items.length === 0 && showZeroNote && !isAdditional && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.06), rgba(0, 245, 160, 0.02))', border: '1.5px dashed var(--primary)', borderRadius: 'var(--radius-md)' }}>
               <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>🌿 무지출 인증</p>
               <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.5 }}>오늘 어떻게 무지출을 달성했나요? 피드에 공유돼요.</p>
