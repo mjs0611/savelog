@@ -426,7 +426,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             case 2:
               return {
                 title: "2. 짠친 피드에서 밸런스 게임 즐기기 🎴",
-                desc: "피드 탭으로 이동하면 짠친들의 영수증을 보고 '과소비' vs '합리적 지출' 투표를 하거나, 반응·콕 찌르기로 지속적으로 소통할 수 있습니다.",
+                desc: "피드 탭으로 이동하면 짠친들의 지출을 보고 '과소비' vs '합리적 지출' 투표를 하거나, ❤️·🤔 리액션으로 소통하고 팔로우할 수 있습니다.",
                 icon: "🎴",
                 targetId: null
               };
