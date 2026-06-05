@@ -294,31 +294,6 @@ export function sendCheeringMessage(recipientNickname: string, text: string, sen
   }
 }
 
-export function sendPokeNotification(recipientNickname: string, senderNickname: string, senderPersonaKey: string | null, isPraise: boolean): void {
-  try {
-    const currentMessages = getCheeringMessages();
-    const p = senderPersonaKey ? PERSONAS[senderPersonaKey] : null;
-    const text = isPraise
-      ? `오늘 무지출 기록에 칭찬 콕! 찌르기를 보냈습니다. 🎉`
-      : `오늘 지출에 깜짝 일침 콕! 찌르기를 날렸습니다. "우리 절약합시다!" ⚡`;
-      
-    const newMessage: CheeringMessage = {
-      id: crypto.randomUUID(),
-      senderNickname: senderNickname || '익명 절약가',
-      senderPersonaEmoji: p?.emoji || '🐷',
-      senderPersonaColor: p?.color || '#00F5A0',
-      text,
-      timestamp: '방금 전',
-      created_at: new Date().toISOString(),
-      recipientNickname
-    };
-    currentMessages.unshift(newMessage);
-    localStorage.setItem(MESSAGES_KEY, JSON.stringify(currentMessages));
-  } catch (e) {
-    console.error('[sendPokeNotification]', e);
-  }
-}
-
 // ── Pending Points (max 50원, 광고 보고 수령) ────────────────────────────────
 
 const PENDING_KEY = 'savelog_pending_points';

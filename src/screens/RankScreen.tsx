@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
-import { sendPokeNotification, getNickname, getPersona } from '../lib/storage';
+import { sendCheeringMessage, getNickname, getPersona } from '../lib/storage';
 
 interface Props {
   userId: string;
@@ -142,7 +142,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
                     const above = spendGroup[mySpendIdx - 1];
                     const myName = getNickname() || '나';
                     const myPersona = getPersona();
-                    sendPokeNotification(above.nickname, myName, myPersona, false);
+                    sendCheeringMessage(above.nickname, '⚡ 절약 대결을 신청했어요! 이번 주 누가 더 절약하나 같이 도전해봐요 🔥', myName, myPersona);
                     try { localStorage.setItem(`savelog_duel_${weekKey}`, 'true'); } catch {}
                     setDuelSent(true);
                   }}
