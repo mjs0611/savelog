@@ -305,7 +305,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         
         {messages.length === 0 ? (
           <p style={{ fontSize: 13, color: 'var(--text-mute)', textAlign: 'center', padding: '10px 0' }}>
-            받은 응원 쪽지가 없습니다.
+            응원 쪽지 내역이 없어요.
           </p>
         ) : (
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
@@ -341,7 +341,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                         </span>
                       )}
                       <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>
-                        {isSent ? `✉️ ${msg.recipientNickname || '상대방'}님에게 보낸 쪽지` : '익명 응원'}
+                        {isSent ? `✉️ ${msg.recipientNickname || '상대방'}님에게 보낸 쪽지` : '받은 응원'}
                       </span>
                     </div>
                     <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
