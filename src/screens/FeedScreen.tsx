@@ -3,7 +3,7 @@ import { Badge, Button } from '@toss/tds-mobile';
 import type { EntryWithReactions } from '../lib/supabase';
 import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, type BalanceEntry } from '../lib/supabase';
 import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
-import { PERSONAS, getPersona, getNickname, sendCheeringMessage, sendPokeNotification, getFollowedUsers, saveFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
+import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
 
 interface Props {
   userId: string;
@@ -28,14 +28,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   const [loadFailed, setLoadFailed] = useState(false);
   const [toggling, setToggling] = useState<Set<string>>(() => new Set());
   const togglingRef = React.useRef<Set<string>>(new Set());
-  const [pokedEntries, setPokedEntries] = useState<Set<string>>(() => {
-    try {
-      const saved = localStorage.getItem('savelog_poked_entries');
-      return saved ? new Set(JSON.parse(saved) as string[]) : new Set();
-    } catch {
-      return new Set();
-    }
-  });
   // 쪽지 및 하트 인터랙션 관련 상태
   const [messageRecipientEntry, setMessageRecipientEntry] = useState<EntryWithReactions | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -131,7 +123,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       setLoadFailed(false);
       setEntries(data);
 
-      // 현재 피드에 없는 엔트리의 댓글 및 콕 찌르기를 localStorage에서 정리
+      // 현재 피드에 없는 엔트리의 댓글을 localStorage에서 정리
       // data가 빈 배열이어도 정리 실행 (validIds가 빈 Set이면 고아 키 전체 제거)
       const validIds = new Set(data.map((e) => e.id));
       setLocalComments((prev) => {
@@ -142,13 +134,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           localStorage.setItem('feed_comments', JSON.stringify(pruned));
         }
         return pruned;
-      });
-      setPokedEntries((prev) => {
-        const cleaned = new Set([...prev].filter((id) => validIds.has(id)));
-        if (cleaned.size !== prev.size) {
-          try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...cleaned])); } catch {}
-        }
-        return cleaned;
       });
     } catch {
       if (loadId !== loadIdRef.current) return;
@@ -644,7 +629,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 {/* 리액션 카운트 — 정보 표시 라인 (인스타 스타일) */}
                 {entry.user_id !== userId && (entry.trust_count > 0 || entry.doubt_count > 0) && (
                   <div className="feed-reaction-counts">
-                    {entry.trust_count > 0 && <span>👃 {entry.trust_count}명</span>}
+                    {entry.trust_count > 0 && <span>❤️ {entry.trust_count}명</span>}
                     {entry.doubt_count > 0 && <span>🤔 {entry.doubt_count}명</span>}
                   </div>
                 )}
@@ -659,7 +644,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                         onClick={(e) => handleReact(entry, 'trust', e)}
                         disabled={toggling.has(entry.id)}
                       >
-                        👃 짠내난다
+                        ❤️ 짠내난다
                       </button>
                       <button
                         className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
@@ -672,25 +657,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                     {/* 오른쪽: 아이콘 액션 */}
                     <div className="feed-actions-group">
-                      {/* 콕 찌르기 */}
-                      <button
-                        className={`action-icon-btn${pokedEntries.has(entry.id) ? ' action-icon-btn--done' : isZeroSpend ? ' action-icon-btn--praise' : ' action-icon-btn--warn'}`}
-                        disabled={pokedEntries.has(entry.id)}
-                        title={pokedEntries.has(entry.id) ? '콕 찌름 완료' : isZeroSpend ? '칭찬 콕!' : '일침 콕!'}
-                        onClick={(e) => {
-                          if (pokedEntries.has(entry.id)) return;
-                          setPokedEntries(prev => {
-                            const next = new Set(prev).add(entry.id);
-                            try { localStorage.setItem('savelog_poked_entries', JSON.stringify([...next])); } catch {}
-                            return next;
-                          });
-                          spawnParticles('⚡', e);
-                          sendPokeNotification(entry.nickname || '익명', getNickname() || '나', myPersonaKey, isZeroSpend);
-                        }}
-                      >
-                        {pokedEntries.has(entry.id) ? '✓' : '⚡'}
-                      </button>
-
                       {/* 응원 쪽지 */}
                       <button
                         className="action-icon-btn"
