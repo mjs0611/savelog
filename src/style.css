@@ -2634,6 +2634,7 @@ input { font: inherit; outline: none; border: none; }
 }
 .tutorial-dots { display: flex; gap: 6px; margin-top: 16px; }
 .tutorial-dot {
+  width: 6px;
   height: 6px;
   border-radius: 100px;
   background: rgba(255, 255, 255, 0.15);
@@ -2656,6 +2657,24 @@ input { font: inherit; outline: none; border: none; }
 
 /* 🐹 펫 아바타 이미지 */
 .pet-avatar-img { width: 70%; height: 70%; object-fit: contain; }
+
+/* 🐹 펫 아바타 원형 컨테이너 (동적 border/boxShadow는 인라인 유지) */
+.pet-avatar-circle {
+  width: 52px; height: 52px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: 100px;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  animation: floating 4s infinite ease-in-out;
+  flex-shrink: 0;
+}
+
+/* 🏆 스트릭 로드맵 노드 아이콘 */
+.streak-node-icon { object-fit: contain; }
+.streak-node-icon--lg   { width: 1.4em; height: 1.4em; }
+.streak-node-icon--md   { width: 1.3em; height: 1.3em; }
+.streak-node-icon--sm   { width: 1.0em; height: 1.0em; }
+.streak-node-icon--muted { filter: grayscale(0.2); }
 
 /* 🚀 Setup 화면 */
 .setup-hero-img { width: 140px; height: 140px; object-fit: contain; margin-bottom: 16px; }

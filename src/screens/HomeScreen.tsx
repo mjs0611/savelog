@@ -134,19 +134,10 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div className="pet-inner">
               <div className="pet-left">
                 <div
+                  className="pet-avatar-circle"
                   style={{
-                    width: 52,
-                    height: 52,
-                    background: 'rgba(255, 255, 255, 0.03)',
                     border: `1.8px solid ${p?.color || '#FF5E62'}`,
-                    borderRadius: 100,
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    position: 'relative',
                     boxShadow: `0 0 15px ${(p?.color || '#FF5E62')}15`,
-                    animation: 'floating 4s infinite ease-in-out',
-                    flexShrink: 0
                   }}
                 >
                   <img src={p?.icon} alt="" className="pet-avatar-img" />
@@ -216,18 +207,18 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                 <div className="streak-node">
                   {isGift ? (
                     isDone ? (
-                      <img src="/images/lucky_chest_opened.png" className="custom-icon" style={{ width: '1.4em', height: '1.4em', objectFit: 'contain' }} />
+                      <img src="/images/lucky_chest_opened.png" className="custom-icon streak-node-icon streak-node-icon--lg" />
                     ) : (
-                      <img src="/images/lucky_chest_closed.png" className="custom-icon" style={{ width: '1.4em', height: '1.4em', objectFit: 'contain', filter: 'grayscale(0.2)' }} />
+                      <img src="/images/lucky_chest_closed.png" className="custom-icon streak-node-icon streak-node-icon--lg streak-node-icon--muted" />
                     )
                   ) : isDone ? (
                     <svg width="12" height="9" viewBox="0 0 12 9" fill="none" className="svg-primary">
                       <path d="M1 4.5L4 7.5L11 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   ) : isCurrent ? (
-                    <img src="/images/icon_flame.png" className="custom-icon" style={{ width: '1.3em', height: '1.3em', objectFit: 'contain' }} />
+                    <img src="/images/icon_flame.png" className="custom-icon streak-node-icon streak-node-icon--md" />
                   ) : (
-                    <img src="/images/icon_lock.png" className="custom-icon" style={{ width: '1.0em', height: '1.0em', objectFit: 'contain' }} />
+                    <img src="/images/icon_lock.png" className="custom-icon streak-node-icon streak-node-icon--sm" />
                   )}
                 </div>
                 <div className="streak-day-label">{i + 1}일</div>
@@ -407,7 +398,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                 <div
                   key={step}
                   className={`tutorial-dot${step === tutorialStep ? ' tutorial-dot--active' : ''}`}
-                  style={{ width: step === tutorialStep ? 18 : 6 }}
                 />
               ))}
             </div>

@@ -275,7 +275,9 @@ export default function App() {
     if (submittingRef.current) return;
     submittingRef.current = true;
     setSubmitting(true);
-    const isFirstRecord = !daily.recorded || daily.date !== today;
+    // 꿀팁·소비 고민은 소셜 포스트 — 순위·스트릭·daily 상태에서 분리
+    const isSocialPost = items.some(it => it.category === '꿀팁' || it.category === '소비 고민');
+    const isFirstRecord = !isSocialPost && (!daily.recorded || daily.date !== today);
     try {
       const total = items.reduce((s, i) => s + i.amount, 0);
       const weekKey = getWeekKey();
@@ -285,7 +287,8 @@ export default function App() {
         user_id: userId,
         nickname: nickname!,
         date: today,
-        week_key: weekKey,
+        // 소셜 포스트는 별도 week_key로 주간 순위에서 제외
+        week_key: isSocialPost ? 'social-' + weekKey : weekKey,
         items,
         total_amount: total,
         persona: currentPersona,
@@ -298,8 +301,10 @@ export default function App() {
         return;
       }
 
-      // 첫 기록에만 미션·스트릭·포인트 처리
-      if (isFirstRecord) {
+      if (isSocialPost) {
+        showToast('✅ 공유 완료!');
+      } else if (isFirstRecord) {
+        // 첫 기록에만 미션·스트릭·포인트 처리
         const mission = getDailyMission(today);
         let missionCleared = false;
         if (!mission.completed) {
@@ -358,15 +363,17 @@ export default function App() {
         showToast('✅ 추가 기록 완료!');
       }
 
-      // 누적 지출액으로 daily 상태 갱신
-      const prevSpent = (daily.date === today ? daily.spentAmount : 0) ?? 0;
-      const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: prevSpent + total };
-      saveDailyState(newDaily);
-      setDaily(newDaily);
+      // 소셜 포스트는 daily 상태 갱신 불필요 (오늘 기록 여부·지출액 변화 없음)
+      if (!isSocialPost) {
+        const prevSpent = (daily.date === today ? daily.spentAmount : 0) ?? 0;
+        const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: prevSpent + total };
+        saveDailyState(newDaily);
+        setDaily(newDaily);
+        loadRank();
+      }
       setFeedRefreshToken(t => t + 1);
       setProfileRefreshToken(t => t + 1);
       setShowRecord(false);
-      loadRank();
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
