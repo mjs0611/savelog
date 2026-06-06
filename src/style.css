@@ -826,6 +826,7 @@ input { font: inherit; outline: none; border: none; }
 .no-spend-quick-btn {}
 .image-upload-section {}
 .image-preview-container {}
+.image-upload-label {}
 
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .cat-btn {
@@ -1613,6 +1614,7 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* 📊 레이더 차트 오각형 글로우 효과 */
+.radar-chart-card {}
 .radar-chart-card svg {
   filter: drop-shadow(0 0 10px rgba(168, 85, 247, 0.15));
   transition: all 0.3s ease;
@@ -1748,6 +1750,7 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* ⚖️ 밸런스 게임 다음 배틀 버튼 */
+.next-battle-btn {}
 .next-battle-btn:hover {
   background: rgba(0, 245, 160, 0.12) !important;
   box-shadow: 0 4px 12px rgba(0, 245, 160, 0.15);
