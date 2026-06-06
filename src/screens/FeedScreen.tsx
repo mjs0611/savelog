@@ -335,14 +335,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   }
 
   function addComment(entryId: string, text: string) {
-    setLocalComments((prev) => {
-      const existing = prev[entryId] || [];
-      if (existing.some((c) => c.sender === '나' && c.text === text)) return prev;
-      if (existing.length >= 20) return prev; // 엔트리당 최대 20개 댓글
-      const updated = { ...prev, [entryId]: [...existing, { sender: '나', text }] };
-      localStorage.setItem('feed_comments', JSON.stringify(updated));
-      return updated;
-    });
+    const existing = localComments[entryId] || [];
+    if (existing.some((c) => c.sender === '나' && c.text === text)) return;
+    if (existing.length >= 20) return; // 엔트리당 최대 20개 댓글
+    const updated = { ...localComments, [entryId]: [...existing, { sender: '나', text }] };
+    localStorage.setItem('feed_comments', JSON.stringify(updated));
+    setLocalComments(updated);
   }
 
   function submitCommentInput(entryId: string) {
