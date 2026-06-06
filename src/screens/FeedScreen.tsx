@@ -47,6 +47,27 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   const [feedTab, setFeedTab] = useState<'all' | 'follow'>('all');
   const [followedUsers, setFollowedUsers] = useState<Record<string, string>>(() => getFollowedUsers());
 
+  const [feedVotes, setFeedVotes] = useState<Record<string, 'over' | 'ok'>>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_feed_votes');
+      return saved ? JSON.parse(saved) : {};
+    } catch {
+      return {};
+    }
+  });
+
+  async function handleFeedVote(entryId: string, vote: 'over' | 'ok') {
+    if (feedVotes[entryId]) return;
+    const nextVotes = { ...feedVotes, [entryId]: vote };
+    setFeedVotes(nextVotes);
+    try {
+      localStorage.setItem('savelog_feed_votes', JSON.stringify(nextVotes));
+      await submitBalanceVote(entryId, userId, vote);
+      onGrantFeedReward?.();
+      showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+    } catch {}
+  }
+
   // 자유 텍스트 댓글 입력 상태 (엔트리별)
   const [commentInputs, setCommentInputs] = useState<Record<string, string>>({});
   // 댓글 스레드 펼침 상태 (2개 초과 시)
@@ -370,7 +391,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           </div>
 
           {balanceEntry === 'loading' ? (
-            <div style={{ height: 80, background: 'rgba(255,255,255,0.03)', borderRadius: 10, animation: 'pulse 1.5s infinite' }} />
+            <div className="balance-loading-lg" />
           ) : typeof balanceEntry === 'object' && balanceEntry !== null ? (() => {
             const entry = balanceEntry;
             const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
@@ -437,7 +458,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                     </div>
                   ) : (
                     /* 집계 중 스켈레톤 */
-                    <div style={{ height: 22, borderRadius: 100, background: 'rgba(255,255,255,0.06)', animation: 'pulse 1.5s infinite' }} />
+                    <div className="balance-loading-sm" />
                   )
                 ) : (
                   /* 투표 전 버튼 */
@@ -588,10 +609,16 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             
             // 지출 레벨 파악 (0원 무지출 / 5만원 이상 FLEX)
             const isMilestone = entry.items.some(it => it.category === '마일스톤');
-            const isZeroSpend = !isMilestone && entry.total_amount === 0;
-            const isFlexSpend = !isMilestone && entry.total_amount > 50000;
+            const isTipPost = entry.items.some(it => it.category === '꿀팁');
+            const isDilemmaPost = entry.items.some(it => it.category === '소비 고민') || entry.is_balance_game;
+            const isZeroSpend = !isMilestone && !isTipPost && entry.total_amount === 0;
+            const isFlexSpend = !isMilestone && !isTipPost && entry.total_amount > 50000;
             const cardClass = isMilestone
               ? 'feed-card--milestone'
+              : isTipPost
+              ? 'feed-card--tip'
+              : isDilemmaPost
+              ? 'feed-card--dilemma'
               : isZeroSpend
               ? 'feed-card--zero'
               : isFlexSpend
@@ -639,6 +666,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                             <span>{p.name}</span>
                           </span>
                         )}
+                        {isTipPost && (
+                          <span className="feed-tier-tag tip-tag">💡 절약 꿀팁</span>
+                        )}
+                        {isDilemmaPost && (
+                          <span className="feed-tier-tag dilemma-tag">⚖️ 소비 고민</span>
+                        )}
                         {isMilestone && (
                           <span className="feed-tier-tag feed-tier-tag--milestone">🏆 마일스톤</span>
                         )}
@@ -652,8 +685,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                       <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
                     </div>
                   </div>
-                  <div className={`feed-total ${!isMilestone && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : ''}`}>
-                    {isMilestone ? '🏆 달성' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
+                  <div className={`feed-total ${!isMilestone && !isTipPost && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : isTipPost ? 'feed-total--tip' : isDilemmaPost ? 'feed-total--dilemma' : ''}`}>
+                    {isMilestone ? '🏆 달성' : isTipPost ? '💡 꿀팁' : isDilemmaPost ? '⚖️ 배틀 중' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
                   </div>
                 </div>
 
@@ -662,6 +695,89 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   <p key={i} className="feed-milestone-note">{it.comment}</p>
                 ))}
 
+                {/* 절약 꿀팁 내용 */}
+                {isTipPost && (
+                  <div className="tip-post-body">
+                    {entry.items.filter(it => it.category === '꿀팁').map((it, i) => (
+                      <p key={i}>{it.comment}</p>
+                    ))}
+                  </div>
+                )}
+
+                {/* 소비 고민 및 inline 투표 */}
+                {isDilemmaPost && (() => {
+                  const dilemmaItem = entry.items.find(it => it.category === '소비 고민');
+                  const text = dilemmaItem?.comment || '';
+                  const amount = dilemmaItem?.amount || entry.total_amount || 0;
+                  
+                  const myVote = feedVotes[entry.id];
+                  const hasVoted = !!myVote || entry.user_id === userId;
+                  
+                  const seed = entry.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+                  const overPctBase = (seed % 40) + 30; // 30% ~ 70%
+                  
+                  let overPct = overPctBase;
+                  let okPct = 100 - overPct;
+                  if (myVote === 'over') {
+                    overPct = Math.min(95, overPct + 5);
+                    okPct = 100 - overPct;
+                  } else if (myVote === 'ok') {
+                    okPct = Math.min(95, okPct + 5);
+                    overPct = 100 - okPct;
+                  }
+                  
+                  const totalFeedVotes = (seed % 30) + 12 + (myVote ? 1 : 0);
+
+                  return (
+                    <div className="dilemma-post-body">
+                      <p>{text}</p>
+
+                      <div className="dilemma-amount-box">
+                        <span className="dilemma-amount-label">예상 소비액</span>
+                        <span className="dilemma-amount-value">{amount.toLocaleString('ko-KR')}원</span>
+                      </div>
+
+                      {hasVoted ? (
+                        <div className="dilemma-result-section">
+                          <div className="dilemma-result-labels">
+                            <span className="dilemma-result-over">
+                              과소비 {overPct}%
+                              {myVote === 'over' && <span className="dilemma-my-badge dilemma-my-badge--over">내 판정 💸</span>}
+                            </span>
+                            <span className="dilemma-result-total">총 {totalFeedVotes}명 참여</span>
+                            <span className="dilemma-result-ok">
+                              {myVote === 'ok' && <span className="dilemma-my-badge dilemma-my-badge--ok">내 판정 🌿</span>}
+                              합리적 {okPct}%
+                            </span>
+                          </div>
+
+                          <div className="dilemma-bar">
+                            <div className="dilemma-bar-over" style={{ width: `${overPct}%` }} />
+                            <div className="dilemma-bar-ok" style={{ width: `${okPct}%` }} />
+                          </div>
+                        </div>
+                      ) : (
+                        <div className="dilemma-vote-btns">
+                          <button
+                            onClick={() => handleFeedVote(entry.id, 'over')}
+                            className="balance-vote-card balance-vote-card--over"
+                          >
+                            <span className="vote-emoji">💸</span>
+                            <span className="vote-title">과소비</span>
+                          </button>
+                          <button
+                            onClick={() => handleFeedVote(entry.id, 'ok')}
+                            className="balance-vote-card balance-vote-card--ok"
+                          >
+                            <span className="vote-emoji">🌿</span>
+                            <span className="vote-title">합리적</span>
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })()}
+
                 {/* 오늘 한마디 (💬 한마디 특수 항목) */}
                 {entry.items.filter(it => it.category === '한마디').map((it, i) => (
                   <p key={i} className="feed-note">💬 {it.comment}</p>
@@ -669,7 +785,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                 {/* 지출 항목 */}
                 {(() => {
-                  const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
+                  const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤' && it.category !== '꿀팁' && it.category !== '소비 고민');
                   if (spendItems.length === 0) return null;
                   return (
                     <div className="feed-items">
@@ -828,7 +944,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         <div className="story-modal-overlay" onClick={() => setMessageRecipientEntry(null)}>
           <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
             <div className="story-modal-header">
-              <img src="/images/icon_mailbox.png" className="custom-icon" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+              <img src="/images/icon_mailbox.png" className="custom-icon story-modal-icon" />
               <div>
                 <h3 className="story-modal-name">
                   {messageRecipientEntry.nickname}님에게 응원 보내기

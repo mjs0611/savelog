@@ -5,8 +5,8 @@ import { contactsViral } from '@apps-in-toss/web-framework';
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
   if (!open) return null;
   return (
-    <div className="modal-overlay" onClick={onClose} style={{ zIndex: 9999 }}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0))', gap: 16 }}>
+    <div className="modal-overlay simple-modal-overlay" onClick={onClose}>
+      <div className="modal-sheet simple-modal-sheet" onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -163,7 +163,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         <div className="profile-persona-banner" onClick={onStartTest}>
           <div className="profile-persona-left">
             <span className="profile-persona-emoji">
-              <img src={p.icon} alt="" className="custom-icon--lg" style={{ verticalAlign: 'middle', width: 36, height: 36, objectFit: 'contain' }} />
+              <img src={p.icon} alt="" className="custom-icon--lg profile-persona-icon-img" />
             </span>
             <div className="profile-persona-info">
               <span className="profile-persona-name" style={{ color: p.color }}>{p.name}</span>
@@ -175,7 +175,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       ) : (
         <div className="profile-persona-banner profile-persona-banner--empty" onClick={onStartTest}>
           <span className="profile-persona-emoji">
-            <img src="/images/savelog_main_character.png" className="custom-icon--lg" style={{ verticalAlign: 'middle' }} />
+            <img src="/images/savelog_main_character.png" className="custom-icon--lg profile-persona-icon-img--empty" />
           </span>
           <div className="profile-persona-info">
             <span className="profile-persona-name">나의 소비 성향(MBTI)은?</span>
@@ -293,7 +293,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                   fill="rgba(168, 85, 247, 0.28)"
                   stroke="#A855F7"
                   strokeWidth="2"
-                  style={{ filter: 'drop-shadow(0 0 8px rgba(168, 85, 247, 0.5))', transition: 'all 0.5s' }}
+                  className="radar-polygon"
                 />
 
                 {/* 6. Label Text Nodes */}
@@ -448,7 +448,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         </div>
       </div>
 
-      <div style={{ height: 24 }} />
+      <div className="rank-bottom-spacer" />
 
       {/* 서비스 이용약관 모달 */}
       <SimpleModal open={termsModalOpen} onClose={() => setTermsModalOpen(false)}>

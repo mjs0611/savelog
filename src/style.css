@@ -1725,6 +1725,7 @@ input { font: inherit; outline: none; border: none; }
   border-bottom: 1px solid rgba(255, 255, 255, 0.06);
   padding-bottom: 16px;
 }
+.story-modal-icon { width: 28px; height: 28px; object-fit: contain; }
 .story-modal-emoji {
   font-size: 52px;
 }
@@ -2671,4 +2672,118 @@ input { font: inherit; outline: none; border: none; }
 .login-error-msg { font-size: 11px; color: #FF4D4F; margin-top: 12px; word-break: break-all; text-align: center; }
 .zero-note-hint { margin: 10px 0 0 0; font-size: 10px; color: var(--text-mute); text-align: center; }
 .setup-textfield-wrap { width: 100%; }
+
+/* 🎛️ Segmented Tabs Control for Record Modal */
+.record-tabs-header {
+  display: flex;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  padding: 3px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+
+.record-tab-btn {
+  flex: 1;
+  text-align: center;
+  padding: 10px 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-mute);
+  border-radius: 11px;
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+  background: transparent;
+  border: none;
+}
+
+.record-tab-btn:hover {
+  color: var(--text-sub);
+}
+
+.record-tab-btn.active {
+  background: var(--primary);
+  color: #090a10;
+  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.25);
+}
+
+/* 💡 Saving Tips glowing card styling */
+.feed-card--tip {
+  border-color: rgba(0, 245, 160, 0.25) !important;
+  box-shadow: 
+    inset 0 1px 1px rgba(0, 245, 160, 0.15),
+    0 6px 24px rgba(0, 245, 160, 0.04) !important;
+}
+
+/* ⚖️ Shopping Dilemma glowing card styling */
+.feed-card--dilemma {
+  border-color: rgba(168, 85, 247, 0.25) !important;
+  box-shadow:
+    inset 0 1px 1px rgba(168, 85, 247, 0.15),
+    0 6px 24px rgba(168, 85, 247, 0.04) !important;
+}
+
+/* 💡 꿀팁 / ⚖️ 소비 고민 tier tag 정적 색상 */
+.tip-tag { background: rgba(0,245,160,0.1); color: var(--primary); border: 1px solid rgba(0,245,160,0.2); }
+.dilemma-tag { background: rgba(168,85,247,0.15); color: #C084FC; border: 1px solid rgba(168,85,247,0.3); }
+
+/* 💡 꿀팁 / ⚖️ 소비 고민 feed-total 색상 변형 */
+.feed-total--tip { color: var(--primary) !important; font-size: 12px; }
+.feed-total--dilemma { color: #C084FC !important; font-size: 12px; }
+
+/* 💡 꿀팁 포스트 본문 */
+.tip-post-body { padding: 6px 4px 8px 4px; }
+.tip-post-body p { margin: 0; font-size: 13px; color: var(--text-main); line-height: 1.5; font-weight: 700; }
+
+/* ⚖️ 소비 고민 포스트 본문 */
+.dilemma-post-body { display: flex; flex-direction: column; gap: 10px; padding: 6px 4px 8px 4px; }
+.dilemma-post-body > p { margin: 0; font-size: 13px; color: var(--text-main); line-height: 1.5; font-weight: 700; }
+.dilemma-amount-box {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 10px 14px; border-radius: 12px;
+  background: rgba(255,255,255,0.02); border: 1px dashed rgba(255,255,255,0.1);
+}
+.dilemma-amount-label { font-size: 12px; color: var(--text-mute); font-weight: 700; }
+.dilemma-amount-value { font-size: 14px; font-weight: 900; color: #C084FC; }
+
+/* ⚖️ 소비 고민 결과 바 */
+.dilemma-result-section { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+.dilemma-result-labels { display: flex; justify-content: space-between; align-items: center; font-size: 10px; font-weight: 700; }
+.dilemma-result-over { color: #FF4D4F; display: inline-flex; align-items: center; gap: 4px; }
+.dilemma-result-ok   { color: #00F5A0; display: inline-flex; align-items: center; gap: 4px; }
+.dilemma-result-total { color: var(--text-mute); }
+.dilemma-my-badge { font-size: 8px; padding: 1px 4px; border-radius: 4px; }
+.dilemma-my-badge--over { background: rgba(255,77,79,0.15); }
+.dilemma-my-badge--ok   { background: rgba(0,245,160,0.15); padding: 1px 5px; }
+.dilemma-bar {
+  height: 12px; border-radius: 100px; overflow: hidden; display: flex;
+  border: 1px solid rgba(255,255,255,0.06); background: rgba(255,255,255,0.02);
+}
+.dilemma-bar-over { background: linear-gradient(90deg, #FF4D4F, #FF7875); height: 100%; transition: width 0.8s ease-out; }
+.dilemma-bar-ok   { background: linear-gradient(90deg, #36CFC9, #00F5A0); height: 100%; transition: width 0.8s ease-out; }
+
+/* ⚖️ 소비 고민 인라인 투표 버튼 컨테이너 */
+.dilemma-vote-btns { display: flex; gap: 8px; margin-top: 4px; }
+.dilemma-vote-btns .balance-vote-card { padding: 10px 8px; border-radius: 12px; }
+
+/* 📝 기록 모달 폼 래퍼 (꿀팁/소비 고민 모드) */
+.record-mode-form { display: flex; flex-direction: column; gap: 14px; }
+.daily-note-section--mt { margin-top: 6px; }
+.modal-header-spacer { width: 32px; }
+
+/* 🔒 SimpleModal (약관/마케팅) */
+.simple-modal-overlay { z-index: 9999; }
+.simple-modal-sheet { padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px)); gap: 16px; }
+
+/* 🎨 프로필 페르소나 아이콘 */
+.profile-persona-icon-img { vertical-align: middle; width: 36px; height: 36px; object-fit: contain; }
+.profile-persona-icon-img--empty { vertical-align: middle; }
+
+/* 📊 레이더 차트 폴리곤 */
+.radar-polygon { filter: drop-shadow(0 0 8px rgba(168, 85, 247, 0.5)); transition: all 0.5s; }
+
+/* 🔍 밸런스 게임 로딩 스켈레톤 */
+.balance-loading-lg { height: 80px; background: rgba(255,255,255,0.03); border-radius: 10px; animation: pulse 1.5s infinite; }
+.balance-loading-sm { height: 22px; border-radius: 100px; background: rgba(255,255,255,0.06); animation: pulse 1.5s infinite; }
+
 
