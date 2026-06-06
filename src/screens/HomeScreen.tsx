@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Badge } from '@toss/tds-mobile';
 import type { DailyState, StreakData } from '../lib/storage';
 import { getDailyMission, getPersona, PERSONAS } from '../lib/storage';
@@ -22,6 +22,29 @@ interface Props {
 
 const WEEK_DAYS = 7;
 
+const PERSONA_QUOTES: Record<string, string[]> = {
+  cost_ai: [
+    "나의 가성비 알고리즘에 따르면 오늘의 무지출은 완벽한 선택입니다. 🤖",
+    "소비의 효용가치가 감가상각을 넘어서지 않는지 늘 검토하세요.",
+    "커피 한 잔(4,500원)을 30년간 저축하면 복리 5% 기준 약 1.1억 원이 됩니다. 계산 완료."
+  ],
+  hamster: [
+    "볼따구에 도토리를 모으듯이 통장에 포인트를 꽉꽉 채워보자구! 🐹",
+    "배달음식은 우리의 소중한 재산을 한 입에 먹어치우는 무서운 식습관이쥐!",
+    "지갑을 닫으면 마음이 풍요로워진다쥐. 오늘 지출 0원에 도전해봐!"
+  ],
+  flexer: [
+    "스트레스로 시발비용을 쓰기 전에, 나랑 3초만 눈 감고 심호흡하자! 🦄",
+    "플렉스는 달콤하지만 카드값 청구서는 맵고 짜다구. 오늘은 꾹 참아볼까?",
+    "진짜 필요한 건가요? 아니면 그냥 낭만을 사고 싶은 건가요? 잘 생각해보자!"
+  ],
+  keeper: [
+    "장바구니에 넣고 3일 동안 고민해 봐! 90%는 결국 안 사도 되더라고. 🛒",
+    "장바구니는 너의 현명한 소비를 도와주는 든든한 방패야. 바로 결제는 금지!",
+    "오늘도 지갑 수비 완료! 짠친들과 함께하는 절약은 생각보다 즐겁단다."
+  ]
+};
+
 export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoints, submitting = false, pendingClaiming = false, streakShields = 0, onRecord, onQuickZeroSpend, onClaimPending }: Props) {
   const weekKey = getWeekKey();
   const weekRangeStr = formatWeekRange(weekKey);
@@ -32,6 +55,36 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const myZeroIdx = zeroGroup.findIndex((r) => r.user_id === userId);
   const inSpendGroup = mySpendIdx >= 0;
   const inZeroGroup = myZeroIdx >= 0;
+
+  const [speech, setSpeech] = useState<string | null>(null);
+  const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [isWobbling, setIsWobbling] = useState(false);
+
+  const handlePetClick = () => {
+    setIsWobbling(true);
+    setTimeout(() => setIsWobbling(false), 500);
+
+    const personaKey = getPersona() || 'hamster';
+    const quotes = PERSONA_QUOTES[personaKey] || PERSONA_QUOTES['hamster'];
+    const randomQuote = quotes[Math.floor(Math.random() * quotes.length)];
+
+    if (speechTimeoutRef.current) {
+      clearTimeout(speechTimeoutRef.current);
+    }
+
+    setSpeech(randomQuote);
+    speechTimeoutRef.current = setTimeout(() => {
+      setSpeech(null);
+    }, 3500);
+  };
+
+  useEffect(() => {
+    return () => {
+      if (speechTimeoutRef.current) {
+        clearTimeout(speechTimeoutRef.current);
+      }
+    };
+  }, []);
 
   const [tutorialStep, setTutorialStep] = useState<number | null>(() => {
     try {
@@ -130,11 +183,16 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const petLevel = Math.min(5, 1 + Math.floor(streak.totalDays / 3));
 
         return (
-          <div className="glass-card pet-card" id="tutorial-step-3">
+          <div className="glass-card pet-card" id="tutorial-step-3" style={{ position: 'relative', cursor: 'pointer' }} onClick={handlePetClick}>
+            {speech && (
+              <div className="pet-speech-bubble">
+                {speech}
+              </div>
+            )}
             <div className="pet-inner">
               <div className="pet-left">
                 <div
-                  className="pet-avatar-circle"
+                  className={`pet-avatar-circle ${isWobbling ? 'wobble-anim' : ''}`}
                   style={{
                     border: `1.8px solid ${p?.color || '#FF5E62'}`,
                     boxShadow: `0 0 15px ${(p?.color || '#FF5E62')}15`,

@@ -15,7 +15,7 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 import type { Entry } from '../lib/supabase';
 import { fetchMyWeekEntries } from '../lib/supabase';
 import type { StreakData, CheeringMessage } from '../lib/storage';
-import { setNickname, getPersona, PERSONAS, getCheeringMessages } from '../lib/storage';
+import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage } from '../lib/storage';
 import { formatAmount, formatDate, getWeekKey, timeAgo } from '../lib/utils';
 
 interface Props {
@@ -45,6 +45,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
+  const [replyModalOpen, setReplyModalOpen] = useState(false);
+  const [replyRecipient, setReplyRecipient] = useState('');
+  const [replyText, setReplyText] = useState('');
   const viralCleanupRef = useRef<(() => void) | null>(null);
 
   function handleShare() {
@@ -102,6 +105,21 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       if (clearConfirmTimerRef.current) clearTimeout(clearConfirmTimerRef.current);
     };
   }, []);
+
+  function handleReplyClick(recipient: string) {
+    setReplyRecipient(recipient);
+    setReplyText('');
+    setReplyModalOpen(true);
+  }
+
+  function handleSendReply() {
+    if (!replyText.trim()) return;
+    sendCheeringMessage(replyRecipient, replyText.trim(), nickname, getPersona());
+    setMessages(getCheeringMessages());
+    setReplyModalOpen(false);
+    setReplyRecipient('');
+    setReplyText('');
+  }
 
   function saveNickname() {
     if (!draft.trim()) return;
@@ -367,6 +385,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                     <span className="mailbox-msg-time">{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
                   </div>
                   <p className={isSent ? 'mailbox-msg-text-sent' : 'mailbox-msg-text-received'}>{msg.text}</p>
+                  {!isSent && (
+                    <div className="mailbox-reply-btn-wrap">
+                      <button className="mailbox-reply-btn" onClick={() => handleReplyClick(msg.senderNickname)}>
+                        ✉️ 답장하기
+                      </button>
+                    </div>
+                  )}
                 </div>
               );
             })}
@@ -482,6 +507,47 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <p>동의 철회 시 또는 회원 탈퇴 시까지 보유 및 이용하며, 거부 시에도 서비스 기본 기능은 정상 이용 가능합니다.</p>
         </div>
         <Button display="full" size="large" color="primary" variant="fill" onClick={() => setMarketingModalOpen(false)}>동의 완료</Button>
+      </SimpleModal>
+
+      {/* 쪽지 답장하기 모달 */}
+      <SimpleModal open={replyModalOpen} onClose={() => setReplyModalOpen(false)}>
+        <div>
+          <h3 className="simple-modal-title">✉️ {replyRecipient}님에게 답장하기</h3>
+          <p className="simple-modal-desc">따뜻한 격려나 꿀팁을 전해보세요</p>
+        </div>
+        <div style={{ width: '100%' }}>
+          <textarea
+            className="nickname-input"
+            style={{
+              width: '100%',
+              minHeight: '80px',
+              padding: '12px',
+              borderRadius: '12px',
+              background: 'rgba(255, 255, 255, 0.03)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              color: '#fff',
+              fontSize: '13px',
+              resize: 'none',
+              lineHeight: '1.5',
+              boxSizing: 'border-box'
+            }}
+            value={replyText}
+            placeholder="응원의 메시지를 입력해 주세요."
+            maxLength={100}
+            onChange={(e) => setReplyText(e.target.value)}
+          />
+          <div style={{ display: 'flex', justifyContent: 'flex-end', fontSize: '10px', color: 'var(--text-mute)', marginTop: '4px', paddingRight: '4px' }}>
+            {replyText.length}/100
+          </div>
+        </div>
+        <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
+          <Button display="full" size="large" color="dark" variant="weak" onClick={() => setReplyModalOpen(false)}>
+            취소
+          </Button>
+          <Button display="full" size="large" color="primary" variant="fill" onClick={handleSendReply} disabled={!replyText.trim()}>
+            보내기
+          </Button>
+        </div>
       </SimpleModal>
     </div>
   );

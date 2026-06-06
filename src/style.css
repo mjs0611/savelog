@@ -2821,4 +2821,84 @@ input { font: inherit; outline: none; border: none; }
 .balance-loading-lg { height: 80px; background: rgba(255,255,255,0.03); border-radius: 10px; animation: pulse 1.5s infinite; }
 .balance-loading-sm { height: 22px; border-radius: 100px; background: rgba(255,255,255,0.06); animation: pulse 1.5s infinite; }
 
+/* 🐹 다마고치 절약 요정 말풍선 */
+.pet-speech-bubble {
+  position: absolute;
+  bottom: 80px;
+  left: 20px;
+  right: 20px;
+  background: rgba(18, 18, 20, 0.95);
+  border: 1px solid rgba(0, 245, 160, 0.3);
+  box-shadow: 0 8px 32px rgba(0, 245, 160, 0.08), inset 0 1px 1px rgba(255, 255, 255, 0.05);
+  border-radius: 14px;
+  padding: 12px 16px;
+  color: var(--text-main);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.5;
+  z-index: 10;
+  word-break: keep-all;
+  animation: scaleInBubble 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+/* 말풍선 아래꼬리 */
+.pet-speech-bubble::after {
+  content: '';
+  position: absolute;
+  bottom: -6px;
+  left: 36px;
+  width: 10px;
+  height: 10px;
+  background: rgba(18, 18, 20, 0.95);
+  border-right: 1px solid rgba(0, 245, 160, 0.3);
+  border-bottom: 1px solid rgba(0, 245, 160, 0.3);
+  transform: rotate(45deg);
+}
+
+@keyframes scaleInBubble {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) translateY(10px);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translateY(0);
+  }
+}
+
+/* 🐹 다마고치 캐릭터 wobble 흔들림 애니메이션 */
+.wobble-anim {
+  animation: wobble 0.5s ease-in-out;
+}
+
+@keyframes wobble {
+  0%, 100% { transform: rotate(0deg) scale(1); }
+  25% { transform: rotate(-8deg) scale(1.05); }
+  75% { transform: rotate(8deg) scale(1.05); }
+}
+
+/* ✉️ 쪽지 답장하기 버튼 */
+.mailbox-reply-btn-wrap {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: 8px;
+}
+.mailbox-reply-btn {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 20px;
+  padding: 4px 10px;
+  font-size: 10px;
+  font-weight: 800;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.mailbox-reply-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: var(--text-main);
+  border-color: rgba(255, 255, 255, 0.12);
+}
+
+
 
