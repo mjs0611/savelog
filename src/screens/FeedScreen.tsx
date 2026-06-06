@@ -148,7 +148,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     };
   }, []);
 
-  // feedVotes → localStorage 동기화 (state updater 밖에서 처리)
+  // localComments / feedVotes → localStorage 동기화 (state updater 밖에서 처리)
+  useEffect(() => {
+    localStorage.setItem('feed_comments', JSON.stringify(localComments));
+  }, [localComments]);
   useEffect(() => {
     localStorage.setItem('savelog_feed_votes', JSON.stringify(feedVotes));
   }, [feedVotes]);
@@ -197,9 +200,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         const pruned = Object.fromEntries(
           Object.entries(prev).filter(([id]) => validIds.has(id))
         );
-        if (Object.keys(pruned).length === Object.keys(prev).length) return prev;
-        localStorage.setItem('feed_comments', JSON.stringify(pruned));
-        return pruned;
+        return Object.keys(pruned).length < Object.keys(prev).length ? pruned : prev;
       });
       // feedVotes도 동일하게 정리 (피드에 없는 엔트리의 투표 기록 제거, localStorage는 useEffect가 처리)
       setFeedVotes((prev) => {
@@ -333,9 +334,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     const existing = localComments[entryId] || [];
     if (existing.some((c) => c.sender === '나' && c.text === text)) return;
     if (existing.length >= 20) return; // 엔트리당 최대 20개 댓글
-    const updated = { ...localComments, [entryId]: [...existing, { sender: '나', text }] };
-    localStorage.setItem('feed_comments', JSON.stringify(updated));
-    setLocalComments(updated);
+    setLocalComments({ ...localComments, [entryId]: [...existing, { sender: '나', text }] });
   }
 
   function submitCommentInput(entryId: string) {
