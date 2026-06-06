@@ -638,8 +638,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             const isMilestone = entry.items.some(it => it.category === '마일스톤');
             const isTipPost = entry.items.some(it => it.category === '꿀팁');
             const isDilemmaPost = entry.items.some(it => it.category === '소비 고민') || entry.is_balance_game;
-            const isZeroSpend = !isMilestone && !isTipPost && entry.total_amount === 0;
-            const isFlexSpend = !isMilestone && !isTipPost && entry.total_amount > 50000;
+            const isZeroSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount === 0;
+            const isFlexSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount > 50000;
             const cardClass = isMilestone
               ? 'feed-card--milestone'
               : isTipPost
@@ -947,6 +947,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
                           onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
                           placeholder="댓글 달기..."
+                          maxLength={60}
                           className="feed-thread-input"
                         />
                         <button
