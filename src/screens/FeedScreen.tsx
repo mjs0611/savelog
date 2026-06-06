@@ -57,7 +57,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   });
 
   async function handleFeedVote(entryId: string, vote: 'over' | 'ok') {
-    if (feedVotes[entryId]) return;
+    if (feedVotes[entryId] || feedVotingRef.current.has(entryId)) return;
+    feedVotingRef.current.add(entryId);
     const nextVotes = { ...feedVotes, [entryId]: vote };
     setFeedVotes(nextVotes);
     try {
@@ -65,7 +66,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       await submitBalanceVote(entryId, userId, vote);
       onGrantFeedReward?.();
       showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
-    } catch {}
+    } catch {
+    } finally {
+      feedVotingRef.current.delete(entryId);
+    }
   }
 
   // 자유 텍스트 댓글 입력 상태 (엔트리별)
@@ -102,6 +106,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
   const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
   const balanceVotingRef = React.useRef(false);
+  const feedVotingRef = React.useRef<Set<string>>(new Set());
 
   const myPersonaKey = getPersona();
 
