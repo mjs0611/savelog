@@ -530,7 +530,7 @@ export default function App() {
 
       {/* 무지출 한마디 모달 */}
       {showZeroNote && (
-        <div className="modal-overlay" onClick={() => { if (!submitting) setShowZeroNote(false); }} style={{ zIndex: 9999 }}>
+        <div className="modal-overlay zero-note-modal-overlay" onClick={() => { if (!submitting) setShowZeroNote(false); }}>
           <div className="modal-sheet zero-note-modal-sheet" onClick={e => e.stopPropagation()}>
             <p className="zero-note-modal-title">🌿 무지출 기록하기</p>
             <p className="zero-note-modal-desc">

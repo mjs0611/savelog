@@ -462,6 +462,7 @@ input { font: inherit; outline: none; border: none; }
 
 /* 기록 시작 상태 — 버튼 행 */
 .record-cta-row { display: flex; align-items: center; gap: 8px; margin-bottom: 12px; }
+.record-cta-row .custom-icon--lg { animation: floating 4s infinite ease-in-out; }
 .record-cta-heading { margin: 0; font-size: 13px; font-weight: 900; color: #fff; }
 .record-cta-detail  { margin: 1px 0 0 0; font-size: 10px; color: var(--text-mute); }
 .record-btn-row { display: flex; gap: 8px; }
@@ -593,6 +594,7 @@ input { font: inherit; outline: none; border: none; }
 .screen-home { gap: 16px; }
 .feed-header { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; }
 .feed-title  { font-size: 22px; font-weight: 900; letter-spacing: -0.5px; }
+.feed-title .custom-icon { margin-left: 5px; }
 .refresh-btn { font-size: 22px; color: var(--primary); padding: 4px; transition: transform 0.2s; }
 .refresh-btn:active { transform: rotate(180deg); }
 
@@ -1311,6 +1313,7 @@ input { font: inherit; outline: none; border: none; }
   display: flex;
   align-items: center;
 }
+.mission-title .custom-icon { margin-left: 5px; }
 .mission-badge {
   background: rgba(255, 255, 255, 0.05);
   color: var(--text-mute);
@@ -1604,6 +1607,7 @@ input { font: inherit; outline: none; border: none; }
   gap: 3px;
   vertical-align: middle;
 }
+.feed-persona-tag img { width: 11px; height: 11px; object-fit: contain; }
 .zero-tag {
   background: rgba(0, 245, 160, 0.15);
   color: var(--primary);
@@ -1614,6 +1618,7 @@ input { font: inherit; outline: none; border: none; }
   color: #ff453a;
   border: 1.5px solid rgba(255, 69, 58, 0.3);
 }
+.feed-tier-tag--milestone { background: rgba(255,215,0,0.15); color: #FFD700; border: 1px solid rgba(255,215,0,0.3); }
 
 /* ── SNS 스레드 스타일 댓글 영역 ────────────────────────────────────────────── */
 .feed-thread-section { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); }
@@ -1757,6 +1762,7 @@ input { font: inherit; outline: none; border: none; }
   gap: 8px;
   margin-top: 8px;
 }
+.story-modal-footer > div { flex: 1; }
 
 /* ── 리액션 파티클 애니메이션 ─────────────────────────────────────────────── */
 .floating-reaction-particle {
@@ -2072,6 +2078,7 @@ input { font: inherit; outline: none; border: none; }
   transition: all 0.2s;
   vertical-align: middle;
   padding: 2.5px 8px;
+  margin-left: 6px;
 }
 .header-follow-btn:hover {
   transform: scale(1.05);
@@ -2272,7 +2279,10 @@ input { font: inherit; outline: none; border: none; }
 /* 📊 밸런스 게임 결과 진행바 채우기 */
 .balance-bar-fill {
   transition: width 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+  height: 100%;
 }
+.balance-bar-fill--over { background: linear-gradient(90deg, #FF4D4F, #FF7875); }
+.balance-bar-fill--ok   { background: linear-gradient(90deg, #36CFC9, #00F5A0); }
 
 /* ⚖️ 밸런스 게임 다음 배틀 버튼 */
 .next-battle-btn {
@@ -2420,6 +2430,7 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* 🌿 App.tsx — 무지출 한마디 모달 */
+.zero-note-modal-overlay { z-index: 9999; }
 .zero-note-modal-sheet {
   padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
   gap: 0;
@@ -2639,6 +2650,8 @@ input { font: inherit; outline: none; border: none; }
 
 /* 🔥 스트릭 헤더 배지 컨테이너 */
 .streak-badges-row { display: flex; align-items: center; gap: 6px; }
+.streak-badges-row .custom-icon--sm { margin-right: 3px; vertical-align: middle; }
+.svg-primary { color: var(--primary); }
 
 /* 🐹 펫 아바타 이미지 */
 .pet-avatar-img { width: 70%; height: 70%; object-fit: contain; }

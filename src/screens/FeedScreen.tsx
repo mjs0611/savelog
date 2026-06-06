@@ -341,7 +341,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       <div className="feed-header">
         <h2 className="feed-title">
           짠내 피드
-          <img src="/images/savelog_main_character.png" className="custom-icon" style={{ marginLeft: 5 }} />
+          <img src="/images/savelog_main_character.png" className="custom-icon" />
         </h2>
         <button className="refresh-btn" onClick={() => load(entries.length > 0)}>↻</button>
       </div>
@@ -419,12 +419,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                       <div className="balance-bar-container">
                         <div
-                          className="balance-bar-fill"
-                          style={{ width: `${balanceStats.over}%`, background: 'linear-gradient(90deg, #FF4D4F, #FF7875)', height: '100%' }}
+                          className="balance-bar-fill balance-bar-fill--over"
+                          style={{ width: `${balanceStats.over}%` }}
                         />
                         <div
-                          className="balance-bar-fill"
-                          style={{ width: `${balanceStats.ok}%`, background: 'linear-gradient(90deg, #36CFC9, #00F5A0)', height: '100%' }}
+                          className="balance-bar-fill balance-bar-fill--ok"
+                          style={{ width: `${balanceStats.ok}%` }}
                         />
                       </div>
                       
@@ -619,7 +619,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           <button
                             onClick={() => handleToggleFollow(entry)}
                             className={`header-follow-btn ${followedUsers[entry.user_id] ? 'following' : ''}`}
-                            style={{ marginLeft: 6 }}
                           >
                             {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
                           </button>
@@ -636,12 +635,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                               border: `1px solid ${p.color}25`,
                             }}
                           >
-                            <img src={p.icon} alt="" style={{ width: 11, height: 11, objectFit: 'contain' }} />
+                            <img src={p.icon} alt="" />
                             <span>{p.name}</span>
                           </span>
                         )}
                         {isMilestone && (
-                          <span className="feed-tier-tag" style={{ background: 'rgba(255,215,0,0.15)', color: '#FFD700', border: '1px solid rgba(255,215,0,0.3)' }}>🏆 마일스톤</span>
+                          <span className="feed-tier-tag feed-tier-tag--milestone">🏆 마일스톤</span>
                         )}
                         {isZeroSpend && (
                           <span className="feed-tier-tag zero-tag">👑 무지출</span>
@@ -870,10 +869,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             </div>
 
             <div className="story-modal-footer">
-              <div style={{ flex: 1 }}>
+              <div>
                 <Button size="large" display="full" color="dark" variant="weak" onClick={() => setMessageRecipientEntry(null)}>취소</Button>
               </div>
-              <div style={{ flex: 1 }}>
+              <div>
                 <Button size="large" display="full" color="primary" variant="fill" disabled={!messageText.trim()} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
               </div>
             </div>
@@ -900,7 +899,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         </span>
       ))}
 
-      <div style={{ height: 24 }} />
+      <div className="rank-bottom-spacer" />
     </div>
   );
 }

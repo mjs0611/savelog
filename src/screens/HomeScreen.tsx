@@ -76,7 +76,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         ) : (
           <div>
             <div className="record-cta-row">
-              <img src="/images/savelog_main_character.png" className="custom-icon--lg" style={{ animation: 'floating 4s infinite ease-in-out' }} />
+              <img src="/images/savelog_main_character.png" className="custom-icon--lg" />
               <div>
                 <h4 className="record-cta-heading">오늘 짠내 나는 저축 일기 쓰기 ✍️</h4>
                 <p className="record-cta-detail">매일 기록하면 짠물 온도 상승 & 토스포인트 적립!</p>
@@ -199,7 +199,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             )}
             {streak.streak > 0 && (
               <Badge size="small" color="red" variant="weak">
-                <img src="/images/icon_flame.png" className="custom-icon--sm" style={{ marginRight: 3, verticalAlign: 'middle' }} />
+                <img src="/images/icon_flame.png" className="custom-icon--sm" />
                 {streak.streak}일
               </Badge>
             )}
@@ -221,7 +221,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                       <img src="/images/lucky_chest_closed.png" className="custom-icon" style={{ width: '1.4em', height: '1.4em', objectFit: 'contain', filter: 'grayscale(0.2)' }} />
                     )
                   ) : isDone ? (
-                    <svg width="12" height="9" viewBox="0 0 12 9" fill="none" style={{ color: 'var(--primary)' }}>
+                    <svg width="12" height="9" viewBox="0 0 12 9" fill="none" className="svg-primary">
                       <path d="M1 4.5L4 7.5L11 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
                   ) : isCurrent ? (
@@ -250,7 +250,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div className="mission-header-row">
               <span className="mission-title">
                 오늘의 짠물 미션
-                <img src="/images/icon_target.png" className="custom-icon" style={{ marginLeft: 5 }} />
+                <img src="/images/icon_target.png" className="custom-icon" />
               </span>
               {mission.completed ? (
                 <span className="mission-completed-badge">🎉 미션 완료</span>
@@ -265,7 +265,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               <div>
                 {mission.completed ? (
                   <span className="mission-completed-row">
-                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ color: 'var(--primary)' }}>
+                    <svg width="12" height="12" viewBox="0 0 12 12" fill="none" className="svg-primary">
                       <circle cx="6" cy="6" r="5.25" fill="rgba(0, 245, 160, 0.1)" stroke="currentColor" strokeWidth="1.5"/>
                       <path d="M4 6L5.5 7.5L8 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
                     </svg>
@@ -415,8 +415,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         );
       })()}
 
-      {/* 하단 여백 */}
-      <div style={{ height: 24 }} />
+      <div className="rank-bottom-spacer" />
     </div>
   );
 }
