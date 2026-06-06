@@ -1108,6 +1108,9 @@ input { font: inherit; outline: none; border: none; }
 }
 .option-btn {
   width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 12px;
   padding: 16px 20px;
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid rgba(255, 255, 255, 0.08);
@@ -1127,7 +1130,7 @@ input { font: inherit; outline: none; border: none; }
   background: rgba(0, 245, 160, 0.08);
   border-color: var(--primary);
 }
-.option-3d-icon { object-fit: contain; flex-shrink: 0; }
+.option-3d-icon { width: 28px; height: 28px; object-fit: contain; flex-shrink: 0; }
 
 /* MBTI 결과 페이지 */
 .persona-result-sheet {
@@ -1156,6 +1159,10 @@ input { font: inherit; outline: none; border: none; }
   font-size: 28px;
   font-weight: 900;
   letter-spacing: -0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
 }
 .persona-illustration-card {
   background: rgba(255, 255, 255, 0.02);
@@ -1169,9 +1176,17 @@ input { font: inherit; outline: none; border: none; }
   gap: 20px;
 }
 .persona-big-emoji, .persona-big-3d-icon {
+  width: 100px;
+  height: 100px;
+  object-fit: contain;
   animation: floating 3s ease-in-out infinite;
 }
-.persona-big-emoji-container {}
+.persona-big-emoji-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 15px 0;
+}
 .persona-desc {
   font-size: 15px;
   line-height: 1.6;

@@ -102,15 +102,15 @@ export default function PersonaTest({ onClose }: Props) {
           <div className="modal-body result-body">
             <div className="result-header">
               <span className="result-subtitle">당신의 소비 MBTI 분석 결과</span>
-              <h2 className="result-title" style={{ color: p.color, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+              <h2 className="result-title" style={{ color: p.color }}>
                 <img src={p.icon} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
                 <span>{p.name}</span>
               </h2>
             </div>
 
             <div className="persona-illustration-card" style={{ borderColor: p.color + '40' }}>
-              <div className="persona-big-emoji-container" style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', margin: '15px 0' }}>
-                <img src={p.icon} alt="" className="persona-big-3d-icon" style={{ width: 100, height: 100, objectFit: 'contain', filter: `drop-shadow(0 0 20px ${p.color}60)` }} />
+              <div className="persona-big-emoji-container">
+                <img src={p.icon} alt="" className="persona-big-3d-icon" style={{ filter: `drop-shadow(0 0 20px ${p.color}60)` }} />
               </div>
               <p className="persona-desc">{p.desc}</p>
             </div>
@@ -170,9 +170,8 @@ export default function PersonaTest({ onClose }: Props) {
                   key={i}
                   className="option-btn"
                   onClick={() => handleSelect(opt.type)}
-                  style={{ display: 'flex', alignItems: 'center', gap: '12px', textAlign: 'left', width: '100%' }}
                 >
-                  <img src={pOpt.icon} alt="" className="option-3d-icon" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                  <img src={pOpt.icon} alt="" className="option-3d-icon" />
                   <span style={{ flex: 1 }}>{opt.text}</span>
                 </button>
               );
