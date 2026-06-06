@@ -306,7 +306,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 transition: 'all 0.2s',
               }}
             >
-              <span style={{ fontSize: 18 }}>{isBalanceGame ? '⚖️' : '⚖️'}</span>
+              <span style={{ fontSize: 18 }}>⚖️</span>
               <div>
                 <p style={{ margin: 0, fontSize: 12, fontWeight: 900 }}>
                   {isBalanceGame ? '밸런스 게임 등록됨 ✓' : '내 지출, 합리적일까? 다른 사람들한테 물어보기'}

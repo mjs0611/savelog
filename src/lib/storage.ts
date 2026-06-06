@@ -288,7 +288,7 @@ export function sendCheeringMessage(recipientNickname: string, text: string, sen
       recipientNickname
     };
     currentMessages.unshift(newMessage);
-    localStorage.setItem(MESSAGES_KEY, JSON.stringify(currentMessages));
+    localStorage.setItem(MESSAGES_KEY, JSON.stringify(currentMessages.slice(0, 100)));
   } catch (e) {
     console.error(e);
   }

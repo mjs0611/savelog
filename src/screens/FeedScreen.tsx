@@ -598,67 +598,64 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             </div>
           )}
           {displayedEntries.length === 0 && feedTab === 'follow' && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, width: '100%' }}>
-              <div style={{ textAlign: 'center', padding: '24px 0 16px 0', color: 'var(--text-mute)' }}>
-                <p style={{ fontSize: 28, margin: '0 0 8px 0' }}>👥</p>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>팔로우한 짠친이 없어요</p>
-                <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>
+            <div style={{ textAlign: 'center', padding: '24px 0 16px 0', color: 'var(--text-mute)' }}>
+              <p style={{ fontSize: 28, margin: '0 0 8px 0' }}>👥</p>
+              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>팔로우한 짠친이 없어요</p>
+              <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>
                 {recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
               </p>
-              </div>
-
-              {recommendedFriends.length > 0 && (
-                <div className="glass-card recommended-friends-box" style={{ padding: 16 }}>
-                  <h4 style={{ margin: '0 0 12px 0', fontSize: 12, fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                    ✨ 추천 짠친
-                  </h4>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {recommendedFriends.map((friend) => {
-                      const p = friend.persona ? PERSONAS[friend.persona] : null;
-                      return (
-                        <div key={friend.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                            <div className="feed-avatar" style={{ margin: 0, width: 32, height: 32, fontSize: 12, ...(p ? { borderColor: p.color } : {}) }}>
-                              {friend.nickname.charAt(0).toUpperCase()}
-                            </div>
-                            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                                <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{friend.nickname}</span>
-                                {p && (
-                                  <span style={{ fontSize: 8, background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25`, padding: '1px 4px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                                    <img src={p.icon} alt="" style={{ width: 8, height: 8, objectFit: 'contain' }} />
-                                    <span>{p.name}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() => {
-                              const nowFollowing = toggleFollow(friend.user_id, friend.nickname);
-                              setFollowedUsers(getFollowedUsers());
-                              showFeedToast(nowFollowing ? `${friend.nickname}님을 팔로우했어요 👥` : `${friend.nickname}님 팔로우 해제`);
-                              toggleFollowSupabase(userId, friend.user_id, friend.nickname).catch(() => {});
-                            }}
-                            className="header-follow-btn"
-                            style={{
-                              padding: '5px 12px',
-                              borderRadius: 100,
-                              fontSize: 10,
-                              fontWeight: 900,
-                              cursor: 'pointer',
-                              boxShadow: '0 4px 10px rgba(0, 245, 160, 0.15)',
-                              transition: 'all 0.2s',
-                            }}
-                          >
-                            + 팔로우
-                          </button>
+            </div>
+          )}
+          {feedTab === 'follow' && Object.keys(followedUsers).length === 0 && recommendedFriends.length > 0 && (
+            <div className="glass-card recommended-friends-box" style={{ padding: 16 }}>
+              <h4 style={{ margin: '0 0 12px 0', fontSize: 12, fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                ✨ 추천 짠친
+              </h4>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+                {recommendedFriends.map((friend) => {
+                  const p = friend.persona ? PERSONAS[friend.persona] : null;
+                  return (
+                    <div key={friend.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div className="feed-avatar" style={{ margin: 0, width: 32, height: 32, fontSize: 12, ...(p ? { borderColor: p.color } : {}) }}>
+                          {friend.nickname.charAt(0).toUpperCase()}
                         </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{friend.nickname}</span>
+                            {p && (
+                              <span style={{ fontSize: 8, background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25`, padding: '1px 4px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
+                                <img src={p.icon} alt="" style={{ width: 8, height: 8, objectFit: 'contain' }} />
+                                <span>{p.name}</span>
+                              </span>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const nowFollowing = toggleFollow(friend.user_id, friend.nickname);
+                          setFollowedUsers(getFollowedUsers());
+                          showFeedToast(nowFollowing ? `${friend.nickname}님을 팔로우했어요 👥` : `${friend.nickname}님 팔로우 해제`);
+                          toggleFollowSupabase(userId, friend.user_id, friend.nickname).catch(() => {});
+                        }}
+                        className="header-follow-btn"
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: 100,
+                          fontSize: 10,
+                          fontWeight: 900,
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 10px rgba(0, 245, 160, 0.15)',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        + 팔로우
+                      </button>
+                    </div>
+                  );
+                })}
+              </div>
             </div>
           )}
           {displayedEntries.map((entry) => {
