@@ -149,7 +149,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                     flexShrink: 0
                   }}
                 >
-                  <img src={p?.icon} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
+                  <img src={p?.icon} alt="" className="pet-avatar-img" />
                 </div>
                 <div className="pet-info">
                   <div className="pet-name-row">
@@ -193,7 +193,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       <div className="glass-card streak-card">
         <div className="streak-header-row">
           <span className="streak-title">연속 기록</span>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="streak-badges-row">
             {streakShields > 0 && (
               <Badge size="small" color="blue" variant="weak">🛡️ 보호권 {streakShields}개</Badge>
             )}
@@ -305,10 +305,10 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {spendGroup.length > 0 && (
         <div className="glass-card rank-preview-card">
           <p className="rank-preview-title">이번 주 절약왕 🏆</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <div className="rank-preview-list">
             {spendGroup.slice(0, 3).map((row, i) => (
               <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <div className="rank-preview-row-info">
                   <span className="rank-medal">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
                   <span className="rank-nickname">{row.nickname}</span>
                 </div>
@@ -317,9 +317,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             ))}
           </div>
           {zeroGroup.length > 0 && (
-            <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
-              👑 무지출 인증단 {zeroGroup.length}명 참여 중
-            </p>
+            <p className="rank-preview-zero-note">👑 무지출 인증단 {zeroGroup.length}명 참여 중</p>
           )}
         </div>
       )}
@@ -373,65 +371,21 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         if (!current) return null;
 
         return (
-          <div
-            style={{
-              position: 'fixed',
-              top: 0,
-              left: 0,
-              width: '100vw',
-              height: '100vh',
-              background: 'rgba(9, 10, 16, 0.88)',
-              zIndex: 5000,
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'center',
-              alignItems: 'center',
-              padding: 24,
-              animation: 'fadeInOverlay 0.22s ease-out'
-            }}
-          >
+          <div className="tutorial-overlay">
             {/* 스포트라이트 안내 카드 */}
-            <div
-              className="glass-card"
-              style={{
-                maxWidth: 320,
-                width: '100%',
-                padding: 24,
-                border: '1.5px solid var(--primary)',
-                background: 'rgba(15, 17, 26, 0.95)',
-                borderRadius: 24,
-                textAlign: 'center',
-                boxShadow: '0 12px 40px rgba(0, 245, 160, 0.15)',
-                position: 'relative'
-              }}
-            >
+            <div className="tutorial-card glass-card">
               <button
                 onClick={() => {
                   localStorage.setItem('savelog_tutorial_completed', 'true');
                   setTutorialStep(null);
                 }}
-                style={{
-                  position: 'absolute',
-                  top: 16,
-                  right: 16,
-                  background: 'rgba(255,255,255,0.08)',
-                  border: 'none',
-                  color: 'var(--text-mute)',
-                  fontSize: 11,
-                  fontWeight: 700,
-                  padding: '3px 10px',
-                  borderRadius: 100,
-                  cursor: 'pointer'
-                }}
+                className="tutorial-skip-btn"
               >
                 건너뛰기
               </button>
-              <span style={{ fontSize: 36, display: 'block', marginBottom: 12 }}>{current.icon}</span>
-              <h3 style={{ fontSize: 15, fontWeight: 900, color: '#fff', margin: '0 0 10px 0' }}>{current.title}</h3>
-              <p style={{ fontSize: 11, color: 'var(--text-mute)', margin: '0 0 20px 0', lineHeight: 1.5, wordBreak: 'keep-all' }}>
-                {current.desc}
-              </p>
-
+              <span className="tutorial-icon">{current.icon}</span>
+              <h3 className="tutorial-title">{current.title}</h3>
+              <p className="tutorial-desc">{current.desc}</p>
               <button
                 onClick={() => {
                   if (tutorialStep < 3) {
@@ -441,36 +395,19 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                     setTutorialStep(null);
                   }
                 }}
-                style={{
-                  width: '100%',
-                  padding: 12,
-                  background: 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)',
-                  border: 'none',
-                  borderRadius: 14,
-                  color: '#090A10',
-                  fontSize: 12,
-                  fontWeight: 900,
-                  cursor: 'pointer',
-                  boxShadow: '0 4px 15px rgba(0, 245, 160, 0.2)',
-                  transition: 'all 0.2s'
-                }}
+                className="tutorial-next-btn"
               >
                 {tutorialStep === 3 ? "가이드 마치고 시작하기! 🎉" : "다음으로 〉"}
               </button>
             </div>
 
             {/* 스포트라이트 인디케이터 도트 */}
-            <div style={{ display: 'flex', gap: 6, marginTop: 16 }}>
+            <div className="tutorial-dots">
               {[1, 2, 3].map((step) => (
                 <div
                   key={step}
-                  style={{
-                    width: step === tutorialStep ? 18 : 6,
-                    height: 6,
-                    borderRadius: 100,
-                    background: step === tutorialStep ? 'var(--primary)' : 'rgba(255,255,255,0.15)',
-                    transition: 'all 0.3s ease'
-                  }}
+                  className={`tutorial-dot${step === tutorialStep ? ' tutorial-dot--active' : ''}`}
+                  style={{ width: step === tutorialStep ? 18 : 6 }}
                 />
               ))}
             </div>

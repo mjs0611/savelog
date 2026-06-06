@@ -178,13 +178,13 @@ export default function App() {
     return (
       <div className="screen setup-screen">
         <div className="setup-hero">
-          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" style={{ width: 140, height: 140, objectFit: 'contain', marginBottom: 16 }} />
+          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
           <h1 className="setup-title">savelog</h1>
           <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
         </div>
-        <div style={{ width: '100%', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)', borderRadius: 12, padding: '14px 16px', marginBottom: 16 }}>
-          <p style={{ fontSize: 12, fontWeight: 800, color: 'var(--text-sub)', marginBottom: 8 }}>서비스 이용을 위해 아래 약관에 동의해 주세요</p>
-          <p style={{ fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.6 }}>
+        <div className="terms-agree-box">
+          <p className="terms-agree-subtitle">서비스 이용을 위해 아래 약관에 동의해 주세요</p>
+          <p className="terms-agree-text">
             · <span>서비스 이용약관</span> (필수)<br />
             · <span>개인정보 수집 및 이용 동의</span> (필수)<br />
             · 마케팅 정보 수신 동의 (선택)
@@ -211,18 +211,14 @@ export default function App() {
     return (
       <div className="screen setup-screen">
         <div className="setup-hero">
-          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" style={{ width: 140, height: 140, objectFit: 'contain', marginBottom: 16 }} />
+          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
           <h1 className="setup-title">savelog</h1>
           <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
         </div>
         <Button size="xlarge" display="full" color="primary" variant="fill" onClick={fetchAnonymousKey} disabled={loginLoading}>
           {loginLoading ? '불러오는 중...' : '다시 시도하기'}
         </Button>
-        {loginError && (
-          <p style={{ fontSize: 11, color: '#FF4D4F', marginTop: 12, wordBreak: 'break-all', textAlign: 'center' }}>
-            {loginError}
-          </p>
-        )}
+        {loginError && <p className="login-error-msg">{loginError}</p>}
       </div>
     );
   }
@@ -231,12 +227,12 @@ export default function App() {
     return (
       <div className="screen setup-screen">
         <div className="setup-hero">
-          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" style={{ width: 140, height: 140, objectFit: 'contain', marginBottom: 16 }} />
+          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
           <h1 className="setup-title">savelog</h1>
           <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
         </div>
 
-        <div style={{ width: '100%' }}>
+        <div className="setup-textfield-wrap">
           <TextField
             variant="box"
             label="닉네임을 설정해 주세요"
@@ -563,7 +559,7 @@ export default function App() {
               {submitting ? '저장 중...' : '무지출 기록 완료'}
             </Button>
             {zeroNoteText.trim().length < 5 && (
-              <p style={{ margin: '10px 0 0 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'center' }}>5자 이상 입력하면 기록할 수 있어요</p>
+              <p className="zero-note-hint">5자 이상 입력하면 기록할 수 있어요</p>
             )}
           </div>
         </div>
