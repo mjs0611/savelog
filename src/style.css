@@ -2901,5 +2901,372 @@ input { font: inherit; outline: none; border: none; }
   border-color: rgba(255, 255, 255, 0.12);
 }
 
+/* 👥 짠물 계모임 스타일 */
+.pot-card-cta {
+  padding: 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pot-cta-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+.pot-cta-emoji {
+  font-size: 24px;
+}
+.pot-cta-title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+}
+.pot-cta-desc {
+  margin: 4px 0 0 0;
+  font-size: 11px;
+  color: var(--text-mute);
+  line-height: 1.4;
+}
+.pot-btn-row {
+  display: flex;
+  gap: 8px;
+}
+.pot-invite-row {
+  display: flex;
+  gap: 6px;
+  width: 100%;
+}
+.pot-invite-input {
+  flex: 1;
+  padding: 8px 12px;
+  font-size: 12px;
+  border-radius: 8px;
+  background: rgba(255,255,255,0.03);
+  border: 1px solid rgba(255,255,255,0.1);
+  color: #fff;
+}
+.pot-btn {
+  border: none;
+  font-size: 12px;
+  font-weight: 800;
+  padding: 8px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pot-btn-create {
+  flex: 1.4;
+  background: var(--primary);
+  color: #090a10;
+}
+.pot-btn-create:hover {
+  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.25);
+  opacity: 0.9;
+}
+.pot-btn-invite-cta {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-sub);
+}
+.pot-btn-invite-cta:hover {
+  background: rgba(255, 255, 255, 0.08);
+  color: #fff;
+}
+.pot-btn-join {
+  background: var(--primary);
+  color: #090a10;
+}
+.pot-btn-cancel {
+  background: rgba(255,255,255,0.05);
+  color: var(--text-mute);
+}
+
+/* 활성 상태 짠물 계모임 카드 */
+.pot-card-active {
+  padding: 16px;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+  border: 1px solid rgba(0, 245, 160, 0.15) !important;
+  box-shadow: 0 8px 24px rgba(0, 245, 160, 0.02) !important;
+}
+.pot-card-active:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 245, 160, 0.3) !important;
+  box-shadow: 0 8px 32px rgba(0, 245, 160, 0.05) !important;
+}
+.pot-active-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+.pot-active-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.pot-active-emoji {
+  font-size: 20px;
+}
+.pot-active-title {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 900;
+  color: #fff;
+}
+.pot-active-subtitle {
+  margin: 1px 0 0 0;
+  font-size: 10px;
+  color: var(--text-mute);
+}
+.pot-code-highlight {
+  color: var(--primary);
+  font-weight: 800;
+}
+.pot-active-badge {
+  font-size: 8px;
+  background: rgba(0, 245, 160, 0.1);
+  border: 1px solid rgba(0, 245, 160, 0.2);
+  color: var(--primary);
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 900;
+}
+
+/* 공동 예산 프로그레스 섹션 */
+.pot-progress-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+.pot-progress-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+}
+.pot-progress-amount {
+  font-size: 14px;
+  font-weight: 900;
+  color: #fff;
+}
+.pot-progress-max {
+  font-size: 11px;
+  color: var(--text-mute);
+  font-weight: 700;
+}
+.pot-progress-percent {
+  font-size: 13px;
+  font-weight: 900;
+  color: var(--primary);
+}
+.pot-progress-track {
+  height: 8px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.03);
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,0.05);
+}
+.pot-progress-fill {
+  height: 100%;
+  border-radius: 100px;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.pot-bar--safe {
+  background: linear-gradient(90deg, #00F5A0, #00D2FF);
+}
+.pot-bar--warning {
+  background: linear-gradient(90deg, #FFA800, #FFC800);
+}
+.pot-bar--danger {
+  background: linear-gradient(90deg, #FF4D4F, #FF7875);
+  animation: pulse-danger 1.5s infinite alternate;
+}
+
+@keyframes pulse-danger {
+  0% { opacity: 0.8; }
+  100% { opacity: 1; box-shadow: 0 0 8px rgba(255, 77, 79, 0.6); }
+}
+
+.pot-active-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid rgba(255,255,255,0.05);
+  padding-top: 10px;
+}
+.pot-footer-desc {
+  font-size: 10px;
+  color: var(--text-mute);
+  font-weight: 700;
+}
+.pot-footer-arrow {
+  font-size: 14px;
+  color: var(--text-mute);
+}
+
+/* 상세 모달 구조 */
+.pot-modal-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.pot-modal-header-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  border-bottom: 1px solid rgba(255,255,255,0.05);
+  padding-bottom: 12px;
+}
+.pot-leave-btn {
+  background: transparent;
+  border: 1px solid rgba(255, 77, 79, 0.3);
+  color: #FF7875;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pot-leave-btn:hover {
+  background: rgba(255, 77, 79, 0.1);
+}
+.pot-section-label {
+  margin: 0 0 8px 0;
+  font-size: 11px;
+  font-weight: 900;
+  color: var(--text-mute);
+  text-transform: uppercase;
+}
+.pot-members-list {
+  display: flex;
+  flex-direction: column;
+}
+.pot-member-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 0;
+  border-bottom: 1px solid rgba(255,255,255,0.03);
+}
+.pot-member-row--me {
+  background: rgba(255,255,255,0.01);
+  padding: 10px 8px;
+  border-radius: 8px;
+  margin: 0 -8px;
+}
+.pot-member-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pot-member-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 100px;
+  background: rgba(255,255,255,0.02);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.pot-member-avatar img {
+  width: 70%;
+  height: 70%;
+  object-fit: contain;
+}
+.pot-member-name {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.pot-me-tag {
+  font-size: 8px;
+  background: rgba(0, 245, 160, 0.15);
+  color: var(--primary);
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-weight: 900;
+}
+.pot-member-persona {
+  margin: 1px 0 0 0;
+  font-size: 9px;
+  font-weight: 700;
+}
+.pot-member-amount {
+  font-size: 12px;
+  font-weight: 900;
+  color: #fff;
+}
+.pot-member-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.pot-nudge-btn {
+  background: rgba(168, 85, 247, 0.12);
+  border: 1px solid rgba(168, 85, 247, 0.25);
+  color: #C084FC;
+  font-size: 9px;
+  font-weight: 900;
+  padding: 4px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.pot-nudge-btn:hover {
+  background: rgba(168, 85, 247, 0.2);
+  border-color: rgba(168, 85, 247, 0.4);
+  transform: scale(1.03);
+}
+
+/* 실시간 로그 */
+.pot-history-section {
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255,255,255,0.04);
+  border-radius: 12px;
+  padding: 12px;
+}
+.pot-history-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  max-height: 100px;
+  overflow-y: auto;
+}
+.pot-history-empty {
+  margin: 0;
+  font-size: 10px;
+  color: var(--text-mute);
+  text-align: center;
+  padding: 10px 0;
+}
+.pot-history-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+}
+.pot-history-bullet {
+  color: var(--primary);
+  font-weight: 900;
+}
+.pot-history-text {
+  font-size: 10px;
+  color: var(--text-sub);
+  line-height: 1.4;
+  word-break: break-all;
+}
+
+/* 모달 및 알림 오버레이 정밀 제어 */
+.pot-toast-overlay {
+  z-index: 10000;
+}
+
 
 

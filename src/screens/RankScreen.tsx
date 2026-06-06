@@ -58,7 +58,6 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
     : myPrevZeroIdx === 0 && prevMyDays >= 3 ? 50
     : 0;
 
-  const myDays = myRow?.days ?? 0;
 
   return (
     <div className="screen screen-rank">

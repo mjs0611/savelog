@@ -1,10 +1,36 @@
 import { useState, useRef, useEffect } from 'react';
-import { Badge } from '@toss/tds-mobile';
+import React from 'react';
+import { Badge, Button } from '@toss/tds-mobile';
 import type { DailyState, StreakData } from '../lib/storage';
-import { getDailyMission, getPersona, PERSONAS } from '../lib/storage';
+import { getDailyMission, getPersona, PERSONAS, getNickname } from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
 
+
+function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  if (!open) return null;
+  return (
+    <div className="modal-overlay simple-modal-overlay" onClick={onClose}>
+      <div className="modal-sheet simple-modal-sheet" onClick={e => e.stopPropagation()}>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+interface PotMember {
+  name: string;
+  spent: number;
+  persona: string;
+}
+
+interface PotGroup {
+  id: string;
+  name: string;
+  budget: number;
+  members: PotMember[];
+  nudgeHistory: string[];
+}
 
 interface Props {
   daily: DailyState;
@@ -60,6 +86,139 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isWobbling, setIsWobbling] = useState(false);
 
+  // 👥 짠물 계모임 관련 상태 및 로직
+  const [group, setGroup] = useState<PotGroup | null>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_pot_group');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+  const [showGroupModal, setShowGroupModal] = useState(false);
+  const [showInviteInput, setShowInviteInput] = useState(false);
+  const [inviteCode, setInviteCode] = useState('');
+  const [potToast, setPotToast] = useState<string | null>(null);
+  const potToastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showPotToast = (msg: string) => {
+    if (potToastTimerRef.current) clearTimeout(potToastTimerRef.current);
+    setPotToast(msg);
+    potToastTimerRef.current = setTimeout(() => {
+      setPotToast(null);
+      potToastTimerRef.current = null;
+    }, 2500);
+  };
+
+  const handleCreateGroup = () => {
+    const names = ['🍳 삼시세끼 집밥단', '☕ 스타벅스 탈출기', '🛒 쇼핑앱 삭제 위원회', '🏪 편의점 1+1 정복단'];
+    const randomName = names[Math.floor(Math.random() * names.length)];
+    const newGroup: PotGroup = {
+      id: Math.random().toString(36).substring(2, 9).toUpperCase(),
+      name: randomName,
+      budget: 300000,
+      members: [
+        { name: '김토스', spent: 38000, persona: 'hamster' },
+        { name: '이패드', spent: 115000, persona: 'flexer' },
+        { name: '박절약', spent: 12000, persona: 'keeper' }
+      ],
+      nudgeHistory: ['이패드님이 가입했습니다.', '김토스님이 박절약님을 콕 찔렀습니다.']
+    };
+    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
+    setGroup(newGroup);
+    showPotToast(`👥 ${randomName} 방을 개설했습니다!`);
+  };
+
+  const handleJoinGroup = () => {
+    const code = inviteCode.trim().toUpperCase();
+    if (!code) return;
+    const names = ['🍳 삼시세끼 집밥단', '☕ 스타벅스 탈출기', '🛒 쇼핑앱 삭제 위원회', '🏪 편의점 1+1 정복단'];
+    const randomName = names[Math.floor(Math.random() * names.length)];
+    const newGroup: PotGroup = {
+      id: code,
+      name: randomName,
+      budget: 300000,
+      members: [
+        { name: '김토스', spent: 42000, persona: 'hamster' },
+        { name: '이패드', spent: 98000, persona: 'flexer' },
+        { name: '박절약', spent: 18000, persona: 'keeper' }
+      ],
+      nudgeHistory: [`초대 코드 ${code}로 입장했습니다.`, '김토스님이 박절약님을 콕 찔렀습니다.']
+    };
+    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
+    setGroup(newGroup);
+    setInviteCode('');
+    setShowInviteInput(false);
+    showPotToast(`👥 ${randomName} 방에 참여했습니다!`);
+  };
+
+  const handleLeaveGroup = () => {
+    localStorage.removeItem('savelog_pot_group');
+    setGroup(null);
+    setShowGroupModal(false);
+    showPotToast('계모임에서 탈퇴했습니다.');
+  };
+
+  const handleNudgeMember = (memberName: string) => {
+    if (!group) return;
+    const myName = getNickname() || '나';
+    const message = `${myName}님이 ${memberName}님을 콕 찔렀습니다.`;
+    const updatedHistory = [message, ...group.nudgeHistory.slice(0, 15)];
+    const updatedGroup = {
+      ...group,
+      nudgeHistory: updatedHistory
+    };
+    localStorage.setItem('savelog_pot_group', JSON.stringify(updatedGroup));
+    setGroup(updatedGroup);
+    showPotToast(`💬 ${memberName}님에게 "지갑 지켜! 🛡️" 콕 찌르기를 보냈어요.`);
+  };
+
+  // 실시간 짠물 계모임 타인 활동 시뮬레이션 효과
+  useEffect(() => {
+    if (!group) return;
+    
+    const interval = setInterval(() => {
+      const chance = Math.random();
+      if (chance < 0.15) { 
+        const mockMembers = ['김토스', '이패드', '박절약'];
+        const chosenOne = mockMembers[Math.floor(Math.random() * mockMembers.length)];
+        const actionType = Math.random() > 0.5 ? 'spend' : 'nudge';
+        
+        setGroup(prevGroup => {
+          if (!prevGroup) return null;
+          let updatedMembers = [...prevGroup.members];
+          let updatedHistory = [...prevGroup.nudgeHistory];
+          
+          if (actionType === 'spend') {
+            const addedSpend = Math.floor(Math.random() * 3000) + 1000;
+            updatedMembers = prevGroup.members.map(m => 
+              m.name === chosenOne ? { ...m, spent: m.spent + addedSpend } : m
+            );
+            updatedHistory.unshift(`${chosenOne}님이 ${formatAmount(addedSpend)} 소비를 기록했습니다.`);
+          } else {
+            const target = mockMembers.filter(n => n !== chosenOne)[Math.floor(Math.random() * 2)];
+            const comment = Math.random() > 0.5 ? '지갑 지키세요! 🛡️' : '커피 참읍시다 ☕';
+            updatedHistory.unshift(`${chosenOne}님이 ${target}님을 콕 찔렀습니다: "${comment}"`);
+            
+            if (Math.random() > 0.5) {
+              showPotToast(`💬 ${chosenOne}님이 나를 콕 찔렀어요: "${comment}"`);
+            }
+          }
+          
+          const newGroup = {
+            ...prevGroup,
+            members: updatedMembers,
+            nudgeHistory: updatedHistory.slice(0, 15)
+          };
+          localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
+          return newGroup;
+        });
+      }
+    }, 12000);
+    
+    return () => clearInterval(interval);
+  }, [group !== null]);
+
   const handlePetClick = () => {
     setIsWobbling(true);
     setTimeout(() => setIsWobbling(false), 500);
@@ -80,9 +239,8 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
   useEffect(() => {
     return () => {
-      if (speechTimeoutRef.current) {
-        clearTimeout(speechTimeoutRef.current);
-      }
+      if (speechTimeoutRef.current) clearTimeout(speechTimeoutRef.current);
+      if (potToastTimerRef.current) clearTimeout(potToastTimerRef.current);
     };
   }, []);
 
@@ -214,6 +372,196 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           </div>
         );
       })()}
+
+      {/* 👥 짠물 계모임 (비참여 상태) */}
+      {!group ? (
+        <div className="glass-card pot-card-cta">
+          <div className="pot-cta-header">
+            <span className="pot-cta-emoji">👥</span>
+            <div>
+              <p className="pot-cta-title">우리끼리 예산 수비, 짠물 계모임</p>
+              <p className="pot-cta-desc">친구들과 함께 주간 예산을 정하고, 공동 목표를 함께 수비해 보세요!</p>
+            </div>
+          </div>
+          {showInviteInput ? (
+            <div className="pot-invite-row">
+              <input
+                className="nickname-input pot-invite-input"
+                placeholder="초대 코드 입력 (예: AB12CD)"
+                value={inviteCode}
+                onChange={e => setInviteCode(e.target.value)}
+                onKeyDown={e => { if (e.key === 'Enter' && inviteCode.trim()) handleJoinGroup(); }}
+                maxLength={10}
+                autoFocus
+              />
+              <button className="pot-btn pot-btn-join" onClick={handleJoinGroup} disabled={!inviteCode.trim()}>
+                참여
+              </button>
+              <button className="pot-btn pot-btn-cancel" onClick={() => { setShowInviteInput(false); setInviteCode(''); }}>
+                취소
+              </button>
+            </div>
+          ) : (
+            <div className="pot-btn-row">
+              <button className="pot-btn pot-btn-create" onClick={handleCreateGroup}>
+                방 개설하기 🍳
+              </button>
+              <button className="pot-btn pot-btn-invite-cta" onClick={() => setShowInviteInput(true)}>
+                초대코드 입력
+              </button>
+            </div>
+          )}
+        </div>
+      ) : (
+        /* 👥 짠물 계모임 (참여 상태) */
+        (() => {
+          const myRow = weekRank.find((r) => r.user_id === userId);
+          const mySpend = myRow ? myRow.total : 0;
+          const combinedSpend = mySpend + group.members.reduce((sum, m) => sum + m.spent, 0);
+          const ratio = Math.min(100, Math.round((combinedSpend / group.budget) * 100));
+          
+          let progressColorClass = 'pot-bar--safe';
+          if (ratio >= 90) {
+            progressColorClass = 'pot-bar--danger';
+          } else if (ratio >= 70) {
+            progressColorClass = 'pot-bar--warning';
+          }
+
+          return (
+            <div className="glass-card pot-card-active" onClick={() => setShowGroupModal(true)}>
+              <div className="pot-active-header">
+                <div className="pot-active-title-wrap">
+                  <span className="pot-active-emoji">👥</span>
+                  <div>
+                    <p className="pot-active-title">{group.name}</p>
+                    <p className="pot-active-subtitle">초대코드: <span className="pot-code-highlight">{group.id}</span></p>
+                  </div>
+                </div>
+                <span className="pot-active-badge">모임 중</span>
+              </div>
+
+              <div className="pot-progress-section">
+                <div className="pot-progress-labels">
+                  <span className="pot-progress-amount">
+                    {formatAmount(combinedSpend)} <span className="pot-progress-max">/ {formatAmount(group.budget)}</span>
+                  </span>
+                  <span className="pot-progress-percent">{ratio}%</span>
+                </div>
+                <div className="pot-progress-track">
+                  <div className={`pot-progress-fill ${progressColorClass}`} style={{ width: `${ratio}%` }} />
+                </div>
+              </div>
+
+              <div className="pot-active-footer">
+                <span className="pot-footer-desc">
+                  현재 {group.members.length + 1}명 참여 중 · 탭해서 상세 가계부 확인
+                </span>
+                <span className="pot-footer-arrow">›</span>
+              </div>
+            </div>
+          );
+        })()
+      )}
+
+      {/* 짠물 계모임 상세 모달 */}
+      <SimpleModal open={showGroupModal} onClose={() => setShowGroupModal(false)}>
+        {group && (() => {
+          const myName = getNickname() || '나';
+          const myPersona = getPersona() || 'hamster';
+          const myRow = weekRank.find((r) => r.user_id === userId);
+          const mySpend = myRow ? myRow.total : 0;
+          
+          return (
+            <div className="pot-modal-content" style={{ width: '100%' }}>
+              <div className="pot-modal-header-row">
+                <div>
+                  <h3 className="simple-modal-title">👥 {group.name}</h3>
+                  <p className="simple-modal-desc">주간 예산: {formatAmount(group.budget)} (코드: {group.id})</p>
+                </div>
+                <button className="pot-leave-btn" onClick={handleLeaveGroup}>모임 탈퇴</button>
+              </div>
+
+              {/* 멤버 현황 리스트 */}
+              <div className="pot-members-list">
+                <p className="pot-section-label">멤버별 지출 현황</p>
+                
+                {/* 1. 로그인 유저 */}
+                {(() => {
+                  const p = PERSONAS[myPersona];
+                  return (
+                    <div className="pot-member-row pot-member-row--me">
+                      <div className="pot-member-info">
+                        <div className="pot-member-avatar" style={{ border: `1.5px solid ${p?.color || '#FF5E62'}` }}>
+                          <img src={p?.icon} alt="" />
+                        </div>
+                        <div>
+                          <p className="pot-member-name">
+                            {myName} <span className="pot-me-tag">나</span>
+                          </p>
+                          <p className="pot-member-persona" style={{ color: p?.color }}>{p?.name}</p>
+                        </div>
+                      </div>
+                      <span className="pot-member-amount">{formatAmount(mySpend)}</span>
+                    </div>
+                  );
+                })()}
+
+                {/* 2. Mock 멤버들 */}
+                {group.members.map((member, i) => {
+                  const p = PERSONAS[member.persona];
+                  return (
+                    <div key={i} className="pot-member-row">
+                      <div className="pot-member-info">
+                        <div className="pot-member-avatar" style={{ border: `1.5px solid ${p?.color || '#FF5E62'}` }}>
+                          <img src={p?.icon} alt="" />
+                        </div>
+                        <div>
+                          <p className="pot-member-name">{member.name}</p>
+                          <p className="pot-member-persona" style={{ color: p?.color }}>{p?.name}</p>
+                        </div>
+                      </div>
+                      <div className="pot-member-right">
+                        <span className="pot-member-amount">{formatAmount(member.spent)}</span>
+                        <button className="pot-nudge-btn" onClick={() => handleNudgeMember(member.name)}>
+                          콕 찌르기 👈
+                        </button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 실시간 활동 로그 */}
+              <div className="pot-history-section">
+                <p className="pot-section-label">실시간 계모임 신호 📡</p>
+                <div className="pot-history-list">
+                  {group.nudgeHistory.length === 0 ? (
+                    <p className="pot-history-empty">아직 활동 신호가 없습니다.</p>
+                  ) : (
+                    group.nudgeHistory.map((log, idx) => (
+                      <div key={idx} className="pot-history-row">
+                        <span className="pot-history-bullet">·</span>
+                        <span className="pot-history-text">{log}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+
+              <div style={{ marginTop: '16px' }}>
+                <Button display="full" size="large" color="primary" variant="fill" onClick={() => setShowGroupModal(false)}>
+                  닫기
+                </Button>
+              </div>
+            </div>
+          );
+        })()}
+      </SimpleModal>
+
+      {/* 짠물 계모임 내부용 간이 토스트 알림 */}
+      {potToast && (
+        <div className="point-toast pot-toast-overlay">{potToast}</div>
+      )}
 
       {/* 펜딩 포인트 (광고 보고 받기) */}
       {pendingPoints > 0 && (
