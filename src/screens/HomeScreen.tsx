@@ -271,8 +271,8 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 스트릭 로드맵 */}
       <div className="glass-card streak-card">
-        <div className="streak-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
-          <span className="streak-title" style={{ fontSize: 13, fontWeight: 800 }}>연속 기록</span>
+        <div className="streak-header-row">
+          <span className="streak-title">연속 기록</span>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
             {streakShields > 0 && (
               <Badge size="small" color="blue" variant="weak">🛡️ 보호권 {streakShields}개</Badge>
@@ -316,7 +316,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           })}
         </div>
         {streak.streak > 0 && streak.streak % 7 === 0 && pendingPoints > 0 && (
-          <p className="streak-reward-hint" style={{ fontSize: 11, color: 'var(--primary)', marginTop: 8, textAlign: 'center', fontWeight: 700 }}>🔥 7일 연속 완주 보너스 포함 · 위에서 광고 보고 받기</p>
+          <p className="streak-reward-hint">🔥 7일 연속 완주 보너스 포함 · 위에서 광고 보고 받기</p>
         )}
       </div>
 
@@ -327,24 +327,24 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const mission = getDailyMission(daily.date);
         return (
           <div className="glass-card daily-mission-card">
-            <div className="mission-header-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span className="mission-title" style={{ fontSize: 13, fontWeight: 800, display: 'flex', alignItems: 'center' }}>
+            <div className="mission-header-row">
+              <span className="mission-title">
                 오늘의 짠물 미션
                 <img src="/images/icon_target.png" className="custom-icon" style={{ marginLeft: 5 }} />
               </span>
               {mission.completed ? (
-                <span className="mission-completed-badge" style={{ fontSize: 10, fontWeight: 800, color: 'var(--primary)', background: 'rgba(0,245,160,0.15)', padding: '2px 8px', borderRadius: 100 }}>🎉 미션 완료</span>
+                <span className="mission-completed-badge">🎉 미션 완료</span>
               ) : (
-                <span className="mission-badge" style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-mute)', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: 100 }}>진행 중</span>
+                <span className="mission-badge">진행 중</span>
               )}
             </div>
-            <div className="mission-content" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <div className="mission-content">
               <div>
-                <p className="mission-text" style={{ margin: 0, fontSize: 12, fontWeight: 700, color: 'var(--text-main)' }}>{mission.action}</p>
+                <p className="mission-text">{mission.action}</p>
               </div>
               <div>
                 {mission.completed ? (
-                  <span className="mission-completed-row" style={{ fontSize: 11, fontWeight: 800, color: 'var(--primary)', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                  <span className="mission-completed-row">
                     <svg width="12" height="12" viewBox="0 0 12 12" fill="none" style={{ color: 'var(--primary)' }}>
                       <circle cx="6" cy="6" r="5.25" fill="rgba(0, 245, 160, 0.1)" stroke="currentColor" strokeWidth="1.5"/>
                       <path d="M4 6L5.5 7.5L8 4.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -352,7 +352,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                     달성
                   </span>
                 ) : (
-                  <span className="mission-reward" style={{ fontSize: 11, fontWeight: 800, color: 'var(--text-mute)' }}>도전 중</span>
+                  <span className="mission-reward">도전 중</span>
                 )}
               </div>
             </div>
@@ -363,9 +363,9 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* 이번 주 내 현황 */}
       {myRow && (
         <div className="glass-card week-summary-card">
-          <p className="week-summary-label" style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>이번 주 내 소비</p>
-          <p className="week-summary-amount" style={{ margin: '4px 0 8px 0', fontSize: 18, fontWeight: 900, color: 'var(--text-main)' }}>{formatAmount(myRow.total)}</p>
-          <div className="week-summary-meta" style={{ display: 'flex', gap: 6 }}>
+          <p className="week-summary-label">이번 주 내 소비</p>
+          <p className="week-summary-amount">{formatAmount(myRow.total)}</p>
+          <div className="week-summary-meta">
             <Badge size="small" color="blue" variant="weak">{myRow.days}일 기록</Badge>
             {inSpendGroup && (
               <Badge size="small" color={mySpendIdx === 0 ? 'yellow' : 'elephant'} variant="weak">
@@ -384,15 +384,15 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* 순위 미리보기 — 유지출 그룹 상위 3명 */}
       {spendGroup.length > 0 && (
         <div className="glass-card rank-preview-card">
-          <p className="rank-preview-title" style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 800 }}>이번 주 절약왕 🏆</p>
+          <p className="rank-preview-title">이번 주 절약왕 🏆</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {spendGroup.slice(0, 3).map((row, i) => (
-              <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '4px 0' }}>
+              <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <span className="rank-medal" style={{ fontSize: 14 }}>{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                  <span className="rank-nickname" style={{ fontSize: 12, fontWeight: 700, color: row.user_id === userId ? 'var(--primary)' : 'var(--text-main)' }}>{row.nickname}</span>
+                  <span className="rank-medal">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                  <span className="rank-nickname" style={{ color: row.user_id === userId ? 'var(--primary)' : 'var(--text-main)' }}>{row.nickname}</span>
                 </div>
-                <span className="rank-amount" style={{ fontSize: 12, fontWeight: 800, color: row.user_id === userId ? 'var(--primary)' : 'var(--text-sub)' }}>{formatAmount(row.total)}</span>
+                <span className="rank-amount" style={{ color: row.user_id === userId ? 'var(--primary)' : 'var(--text-sub)' }}>{formatAmount(row.total)}</span>
               </div>
             ))}
           </div>

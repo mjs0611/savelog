@@ -344,8 +344,8 @@ input { font: inherit; outline: none; border: none; }
 .points-val  { font-size: 15px; font-weight: 800; color: var(--primary); }
 
 /* 스트릭 - Instagram Story bubble style */
-.streak-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
-.streak-title { font-size: 15px; font-weight: 800; color: var(--text-main); }
+.streak-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+.streak-title { font-size: 13px; font-weight: 800; color: var(--text-main); }
 
 .streak-roadmap {
   display: flex;
@@ -415,7 +415,7 @@ input { font: inherit; outline: none; border: none; }
 }
 
 .streak-day-label { font-size: 11px; color: var(--text-mute); font-weight: 700; }
-.streak-reward-hint { font-size: 13px; color: var(--primary); font-weight: 700; margin-top: 12px; text-align: center; }
+.streak-reward-hint { font-size: 11px; color: var(--primary); font-weight: 700; margin-top: 8px; text-align: center; }
 
 /* 기록 CTA */
 .record-cta-card {
@@ -466,26 +466,23 @@ input { font: inherit; outline: none; border: none; }
   padding: 12px 14px;
   background: linear-gradient(135deg, rgba(18, 18, 20, 0.8), rgba(28, 28, 30, 0.4));
 }
-.week-summary-label  { font-size: 13px; color: var(--text-mute); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-.week-summary-amount { font-size: 30px; font-weight: 900; color: var(--text-main); margin-bottom: 12px; letter-spacing: -0.5px; }
-.week-summary-amount::after { content: ''; display: block; width: 40px; height: 3px; background: var(--primary); margin-top: 8px; border-radius: 10px; }
+.week-summary-label  { font-size: 11px; color: var(--text-mute); font-weight: 700; margin: 0 0 4px 0; }
+.week-summary-amount { font-size: 18px; font-weight: 900; color: var(--text-main); margin: 4px 0 8px 0; letter-spacing: -0.5px; }
 .week-summary-meta   { display: flex; gap: 8px; }
 
 /* 순위 미리보기 */
-.rank-preview-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; }
+.rank-preview-title { font-size: 13px; font-weight: 800; margin: 0 0 10px 0; }
 .rank-preview-card { padding: 12px 14px; }
-.rank-preview-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--divider); }
-.rank-preview-row:last-child { border-bottom: none; }
-.rank-preview-row.rank-mine { 
-  background: rgba(0, 245, 160, 0.08); 
+.rank-preview-row { display: flex; justify-content: space-between; align-items: center; padding: 4px 0; }
+.rank-preview-row.rank-mine {
+  background: rgba(0, 245, 160, 0.08);
   border-radius: var(--radius-sm);
-  margin: 4px -10px; 
-  padding: 10px 10px; 
-  border-bottom: none;
+  margin: 4px -10px;
+  padding: 10px 10px;
 }
-.rank-medal { font-size: 18px; width: 24px; text-align: center; }
-.rank-nickname { flex: 1; font-size: 15px; font-weight: 700; }
-.rank-amount   { font-size: 14px; font-weight: 800; color: var(--text-main); }
+.rank-medal { font-size: 14px; width: 24px; text-align: center; }
+.rank-nickname { font-size: 12px; font-weight: 700; }
+.rank-amount   { font-size: 12px; font-weight: 800; }
 
 /* ── Feed Screen ────────────────────────────────────────────────────────────── */
 
@@ -1016,19 +1013,20 @@ input { font: inherit; outline: none; border: none; }
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
 }
 .mission-title {
-  font-size: 15px;
+  font-size: 13px;
   font-weight: 800;
   color: var(--text-main);
+  display: flex;
+  align-items: center;
 }
 .mission-badge {
-  background: rgba(255, 149, 0, 0.12);
-  color: var(--warning);
-  border: 1px solid rgba(255, 149, 0, 0.2);
-  font-size: 11px;
-  padding: 3px 8px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-mute);
+  font-size: 10px;
+  padding: 2px 8px;
   border-radius: 100px;
   font-weight: 700;
 }
@@ -1042,34 +1040,32 @@ input { font: inherit; outline: none; border: none; }
   border: 1px solid rgba(255, 255, 255, 0.04);
 }
 .mission-text {
-  font-size: 15px;
+  font-size: 12px;
   font-weight: 700;
   color: var(--text-main);
+  margin: 0;
 }
 .mission-reward {
-  font-size: 14px;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--text-mute);
+}
+.mission-completed-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
   font-weight: 800;
   color: var(--primary);
 }
-.mission-completed-row {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 14px;
-  font-weight: 700;
-  color: var(--primary);
-}
 .mission-completed-badge {
-  background: rgba(0, 245, 160, 0.12);
+  background: rgba(0, 245, 160, 0.15);
   color: var(--primary);
-  border: 1px solid rgba(0, 245, 160, 0.25);
-  font-size: 12px;
-  padding: 4px 10px;
+  border: none;
+  font-size: 10px;
+  padding: 2px 8px;
   border-radius: 100px;
-  font-weight: 700;
-  display: flex;
-  align-items: center;
-  gap: 4px;
+  font-weight: 800;
 }
 
 /* ── 소비 MBTI 테스트 스타일 ────────────────────────────────────────────────── */
