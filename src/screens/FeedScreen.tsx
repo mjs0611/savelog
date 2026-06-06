@@ -796,7 +796,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 )}
 
                 {/* 리액션 카운트 — 정보 표시 라인 (인스타 스타일) */}
-                {entry.user_id !== userId && (entry.trust_count > 0 || entry.doubt_count > 0) && (
+                {(entry.trust_count > 0 || entry.doubt_count > 0) && (
                   <div className="feed-reaction-counts">
                     {entry.trust_count > 0 && <span>❤️ {entry.trust_count}명</span>}
                     {entry.doubt_count > 0 && <span>🤔 {entry.doubt_count}명</span>}
