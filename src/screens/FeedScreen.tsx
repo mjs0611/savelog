@@ -59,7 +59,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   async function handleFeedVote(entryId: string, vote: 'over' | 'ok') {
     if (feedVotes[entryId] || feedVotingRef.current.has(entryId)) return;
     feedVotingRef.current.add(entryId);
-    const prevVotes = feedVotes; // rollback 용 스냅샷
     const nextVotes = { ...feedVotes, [entryId]: vote };
     setFeedVotes(nextVotes); // optimistic UI update
     try {
@@ -69,8 +68,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       onGrantFeedReward?.();
       showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
     } catch {
-      // API 실패 시 optimistic update 롤백 (handleReact와 동일한 패턴)
-      setFeedVotes(prevVotes);
+      // 실패한 엔트리만 롤백 — 동시 진행 중인 다른 투표에 영향 없도록 functional update 사용
+      setFeedVotes(prev => {
+        const { [entryId]: _, ...rest } = prev;
+        return rest;
+      });
       showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
     } finally {
       feedVotingRef.current.delete(entryId);
