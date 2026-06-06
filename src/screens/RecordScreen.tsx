@@ -551,8 +551,14 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
 
           {creatorMode === 'dilemma' && (
             <>
-              {(dilemmaText.trim().length < 5 || !dilemmaCostStr) && (
-                <p className="submit-hint submit-hint--mb">금액과 고민 설명을 5자 이상 입력해 주세요</p>
+              {(!dilemmaCostStr || dilemmaText.trim().length < 5) && (
+                <p className="submit-hint submit-hint--mb">
+                  {!dilemmaCostStr && dilemmaText.trim().length < 5
+                    ? '금액과 고민 설명을 입력해 주세요'
+                    : !dilemmaCostStr
+                    ? '예상 소비 금액을 입력해 주세요'
+                    : '소비 고민 설명을 5자 이상 입력해 주세요'}
+                </p>
               )}
               <Button
                 size="xlarge"
