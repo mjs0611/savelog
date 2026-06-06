@@ -236,11 +236,11 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
         return (
           <div className="glass-card radar-chart-card">
-            <div style={{ marginBottom: 14 }}>
-              <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-main)' }}>소비 오각형 스탯 📊</span>
+            <div className="radar-chart-header">
+              <span className="radar-chart-label">소비 오각형 스탯 📊</span>
             </div>
 
-            <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', position: 'relative' }}>
+            <div className="radar-chart-svg-wrap">
               <svg width="200" height="184" style={{ overflow: 'visible' }}>
                 {/* 1. Concentric Pentagonal Grid */}
                 {gridPoints.map((pts, idx) => (
@@ -329,17 +329,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <>
                 <button
                   onClick={handleClearAllMessages}
-                  style={{
-                    border: 'none',
-                    background: clearConfirm ? 'rgba(255,77,79,0.15)' : 'rgba(255,255,255,0.06)',
-                    color: clearConfirm ? '#FF4D4F' : 'var(--text-mute)',
-                    fontSize: 10,
-                    fontWeight: 700,
-                    padding: '2px 8px',
-                    borderRadius: 100,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s'
-                  }}
+                  className={`mailbox-clear-btn${clearConfirm ? ' mailbox-clear-btn--confirm' : ''}`}
                 >
                   {clearConfirm ? '한 번 더 탭하면 삭제' : '전체 삭제'}
                 </button>
@@ -356,43 +346,27 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             {messages.map((msg) => {
               const isSent = msg.senderNickname === nickname;
               return (
-                <div
-                  key={msg.id}
-                  style={{
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: 6,
-                    padding: 12,
-                    background: isSent ? 'rgba(255, 255, 255, 0.01)' : 'rgba(255, 255, 255, 0.02)',
-                    border: `1px solid ${isSent ? 'rgba(255,255,255,0.04)' : 'rgba(255, 255, 255, 0.05)'}`,
-                    borderRadius: 'var(--radius-sm)'
-                  }}
-                >
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                <div key={msg.id} className={`mailbox-msg-row${isSent ? ' mailbox-msg-row--sent' : ''}`}>
+                  <div className="mailbox-msg-meta">
+                    <div className="mailbox-msg-from">
                       {!isSent && (
                         <span
+                          className="mailbox-sender-badge"
                           style={{
-                            fontSize: 12,
                             background: `${msg.senderPersonaColor || '#00F5A0'}15`,
                             color: msg.senderPersonaColor || '#00F5A0',
-                            padding: '2px 6px',
-                            borderRadius: 100,
-                            fontWeight: 700
                           }}
                         >
                           {msg.senderPersonaEmoji || '🐷'} {msg.senderNickname}
                         </span>
                       )}
-                      <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>
+                      <span className="mailbox-msg-label">
                         {isSent ? `✉️ ${msg.recipientNickname || '상대방'}님에게 보낸 쪽지` : '받은 응원'}
                       </span>
                     </div>
-                    <span style={{ fontSize: 10, color: 'var(--text-mute)' }}>{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
+                    <span className="mailbox-msg-time">{msg.created_at ? timeAgo(msg.created_at) : msg.timestamp}</span>
                   </div>
-                  <p style={{ fontSize: 12, color: isSent ? 'var(--text-mute)' : 'var(--text-sub)', lineHeight: 1.4 }}>
-                    {msg.text}
-                  </p>
+                  <p className={isSent ? 'mailbox-msg-text-sent' : 'mailbox-msg-text-received'}>{msg.text}</p>
                 </div>
               );
             })}
@@ -410,16 +384,11 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         </div>
 
         {entriesLoading ? (
-          <p className="week-entries-empty" style={{ color: 'var(--text-mute)' }}>불러오는 중...</p>
+          <p className="week-entries-empty">불러오는 중...</p>
         ) : entriesError ? (
-          <div style={{ textAlign: 'center', padding: '8px 0' }}>
-            <p className="week-entries-empty" style={{ color: '#FF4D4F', marginBottom: 8 }}>기록을 불러오지 못했어요</p>
-            <button
-              onClick={() => setEntriesRetry((n) => n + 1)}
-              style={{ fontSize: 12, color: 'var(--text-sub)', background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)', borderRadius: 8, padding: '6px 16px', cursor: 'pointer' }}
-            >
-              다시 시도
-            </button>
+          <div className="week-entries-error">
+            <p className="week-entries-empty week-entries-error-msg">기록을 불러오지 못했어요</p>
+            <button onClick={() => setEntriesRetry((n) => n + 1)} className="week-entries-retry-btn">다시 시도</button>
           </div>
         ) : myEntries.length === 0 ? (
           <p className="week-entries-empty">아직 기록이 없어요</p>
@@ -448,26 +417,26 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       <div className="glass-card how-to-card">
         <p className="how-to-title">포인트 획득 방법</p>
         <div className="how-to-rows">
-          <div className="how-to-row"><span>📝 매일 기록</span><span style={{color:'var(--text-mute)',fontSize:10}}>+3원 대기</span></div>
-          <div className="how-to-row"><span>🔥 7일 연속 완주</span><span style={{color:'var(--text-mute)',fontSize:10}}>+20원 대기</span></div>
-          <div className="how-to-row"><span style={{fontSize:11,color:'var(--text-mute)',marginLeft:8}}>└ 광고 시청 후 토스포인트 지급</span><span></span></div>
-          <div className="how-to-row"><span>❤️ 게시글 반응하기</span><span>+1원</span></div>
-          <div className="how-to-row"><span>🥇 주간 1위 (3일↑)</span><span style={{color:'var(--text-mute)',fontSize:10}}>광고 후 +50원</span></div>
-          <div className="how-to-row"><span>📊 상위 10% (3일↑)</span><span style={{color:'var(--text-mute)',fontSize:10}}>광고 후 +30원</span></div>
+          <div className="how-to-row"><span>📝 매일 기록</span><span className="how-to-reward-muted">+3원 대기</span></div>
+          <div className="how-to-row"><span>🔥 7일 연속 완주</span><span className="how-to-reward-muted">+20원 대기</span></div>
+          <div className="how-to-row how-to-row--note"><span>└ 광고 시청 후 토스포인트 지급</span><span /></div>
+          <div className="how-to-row"><span>❤️ 게시글 반응하기</span><span className="how-to-reward-primary">+1원</span></div>
+          <div className="how-to-row"><span>🥇 주간 1위 (3일↑)</span><span className="how-to-reward-muted">광고 후 +50원</span></div>
+          <div className="how-to-row"><span>📊 상위 10% (3일↑)</span><span className="how-to-reward-muted">광고 후 +30원</span></div>
         </div>
       </div>
 
       {/* ⚙️ 약관 및 마케팅 설정 */}
       <div className="glass-card setting-menu-card">
         <div
-          className="setting-menu-item"
+          className="setting-menu-item setting-menu-item--primary"
           onClick={() => {
             localStorage.removeItem('savelog_tutorial_completed');
             window.location.reload();
           }}
         >
-          <span style={{ color: 'var(--primary)', fontWeight: 800 }}>🎓 가이드 튜토리얼 다시 보기</span>
-          <span className="setting-arrow" style={{ color: 'var(--primary)' }}>›</span>
+          <span>🎓 가이드 튜토리얼 다시 보기</span>
+          <span className="setting-arrow">›</span>
         </div>
         <div className="setting-menu-item" onClick={() => setTermsModalOpen(true)}>
           <span>서비스 이용약관</span>
@@ -484,8 +453,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       {/* 서비스 이용약관 모달 */}
       <SimpleModal open={termsModalOpen} onClose={() => setTermsModalOpen(false)}>
         <div>
-          <h3 style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>서비스 이용약관</h3>
-          <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>세이브로그 서비스 이용 동의서</p>
+          <h3 className="simple-modal-title">서비스 이용약관</h3>
+          <p className="simple-modal-desc">세이브로그 서비스 이용 동의서</p>
         </div>
         <div className="terms-content-box">
           <h4>제 1 조 (목적)</h4>
@@ -501,8 +470,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       {/* 마케팅 수신동의 모달 */}
       <SimpleModal open={marketingModalOpen} onClose={() => setMarketingModalOpen(false)}>
         <div>
-          <h3 style={{ fontSize: 16, fontWeight: 900, marginBottom: 4 }}>마케팅 정보 수신 동의</h3>
-          <p style={{ fontSize: 11, color: 'var(--text-mute)' }}>혜택 알림 및 이벤트 정보 안내</p>
+          <h3 className="simple-modal-title">마케팅 정보 수신 동의</h3>
+          <p className="simple-modal-desc">혜택 알림 및 이벤트 정보 안내</p>
         </div>
         <div className="terms-content-box">
           <h4>1. 개인정보 수집 및 이용 목적</h4>

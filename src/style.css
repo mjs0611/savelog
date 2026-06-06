@@ -945,12 +945,65 @@ input { font: inherit; outline: none; border: none; }
 .mailbox-actions { display: flex; align-items: center; gap: 6px; }
 .mailbox-list { display: flex; flex-direction: column; gap: 10px; }
 .mailbox-empty { font-size: 13px; color: var(--text-mute); text-align: center; padding: 10px 0; }
+.mailbox-clear-btn {
+  border: none;
+  background: rgba(255, 255, 255, 0.06);
+  color: var(--text-mute);
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: inherit;
+}
+.mailbox-clear-btn--confirm {
+  background: rgba(255, 77, 79, 0.15) !important;
+  color: #FF4D4F !important;
+}
+.mailbox-msg-row {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+}
+.mailbox-msg-row--sent {
+  background: rgba(255, 255, 255, 0.01) !important;
+  border-color: rgba(255, 255, 255, 0.04) !important;
+}
+.mailbox-msg-meta { display: flex; justify-content: space-between; align-items: center; }
+.mailbox-msg-from { display: flex; align-items: center; gap: 6px; }
+.mailbox-msg-time { font-size: 10px; color: var(--text-mute); }
+.mailbox-msg-text-received { font-size: 12px; color: var(--text-sub); line-height: 1.4; margin: 0; }
+.mailbox-msg-text-sent { font-size: 12px; color: var(--text-mute); line-height: 1.4; margin: 0; }
+.mailbox-msg-label { font-size: 10px; color: var(--text-mute); }
+.mailbox-sender-badge {
+  font-size: 12px;
+  padding: 2px 6px;
+  border-radius: 100px;
+  font-weight: 700;
+}
 
 .week-entries-card {}
 .mailbox-card {}
 .week-entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
 .week-entries-title  { font-size: 15px; font-weight: 800; }
 .week-entries-empty  { font-size: 14px; color: var(--text-mute); text-align: center; padding: 24px 0; }
+.week-entries-error { text-align: center; padding: 8px 0; }
+.week-entries-error-msg { color: #FF4D4F; margin-bottom: 8px; }
+.week-entries-retry-btn {
+  font-size: 12px;
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 6px 16px;
+  cursor: pointer;
+  font-family: inherit;
+}
 .week-entries-list   { display: flex; flex-direction: column; gap: 10px; }
 .week-entry-row { display: flex; align-items: center; gap: 12px; padding-bottom: 12px; border-bottom: 1px solid var(--divider); }
 .week-entry-row:last-child { border-bottom: none; padding-bottom: 0; }
@@ -964,7 +1017,10 @@ input { font: inherit; outline: none; border: none; }
 .how-to-title { font-size: 15px; font-weight: 800; margin-bottom: 14px; }
 .how-to-rows  { display: flex; flex-direction: column; gap: 10px; }
 .how-to-row { display: flex; justify-content: space-between; font-size: 14px; color: var(--text-sub); }
-.how-to-row span:last-child { font-weight: 800; color: var(--primary); }
+.how-to-row span:last-child { font-weight: 800; }
+.how-to-reward-primary { color: var(--primary); }
+.how-to-reward-muted { color: var(--text-mute); font-size: 10px; }
+.how-to-row--note span:first-child { font-size: 11px; color: var(--text-mute); margin-left: 8px; }
 
 /* ── Record Modal ───────────────────────────────────────────────────────────── */
 
@@ -1882,6 +1938,20 @@ input { font: inherit; outline: none; border: none; }
   font-size: 18px;
   font-weight: 400;
 }
+.setting-menu-item--primary {
+  color: var(--primary) !important;
+  font-weight: 800 !important;
+}
+.setting-menu-item--primary .setting-arrow {
+  color: var(--primary);
+}
+/* SimpleModal title/desc */
+.simple-modal-title { font-size: 16px; font-weight: 900; margin-bottom: 4px; }
+.simple-modal-desc  { font-size: 11px; color: var(--text-mute); margin: 0; }
+/* Radar chart section header */
+.radar-chart-label { font-size: 13px; font-weight: 900; color: var(--text-main); }
+.radar-chart-header { margin-bottom: 14px; }
+.radar-chart-svg-wrap { display: flex; justify-content: center; align-items: center; position: relative; }
 
 /* Scrollable overlay sheet content */
 .terms-content-box {
