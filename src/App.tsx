@@ -109,6 +109,7 @@ export default function App() {
         const currentDay = getTodayStr();
         setDaily(prev => prev.date !== currentDay ? loadDailyState(currentDay) : prev);
         setStreak(getEffectiveStreak());
+        setStreakShields(getStreakShields());
         loadRank();
       }
     }
