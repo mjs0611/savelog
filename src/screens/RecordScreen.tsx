@@ -53,7 +53,9 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   function removeItem(idx: number) {
     const next = items.filter((_, i) => i !== idx);
     setItems(next);
-    if (next.length === 0) setIsBalanceGame(false);
+    if (next.length === 0 || next.reduce((s, i) => s + i.amount, 0) === 0) {
+      setIsBalanceGame(false);
+    }
   }
 
   function handleAmountChange(val: string) {
