@@ -1787,11 +1787,96 @@ input { font: inherit; outline: none; border: none; }
   box-shadow: 0 8px 32px rgba(0, 245, 160, 0.04) !important;
 }
 
+/* 🗓️ 피드 탭 필터바 */
+.feed-tab-bar { display: flex; gap: 8px; margin-bottom: 8px; }
+.feed-tab-btn {
+  padding: 6px 16px;
+  border-radius: 100px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.feed-tab-btn--active {
+  border: 1.5px solid var(--primary);
+  background: rgba(0, 245, 160, 0.1);
+  color: var(--primary);
+}
+
+/* 💪 그룹 챌린지 카드 */
+.challenge-card { margin: 4px 0; padding: 14px 16px; border: 1px solid rgba(255, 255, 255, 0.08) !important; }
+.challenge-card-header { margin-bottom: 10px; }
+.challenge-card-title { font-size: 13px; font-weight: 900; color: #fff; }
+.challenge-card-body { display: flex; align-items: center; gap: 12px; }
+.challenge-emoji { font-size: 26px; flex-shrink: 0; }
+.challenge-info { flex: 1; min-width: 0; }
+.challenge-name { margin: 0 0 2px 0; font-size: 13px; font-weight: 900; color: #fff; }
+.challenge-desc { margin: 0; font-size: 11px; color: var(--text-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ✉️ 응원 쪽지 템플릿 칩 */
+.message-template-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+.message-template-chip {
+  font-size: 11px;
+  color: var(--text-sub);
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 6px 10px;
+  border-radius: 100px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+.message-template-chip:hover {
+  border-color: var(--primary);
+  color: #fff;
+}
+
+/* 🏆 피드 마일스톤 메시지 */
+.feed-milestone-note {
+  margin: 4px 0 8px 0;
+  font-size: 13px;
+  color: #FFD700;
+  line-height: 1.5;
+  font-weight: 800;
+  border-left: 3px solid #FFD700;
+  background: rgba(255, 215, 0, 0.04);
+  border-radius: 0 6px 6px 0;
+  padding: 6px 8px;
+}
+
+/* 🔽 피드 인터널 토스트 (하단 고정) */
+.point-toast--feed {
+  top: auto;
+  bottom: calc(var(--tab-h, 64px) + env(safe-area-inset-bottom, 0px) + 10px);
+  background: rgba(18, 18, 20, 0.9);
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+}
+
 /* ⚖️ 밸런스 게임 VS 배틀 카드 글로우 효과 */
 .balance-game-card-glow {
   position: relative;
+  margin: 0 0 4px 0;
+  padding: 18px !important;
+  border: 1.5px solid rgba(168, 85, 247, 0.25) !important;
+  background: linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  box-shadow: 0 8px 32px rgba(168, 85, 247, 0.08) !important;
   transition: all 0.3s ease;
 }
+.balance-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 8px;
+}
+.balance-card-title { font-size: 13px; font-weight: 900; color: #C084FC; display: flex; align-items: center; gap: 4px; }
+.balance-card-status { font-size: 10px; color: var(--text-mute); font-weight: 700; }
 .balance-game-card-glow::before {
   content: '';
   position: absolute;

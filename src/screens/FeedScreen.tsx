@@ -347,21 +347,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       </div>
 
       {/* 탭 필터: 전체 / 팔로우 */}
-      <div style={{ display: 'flex', gap: 8, marginBottom: 8 }}>
+      <div className="feed-tab-bar">
         {(['all', 'follow'] as const).map((t) => (
           <button
             key={t}
+            className={`feed-tab-btn${feedTab === t ? ' feed-tab-btn--active' : ''}`}
             onClick={() => setFeedTab(t)}
-            style={{
-              padding: '6px 16px',
-              borderRadius: 100,
-              border: feedTab === t ? '1.5px solid var(--primary)' : '1px solid rgba(255,255,255,0.1)',
-              background: feedTab === t ? 'rgba(0,245,160,0.1)' : 'rgba(255,255,255,0.03)',
-              color: feedTab === t ? 'var(--primary)' : 'var(--text-mute)',
-              fontSize: 12,
-              fontWeight: 800,
-              cursor: 'pointer',
-            }}
           >
             {t === 'all' ? '전체' : `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}`}
           </button>
@@ -370,22 +361,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
       {/* ⚖️ 밸런스 게임 — 실제 유저 기록 기반 */}
       {balanceEntry !== 'empty' && (
-        <div
-          className="glass-card balance-game-card-glow"
-          style={{
-            margin: '0 0 4px 0',
-            padding: 18,
-            border: '1.5px solid rgba(168, 85, 247, 0.25)',
-            background: 'linear-gradient(135deg, rgba(168, 85, 247, 0.05) 0%, rgba(255, 255, 255, 0.01) 100%)',
-            boxShadow: '0 8px 32px rgba(168, 85, 247, 0.08)',
-          }}
-        >
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12, borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 8 }}>
-            <span style={{ fontSize: 13, fontWeight: 900, color: '#C084FC', display: 'flex', alignItems: 'center', gap: 4 }}>
-              ⚖️ 실시간 짠물 배틀
-            </span>
+        <div className="glass-card balance-game-card-glow">
+          <div className="balance-card-header">
+            <span className="balance-card-title">⚖️ 실시간 짠물 배틀</span>
             {balanceEntry !== 'loading' && typeof balanceEntry === 'object' && (
-              <span style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>판정 진행 중</span>
+              <span className="balance-card-status">판정 진행 중</span>
             )}
           </div>
 
@@ -527,15 +507,15 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       )}
 
       {/* 💪 이번 주 그룹 챌린지 */}
-      <div className="glass-card" style={{ margin: '4px 0', padding: '14px 16px', border: '1px solid rgba(255,255,255,0.08)' }}>
-        <div style={{ marginBottom: 10 }}>
-          <span style={{ fontSize: 13, fontWeight: 900, color: '#fff' }}>💪 이번 주 그룹 챌린지</span>
+      <div className="glass-card challenge-card">
+        <div className="challenge-card-header">
+          <span className="challenge-card-title">💪 이번 주 그룹 챌린지</span>
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ fontSize: 26, flexShrink: 0 }}>{weekChallenge.emoji}</span>
-          <div style={{ flex: 1, minWidth: 0 }}>
-            <p style={{ margin: '0 0 2px 0', fontSize: 13, fontWeight: 900, color: '#fff' }}>{weekChallenge.title}</p>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{weekChallenge.desc}</p>
+        <div className="challenge-card-body">
+          <span className="challenge-emoji">{weekChallenge.emoji}</span>
+          <div className="challenge-info">
+            <p className="challenge-name">{weekChallenge.title}</p>
+            <p className="challenge-desc">{weekChallenge.desc}</p>
           </div>
           <button
             onClick={() => handleToggleChallenge(weekChallenge.id)}
@@ -735,9 +715,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                 {/* 마일스톤 달성 메시지 */}
                 {entry.items.filter(it => it.category === '마일스톤').map((it, i) => (
-                  <p key={i} style={{ margin: '4px 0 8px 0', fontSize: 13, color: '#FFD700', lineHeight: 1.5, fontWeight: 800, paddingLeft: 8, borderLeft: '3px solid #FFD700', background: 'rgba(255,215,0,0.04)', borderRadius: '0 6px 6px 0', padding: '6px 8px' }}>
-                    {it.comment}
-                  </p>
+                  <p key={i} className="feed-milestone-note">{it.comment}</p>
                 ))}
 
                 {/* 오늘 한마디 (💬 한마디 특수 항목) */}
@@ -921,7 +899,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             
             <div className="story-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
               {/* 퀵 템플릿 칩 */}
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginTop: 4 }}>
+              <div className="message-template-chips">
                 {[
                   '오늘 하루도 잘 버텼어요! 👏',
                   '무지출 성공 축하드려요! 🎉',
@@ -930,25 +908,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 ].map((tpl) => (
                   <button
                     key={tpl}
+                    className="message-template-chip"
                     onClick={() => setMessageText(tpl)}
-                    style={{
-                      fontSize: 11,
-                      color: 'var(--text-sub)',
-                      background: 'rgba(255,255,255,0.05)',
-                      border: '1px solid rgba(255,255,255,0.08)',
-                      padding: '6px 10px',
-                      borderRadius: 100,
-                      cursor: 'pointer',
-                      transition: 'all 0.2s'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.borderColor = 'var(--primary)';
-                      e.currentTarget.style.color = '#fff';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.borderColor = 'rgba(255,255,255,0.08)';
-                      e.currentTarget.style.color = 'var(--text-sub)';
-                    }}
                   >
                     {tpl}
                   </button>
@@ -1010,9 +971,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
       {/* 가상 토스트 노티파이어 */}
       {toastText && (
-        <div className="point-toast" style={{ top: 'auto', bottom: 'calc(var(--tab-h, 64px) + env(safe-area-inset-bottom, 0px) + 10px)', background: 'rgba(18, 18, 20, 0.9)', color: '#fff', border: '1px solid rgba(255,255,255,0.12)', backdropFilter: 'blur(10px)' }}>
-          {toastText}
-        </div>
+        <div className="point-toast point-toast--feed">{toastText}</div>
       )}
 
       {/* 리액션 이펙트 렌더링 */}
