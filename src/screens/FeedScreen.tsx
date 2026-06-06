@@ -712,7 +712,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                       <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
                     </div>
                   </div>
-                  <div className={`feed-total ${!isMilestone && !isTipPost && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : isTipPost ? 'feed-total--tip' : isDilemmaPost ? 'feed-total--dilemma' : ''}`}>
+                  <div className={`feed-total ${!isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : isTipPost ? 'feed-total--tip' : isDilemmaPost ? 'feed-total--dilemma' : ''}`}>
                     {isMilestone ? '🏆 달성' : isTipPost ? '💡 꿀팁' : isDilemmaPost ? '⚖️ 배틀 중' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
                   </div>
                 </div>
