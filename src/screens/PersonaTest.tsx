@@ -103,7 +103,7 @@ export default function PersonaTest({ onClose }: Props) {
             <div className="result-header">
               <span className="result-subtitle">당신의 소비 MBTI 분석 결과</span>
               <h2 className="result-title" style={{ color: p.color }}>
-                <img src={p.icon} alt="" style={{ width: 28, height: 28, objectFit: 'contain' }} />
+                <img src={p.icon} alt="" />
                 <span>{p.name}</span>
               </h2>
             </div>
@@ -128,9 +128,9 @@ export default function PersonaTest({ onClose }: Props) {
                 variant="fill"
                 onClick={() => onClose(result)}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '6px', width: '100%' }}>
+                <div className="persona-result-btn-content">
                   <span>배지 달고 피드로 가기</span>
-                  <img src={p.icon} alt="" style={{ width: 18, height: 18, objectFit: 'contain' }} />
+                  <img src={p.icon} alt="" className="persona-result-btn-icon" />
                 </div>
               </Button>
             </div>
@@ -172,7 +172,7 @@ export default function PersonaTest({ onClose }: Props) {
                   onClick={() => handleSelect(opt.type)}
                 >
                   <img src={pOpt.icon} alt="" className="option-3d-icon" />
-                  <span style={{ flex: 1 }}>{opt.text}</span>
+                  <span>{opt.text}</span>
                 </button>
               );
             })}

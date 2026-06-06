@@ -234,7 +234,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           {/* 오늘 한마디 (첫 기록이고 항목이 1개 이상일 때 표시) */}
           {items.length > 0 && !showZeroNote && !isAdditional && (
             <div className="daily-note-section">
-              <p className="form-label" style={{ margin: 0 }}>오늘 한마디 <span style={{ color: 'var(--primary)', fontWeight: 900 }}>*</span></p>
+              <p className="form-label">오늘 한마디 <span className="daily-note-required">*</span></p>
               <p className="daily-note-desc">오늘 지출에 대한 한 줄 일기를 남겨요. 피드에 공유됩니다.</p>
               <textarea
                 className={`daily-note-textarea${dailyNote.trim().length >= 5 ? ' daily-note-textarea--valid' : ''}`}
@@ -271,13 +271,11 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           {!showZeroNote && <div className="image-upload-section">
             <p className="form-label">지출 인증샷 / 영수증 (선택)</p>
             {imageError && (
-              <p style={{ fontSize: 12, color: '#FF4D4F', fontWeight: 600, margin: '0 0 8px 0' }}>
-                ⚠️ {imageError}
-              </p>
+              <p className="image-error-msg">⚠️ {imageError}</p>
             )}
             {image ? (
               <div className="image-preview-container">
-                <img src={image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                <img src={image} alt="Preview" />
                 <button
                   className="image-remove-btn"
                   onClick={() => { setImage(null); setImageError(null); }}
@@ -307,7 +305,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           ) : items.length > 0 ? (
             <>
               {!isAdditional && dailyNote.trim().length < 5 && (
-                <p className="submit-hint" style={{ marginBottom: 8 }}>오늘 한마디를 5자 이상 입력해 주세요</p>
+                <p className="submit-hint submit-hint--mb">오늘 한마디를 5자 이상 입력해 주세요</p>
               )}
               <Button
                 size="xlarge"

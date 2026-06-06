@@ -728,7 +728,10 @@ input { font: inherit; outline: none; border: none; }
 
 .screen-rank { gap: 16px; }
 .rank-header { padding: 8px 0; }
+.rank-bottom-spacer { height: 24px; }
 .rank-title  { font-size: 22px; font-weight: 900; }
+.rank-title .custom-icon { margin-left: 5px; }
+.my-rank-pos--zero { font-size: 13px; }
 .rank-period { font-size: 14px; color: var(--text-mute); margin-top: 2px; }
 
 .my-rank-card {
@@ -1082,6 +1085,7 @@ input { font: inherit; outline: none; border: none; }
   background: #17171c;
 }
 .submit-hint { text-align: center; font-size: 13px; color: var(--text-mute); font-weight: 600; }
+.submit-hint--mb { margin-bottom: 8px; }
 
 /* 추가된 항목 목록 */
 .items-list { display: flex; flex-direction: column; gap: 10px; }
@@ -1156,6 +1160,8 @@ input { font: inherit; outline: none; border: none; }
   overflow: hidden;
   border: 1px solid rgba(255, 255, 255, 0.08);
 }
+.image-preview-container img { width: 100%; height: 100%; object-fit: cover; }
+.image-error-msg { font-size: 12px; color: #FF4D4F; font-weight: 600; margin: 0 0 8px 0; }
 .image-upload-label {
   display: flex;
   align-items: center;
@@ -1498,6 +1504,10 @@ input { font: inherit; outline: none; border: none; }
   width: 100%;
   margin-top: 10px;
 }
+.result-title img { width: 28px; height: 28px; object-fit: contain; }
+.persona-result-btn-content { display: flex; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+.persona-result-btn-icon { width: 18px; height: 18px; object-fit: contain; }
+.option-btn span { flex: 1; }
 
 /* 프로필 성향 배너 */
 .profile-persona-banner {
@@ -2344,6 +2354,8 @@ input { font: inherit; outline: none; border: none; }
 
 /* 📝 RecordScreen — 오늘 한마디 섹션 */
 .daily-note-section { display: flex; flex-direction: column; gap: 6px; }
+.daily-note-section .form-label { margin: 0; }
+.daily-note-required { color: var(--primary); font-weight: 900; }
 .daily-note-desc { margin: 0; font-size: 11px; color: var(--text-mute); line-height: 1.4; }
 .daily-note-textarea {
   width: 100%;

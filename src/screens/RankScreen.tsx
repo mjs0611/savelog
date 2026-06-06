@@ -50,7 +50,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       <div className="rank-header">
         <h2 className="rank-title">
           주간 절약 순위
-          <img src="/images/icon_rank.png" className="custom-icon" style={{ marginLeft: 5 }} />
+          <img src="/images/icon_rank.png" className="custom-icon" />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
         <p className="rank-reset-hint">🔄 매주 월요일 오전 9시 초기화</p>
@@ -67,7 +67,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
               </>
             ) : (
               <>
-                <span className="my-rank-pos" style={{ fontSize: 13 }}>무지출</span>
+                <span className="my-rank-pos my-rank-pos--zero">무지출</span>
                 <span className="my-rank-label">{myZeroIdx + 1}번째</span>
               </>
             )}
@@ -270,7 +270,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
         </div>
       )}
 
-      <div style={{ height: 24 }} />
+      <div className="rank-bottom-spacer" />
     </div>
   );
 }
