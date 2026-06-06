@@ -151,30 +151,23 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const temp = daily.recorded ? (spent === 0 ? 100 : Math.max(10, Math.min(99, Math.round(100 - (spent / 1000))))) : 0;
         return (
           <div className="glass-card savings-temp-card">
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
-              <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
+            <div className="savings-temp-header">
+              <span className="savings-temp-title">
                 오늘의 절약 온도
-                <span style={{ fontSize: 13 }}>🔥</span>
+                <span>🔥</span>
               </span>
-              <span style={{ fontSize: 12, fontWeight: 800, color: 'var(--primary)' }}>
+              <span className="savings-temp-value">
                 {daily.recorded ? (spent === 0 ? '100% (무지출)' : `${temp}%`) : '측정 대기 중'}
               </span>
             </div>
-            
-            <div style={{ height: 6, background: 'rgba(255,255,255,0.06)', borderRadius: 100, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${daily.recorded ? temp : 0}%`, background: '#00F5A0', borderRadius: 100, transition: 'width 0.6s ease-out' }} />
+            <div className="savings-temp-track">
+              <div className="savings-temp-fill" style={{ width: `${daily.recorded ? temp : 0}%` }} />
             </div>
-            
-            <p style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 8, lineHeight: 1.4, margin: '8px 0 0 0' }}>
+            <p className="savings-temp-desc">
               {daily.recorded ? (
-                spent === 0 ? (
-                  '완벽한 하루! 무지출 달성으로 절약 온도가 뜨겁습니다 👑'
-                ) : (
-                  `오늘 ${formatAmount(spent)} 지출 완료. 현명하고 통제된 소비 온도입니다.`
-                )
-              ) : (
-                '오늘 소비 기록을 남기면 실시간 절약 온도가 시각화됩니다.'
-              )}
+                spent === 0 ? '완벽한 하루! 무지출 달성으로 절약 온도가 뜨겁습니다 👑'
+                : `오늘 ${formatAmount(spent)} 지출 완료. 현명하고 통제된 소비 온도입니다.`
+              ) : '오늘 소비 기록을 남기면 실시간 절약 온도가 시각화됩니다.'}
             </p>
           </div>
         );
@@ -188,9 +181,8 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
         return (
           <div className="glass-card pet-card" id="tutorial-step-3">
-            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-              {/* 캐릭터 바디 및 장착된 악세사리 */}
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div className="pet-inner">
+              <div className="pet-left">
                 <div
                   style={{
                     width: 52,
@@ -209,18 +201,16 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                 >
                   <img src={p?.icon} alt="" style={{ width: '70%', height: '70%', objectFit: 'contain' }} />
                 </div>
-
-                <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                    <span style={{ fontSize: 12, fontWeight: 900, color: '#fff' }}>{p?.name} 요정</span>
-                    <span style={{ fontSize: 8, background: 'rgba(168,85,247,0.15)', color: '#C084FC', padding: '1px 5px', borderRadius: 4, fontWeight: 900 }}>LV.{petLevel}</span>
+                <div className="pet-info">
+                  <div className="pet-name-row">
+                    <span className="pet-name">{p?.name} 요정</span>
+                    <span className="pet-level">LV.{petLevel}</span>
                   </div>
-                  <span style={{ fontSize: 10, color: 'var(--text-mute)', display: 'block', maxWidth: 160, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                  <span className="pet-status">
                     {daily.recorded ? ((daily.spentAmount ?? 0) === 0 ? '🔋 기분 최고! (무지출 상태)' : '🥱 지출 발생으로 피곤함') : '💤 기록을 기다리는 중...'}
                   </span>
                 </div>
               </div>
-
             </div>
           </div>
         );
@@ -228,23 +218,20 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 펜딩 포인트 (광고 보고 받기) */}
       {pendingPoints > 0 && (
-        <div className="glass-card" style={{ padding: '16px', border: '1px solid rgba(255, 200, 0, 0.25)', background: 'linear-gradient(135deg, rgba(255, 200, 0, 0.06) 0%, rgba(255,255,255,0.01) 100%)', display: 'flex', flexDirection: 'column', gap: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="glass-card pending-points-card">
+          <div className="pending-points-row">
+            <div className="pending-points-left">
               <img
                 src={pendingClaiming ? "/images/lucky_chest_opened.png" : "/images/lucky_chest_closed.png"}
                 alt="Lucky Chest"
                 className="lucky-chest-img lucky-chest-bob"
-                style={{ width: 42, height: 42, objectFit: 'contain', flexShrink: 0 }}
               />
               <div>
-                <p style={{ margin: 0, fontSize: 14, fontWeight: 900, color: '#FFC800' }}>적립된 토스포인트</p>
-                <p style={{ margin: '3px 0 0 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4, wordBreak: 'keep-all' }}>
-                  리워드 광고를 시청하면 지급됩니다 · 최대 50원
-                </p>
+                <p className="pending-points-title">적립된 토스포인트</p>
+                <p className="pending-points-sub">리워드 광고를 시청하면 지급됩니다 · 최대 50원</p>
               </div>
             </div>
-            <span style={{ fontSize: 20, fontWeight: 900, color: '#FFC800', flexShrink: 0 }}>{pendingPoints}원</span>
+            <span className="pending-points-amount">{pendingPoints}원</span>
           </div>
           <button
             onClick={onClaimPending}

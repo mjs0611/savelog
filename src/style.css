@@ -461,6 +461,36 @@ input { font: inherit; outline: none; border: none; }
   box-shadow: 0 8px 24px rgba(0, 245, 160, 0.05);
 }
 .savings-temp-card { padding: 12px 14px; }
+.savings-temp-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.savings-temp-title  { font-size: 13px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; gap: 4px; }
+.savings-temp-value  { font-size: 12px; font-weight: 800; color: var(--primary); }
+.savings-temp-track  { height: 6px; background: rgba(255, 255, 255, 0.06); border-radius: 100px; overflow: hidden; }
+.savings-temp-fill   { height: 100%; background: #00F5A0; border-radius: 100px; transition: width 0.6s ease-out; }
+.savings-temp-desc   { font-size: 11px; color: var(--text-mute); margin: 8px 0 0 0; line-height: 1.4; }
+
+/* 💰 펜딩 포인트 카드 */
+.pending-points-card {
+  padding: 16px !important;
+  border: 1px solid rgba(255, 200, 0, 0.25) !important;
+  background: linear-gradient(135deg, rgba(255, 200, 0, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+.pending-points-row    { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pending-points-left   { display: flex; align-items: center; gap: 8px; }
+.pending-points-title  { margin: 0; font-size: 14px; font-weight: 900; color: #FFC800; }
+.pending-points-sub    { margin: 3px 0 0 0; font-size: 11px; color: var(--text-mute); line-height: 1.4; word-break: keep-all; }
+.pending-points-amount { font-size: 20px; font-weight: 900; color: #FFC800; flex-shrink: 0; }
+
+/* 🐹 펫 카드 내부 */
+.pet-inner       { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.pet-left        { display: flex; align-items: center; gap: 12px; }
+.pet-info        { display: flex; flex-direction: column; gap: 2px; }
+.pet-name-row    { display: flex; align-items: center; gap: 6px; }
+.pet-name        { font-size: 12px; font-weight: 900; color: #fff; }
+.pet-level       { font-size: 8px; background: rgba(168, 85, 247, 0.15); color: #C084FC; padding: 1px 5px; border-radius: 4px; font-weight: 900; }
+.pet-status      { font-size: 10px; color: var(--text-mute); display: block; max-width: 160px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .streak-card {}
 .week-summary-card {
   padding: 12px 14px;
@@ -1741,7 +1771,7 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* 🎁 토스포인트 럭키 박스 애니메이션 */
-.lucky-chest-img { object-fit: contain; flex-shrink: 0; }
+.lucky-chest-img { width: 42px; height: 42px; object-fit: contain; flex-shrink: 0; }
 .lucky-chest-bob {
   animation: lucky-chest-bob 2.2s infinite ease-in-out;
 }
