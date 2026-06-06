@@ -370,6 +370,7 @@ export default function App() {
       setFeedRefreshToken(t => t + 1);
       setProfileRefreshToken(t => t + 1);
       setShowRecord(false);
+      setShowZeroNote(false);
     } finally {
       submittingRef.current = false;
       setSubmitting(false);
@@ -556,7 +557,6 @@ export default function App() {
               variant="fill"
               disabled={zeroNoteText.trim().length < 5 || submitting}
               onClick={() => {
-                setShowZeroNote(false);
                 handleSubmitRecord([{ category: '한마디', emoji: '💬', amount: 0, comment: zeroNoteText.trim() }]);
               }}
             >
