@@ -770,20 +770,26 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 ))}
 
                 {/* 지출 항목 */}
-                <div className="feed-items">
-                  {entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤').map((item, i) => (
-                    <div key={i} className="feed-item">
-                      <span className="feed-item-emoji">{item.emoji}</span>
-                      <div className="feed-item-info">
-                        <span className="feed-item-cat">{item.category}</span>
-                        {item.comment && <span className="feed-item-comment">{item.comment}</span>}
-                      </div>
-                      <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
-                        {item.amount === 0 ? '0원' : formatAmount(item.amount)}
-                      </span>
+                {(() => {
+                  const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
+                  if (spendItems.length === 0) return null;
+                  return (
+                    <div className="feed-items">
+                      {spendItems.map((item, i) => (
+                        <div key={i} className="feed-item">
+                          <span className="feed-item-emoji">{item.emoji}</span>
+                          <div className="feed-item-info">
+                            <span className="feed-item-cat">{item.category}</span>
+                            {item.comment && <span className="feed-item-comment">{item.comment}</span>}
+                          </div>
+                          <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
+                            {item.amount === 0 ? '0원' : formatAmount(item.amount)}
+                          </span>
+                        </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
+                  );
+                })()}
 
                 {/* 인증샷 / 영수증 이미지 */}
                 {entry.image && (
