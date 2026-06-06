@@ -840,7 +840,19 @@ input { font: inherit; outline: none; border: none; }
   background: linear-gradient(135deg, rgba(0, 245, 160, 0.2), rgba(0, 245, 160, 0.08));
   border-color: var(--primary);
 }
-.image-upload-section {}
+.no-spend-quick-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+.no-spend-quick-btn:disabled:hover {
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.12), rgba(0, 245, 160, 0.04));
+  border-color: var(--primary);
+}
+.image-upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
 .image-preview-container {
   position: relative;
   width: 100%;
