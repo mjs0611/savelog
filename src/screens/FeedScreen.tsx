@@ -331,10 +331,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   }
 
   function addComment(entryId: string, text: string) {
-    const existing = localComments[entryId] || [];
-    if (existing.some((c) => c.sender === '나' && c.text === text)) return;
-    if (existing.length >= 20) return; // 엔트리당 최대 20개 댓글
-    setLocalComments({ ...localComments, [entryId]: [...existing, { sender: '나', text }] });
+    setLocalComments(prev => {
+      const existing = prev[entryId] || [];
+      if (existing.some((c) => c.sender === '나' && c.text === text)) return prev;
+      if (existing.length >= 20) return prev; // 엔트리당 최대 20개 댓글
+      return { ...prev, [entryId]: [...existing, { sender: '나', text }] };
+    });
   }
 
   function submitCommentInput(entryId: string) {
@@ -755,7 +757,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                   return (
                     <div className="dilemma-post-body">
-                      <p>{text}</p>
+                      {text && <p>{text}</p>}
 
                       <div className="dilemma-amount-box">
                         <span className="dilemma-amount-label">예상 소비액</span>
