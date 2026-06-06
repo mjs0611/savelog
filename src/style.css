@@ -823,7 +823,23 @@ input { font: inherit; outline: none; border: none; }
 /* 항목 추가 폼 */
 .item-form { display: flex; flex-direction: column; gap: 16px; }
 .form-label { font-size: 13px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
-.no-spend-quick-btn {}
+.no-spend-quick-btn {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.12), rgba(0, 245, 160, 0.04));
+  border: 1.5px dashed var(--primary);
+  border-radius: var(--radius-md);
+  color: var(--primary);
+  font-size: 14px;
+  font-weight: 800;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+.no-spend-quick-btn:hover {
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.2), rgba(0, 245, 160, 0.08));
+  border-color: var(--primary);
+}
 .image-upload-section {}
 .image-preview-container {
   position: relative;

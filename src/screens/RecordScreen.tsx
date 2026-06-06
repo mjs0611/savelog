@@ -126,19 +126,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               className="no-spend-quick-btn"
               disabled={submitting}
               onClick={() => setShowZeroNote(true)}
-              style={{
-                width: '100%',
-                padding: '16px',
-                background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.12), rgba(0, 245, 160, 0.04))',
-                border: '1.5px dashed var(--primary)',
-                borderRadius: 'var(--radius-md)',
-                color: 'var(--primary)',
-                fontSize: '14px',
-                fontWeight: 800,
-                textAlign: 'center',
-                cursor: 'pointer',
-                transition: 'all 0.2s ease',
-              }}
             >
               🌿 오늘 돈 한 푼도 안 썼어요 (무지출 인증)
             </button>

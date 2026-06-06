@@ -88,7 +88,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   const recommendedFriends = React.useMemo(() => {
     const uniqueUsers: Record<string, { user_id: string; nickname: string; persona: string | null }> = {};
     entries.forEach((e) => {
-      if (e.user_id !== userId && !followedUsers[e.user_id]) {
+      if (e.user_id !== userId && !followedUsers[e.user_id] && !uniqueUsers[e.user_id]) {
         uniqueUsers[e.user_id] = {
           user_id: e.user_id,
           nickname: e.nickname || '익명 짠친',
