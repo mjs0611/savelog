@@ -169,6 +169,8 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
   const allEntryIds = typedData.map((r) => r.id);
   const doubtByUser = new Map<string, number>();
   if (allEntryIds.length > 0) {
+    // entry_id → user_id 역매핑을 Map으로 미리 인덱싱 (O(n) → find 루프 제거)
+    const entryUserMap = new Map<string, string>(typedData.map((e) => [e.id, e.user_id]));
     const { data: rxData } = await supabase
       .from('reactions')
       .select('entry_id, type')
@@ -176,10 +178,9 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
       .eq('type', 'doubt');
     if (rxData) {
       for (const rx of rxData as { entry_id: string; type: string }[]) {
-        // entry_id → user_id 역매핑
-        const entry = typedData.find((e) => e.id === rx.entry_id);
-        if (entry) {
-          doubtByUser.set(entry.user_id, (doubtByUser.get(entry.user_id) ?? 0) + 1);
+        const userId = entryUserMap.get(rx.entry_id);
+        if (userId) {
+          doubtByUser.set(userId, (doubtByUser.get(userId) ?? 0) + 1);
         }
       }
     }
