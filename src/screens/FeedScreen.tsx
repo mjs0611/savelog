@@ -166,6 +166,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     }).catch(() => {/* 오류 시 로컬캐시 유지 */});
   }, [userId]);
 
+  // 주차가 바뀌면 챌린지 참여 상태 재동기화 (앱을 주 경계 넘어 열어둔 경우 stale 방지)
+  useEffect(() => {
+    setActiveChallenge(getActiveChallengeId(currentWeekKey));
+  }, [currentWeekKey]);
+
   async function loadBalanceEntry() {
     setBalanceEntry('loading');
     setBalanceVoted(null);
