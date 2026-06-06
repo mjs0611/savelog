@@ -53,9 +53,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <img src="/images/icon_rank.png" className="custom-icon" style={{ marginLeft: 5 }} />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
-        <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--text-mute)', fontWeight: 700 }}>
-          🔄 매주 월요일 오전 9시 초기화
-        </p>
+        <p className="rank-reset-hint">🔄 매주 월요일 오전 9시 초기화</p>
       </div>
 
       {/* 내 순위 요약 */}
@@ -98,7 +96,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
 
       {/* 도발 카드: 바로 위 순위 (유지출 그룹만) */}
       {inSpendGroup && mySpendIdx > 0 && (
-        <div className="glass-card" style={{ padding: '12px 16px', border: '1px solid rgba(255, 77, 79, 0.2)', background: 'rgba(255, 77, 79, 0.04)' }}>
+        <div className="glass-card duel-card">
           <p style={{ margin: 0, fontSize: 11, color: '#FF4D4F', fontWeight: 800, marginBottom: 6 }}>🔥 지금 역전 가능해요</p>
           {(() => {
             const above = spendGroup[mySpendIdx - 1];
