@@ -7,6 +7,7 @@ import { sendCheeringMessage, getNickname, getPersona } from '../lib/storage';
 interface Props {
   userId: string;
   weekRank: WeekRankRow[];
+  prevWeekRank?: WeekRankRow[]; // 지난 주 순위 (리워드 수령 판단용)
   loading: boolean;
   loadFailed?: boolean;
   onClaimRankReward?: (amount: number) => void;
@@ -18,7 +19,7 @@ interface Props {
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false, onRetry }: Props) {
+export default function RankScreen({ userId, weekRank, prevWeekRank = [], loading, loadFailed, onClaimRankReward, claimedThisWeek, rankClaiming = false, dailyRecorded = false, onRetry }: Props) {
   const weekKey = getWeekKey();
   const [duelSent, setDuelSent] = useState<boolean>(() => {
     try { return localStorage.getItem(`savelog_duel_${getWeekKey()}`) === 'true'; } catch { return false; }
@@ -33,17 +34,26 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
   const inSpendGroup = mySpendIdx >= 0;
   const inZeroGroup = myZeroIdx >= 0;
 
-  // 의심 반응 3개 이상이면 리워드 수령 불가
+  // 내 순위 요약 (이번 주 — 도발 카드용)
   const myRow = inSpendGroup ? spendGroup[mySpendIdx] : (inZeroGroup ? zeroGroup[myZeroIdx] : null);
   const isSuspicious = myRow ? (myRow.total === 0 && myRow.doubtCount >= 3) : false;
 
-  // 수령 가능한 순위 리워드 계산 (의심됨 상태면 0, 최소 3일 기록 필요)
-  const myDays = myRow?.days ?? 0;
-  const rankRewardAmount = isSuspicious ? 0
-    : inSpendGroup && mySpendIdx === 0 && myDays >= 3 ? 50
-    : inSpendGroup && myDays >= 3 && spendGroup.length > 0 && (mySpendIdx + 1) / spendGroup.length <= 0.1 ? 30
-    : inZeroGroup && myZeroIdx === 0 && myDays >= 3 ? 50
+  // ── 순위 리워드는 지난 주 최종 성적 기준으로만 계산 ──
+  const prevSpendGroup = prevWeekRank.filter(r => r.total > 0);
+  const prevZeroGroup = prevWeekRank.filter(r => r.total === 0);
+  const myPrevSpendIdx = prevSpendGroup.findIndex(r => r.user_id === userId);
+  const myPrevZeroIdx = prevZeroGroup.findIndex(r => r.user_id === userId);
+  const prevMyRow = myPrevSpendIdx >= 0 ? prevSpendGroup[myPrevSpendIdx]
+    : myPrevZeroIdx >= 0 ? prevZeroGroup[myPrevZeroIdx] : null;
+  const isPrevSuspicious = prevMyRow ? (prevMyRow.total === 0 && prevMyRow.doubtCount >= 3) : false;
+  const prevMyDays = prevMyRow?.days ?? 0;
+  const rankRewardAmount = isPrevSuspicious ? 0
+    : myPrevSpendIdx === 0 && prevMyDays >= 3 ? 50
+    : myPrevSpendIdx >= 0 && prevMyDays >= 3 && prevSpendGroup.length > 0 && (myPrevSpendIdx + 1) / prevSpendGroup.length <= 0.1 ? 30
+    : myPrevZeroIdx === 0 && prevMyDays >= 3 ? 50
     : 0;
+
+  const myDays = myRow?.days ?? 0;
 
   return (
     <div className="screen screen-rank">
@@ -160,8 +170,11 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <div className="reward-row">❤️ 게시글 반응 <span>+1원</span></div>
         </div>
         <p className="reward-info-note">❤️ 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령</p>
-        {(inSpendGroup || inZeroGroup) && rankRewardAmount === 0 && !isSuspicious && myDays > 0 && myDays < 3 && (
-          <p className="reward-days-hint">📅 순위 리워드는 3일 이상 기록 후 수령 가능해요 ({myDays}/3일)</p>
+        {prevMyRow && rankRewardAmount === 0 && !isPrevSuspicious && prevMyDays > 0 && prevMyDays < 3 && (
+          <p className="reward-days-hint">📅 지난 주 기록이 3일 미만이라 순위 리워드가 없어요 ({prevMyDays}/3일)</p>
+        )}
+        {prevWeekRank.length === 0 && (
+          <p className="reward-days-hint">📅 순위 리워드는 매주 월요일 오전 9시 이후 지난 주 성적 기준으로 수령 가능해요</p>
         )}
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
@@ -169,10 +182,10 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
             disabled={claimedThisWeek || rankClaiming}
             onClick={() => onClaimRankReward(rankRewardAmount)}
           >
-            {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : rankClaiming ? '광고 시청 중...' : `📺 광고 보고 +${rankRewardAmount}원 받기`}
+            {claimedThisWeek ? `✅ 지난 주 리워드 수령 완료` : rankClaiming ? '광고 시청 중...' : `📺 광고 보고 +${rankRewardAmount}원 받기`}
           </button>
         )}
-        <p className={`reward-note${rankRewardAmount > 0 ? ' reward-note--compact' : ''}`}>* 순위 리워드는 최소 3일 기록 후 광고 시청 시 지급됩니다</p>
+        <p className={`reward-note${rankRewardAmount > 0 ? ' reward-note--compact' : ''}`}>* 순위 리워드는 지난 주 성적 기준 · 3일 이상 기록 시 광고 보고 수령</p>
       </div>
 
       {/* 순위 리스트 */}

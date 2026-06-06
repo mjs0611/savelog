@@ -6,6 +6,13 @@ export function getTodayStr(): string {
   return `${year}-${month}-${day}`;
 }
 
+// 지난 주 ISO 주 키 반환
+export function getPrevWeekKey(): string {
+  const d = new Date();
+  d.setDate(d.getDate() - 7);
+  return getWeekKey(d);
+}
+
 // ISO 주 번호 (월요일 시작)
 export function getWeekKey(date = new Date()): string {
   const d = new Date(date);

@@ -29,9 +29,9 @@ import {
   type DailyState,
 } from './lib/storage';
 import { initAit, grantPendingReward, grantRankReward, grantFeedReward } from './lib/tosspoint';
-import { preloadInterstitial, showInterstitial, preloadReward, showReward } from './lib/ads';
+import { preloadReward, showReward } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, type SpendingItem, type WeekRankRow } from './lib/supabase';
-import { getTodayStr, getWeekKey } from './lib/utils';
+import { getTodayStr, getWeekKey, getPrevWeekKey } from './lib/utils';
 import HomeScreen from './screens/HomeScreen';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
@@ -71,6 +71,7 @@ export default function App() {
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
   const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
   const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
+  const [prevWeekRank, setPrevWeekRank] = useState<WeekRankRow[]>([]);
   const [rankLoading, setRankLoading] = useState(true);
   const [rankLoadFailed, setRankLoadFailed] = useState(false);
   const [showRecord, setShowRecord] = useState(false);
@@ -93,9 +94,10 @@ export default function App() {
 
   useEffect(() => {
     initAit();
-    preloadInterstitial();
     if (getPendingPoints() > 0) preloadReward();
     loadRank();
+    // 지난 주 순위 로드 (리워드 수령 판단용)
+    fetchWeekRank(getPrevWeekKey()).then(data => { if (data) setPrevWeekRank(data); }).catch(() => {});
     cleanupStaleKeys();
     if (termsAgreed && !anonymousKey && import.meta.env.PROD) {
       fetchAnonymousKey();
@@ -260,14 +262,8 @@ export default function App() {
     );
   }
 
-  async function handleSubmitRecord(items: SpendingItem[], image?: string, isBalanceGame?: boolean): Promise<void> {
-    if (submittingRef.current) return;
-    submittingRef.current = true;
-    setSubmitting(true);
-    showInterstitial(() => {
-      submittingRef.current = false;
-      handleCloseAdAndSubmit(items, image, isBalanceGame);
-    });
+  function handleSubmitRecord(items: SpendingItem[], image?: string, isBalanceGame?: boolean): Promise<void> {
+    return handleCloseAdAndSubmit(items, image, isBalanceGame);
   }
 
   async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string, isBalanceGame?: boolean) {
@@ -408,7 +404,7 @@ export default function App() {
   }
 
   function handleClaimRankReward(amount: number) {
-    const weekKey = getWeekKey();
+    const weekKey = getPrevWeekKey(); // 리워드는 지난 주 기준
     if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
     rankClaimingRef.current = true;
     setRankClaiming(true);
@@ -485,10 +481,11 @@ export default function App() {
           <RankScreen
             userId={userId}
             weekRank={weekRank}
+            prevWeekRank={prevWeekRank}
             loading={rankLoading}
             loadFailed={rankLoadFailed}
             onClaimRankReward={handleClaimRankReward}
-            claimedThisWeek={getClaimedRankReward(getWeekKey())}
+            claimedThisWeek={getClaimedRankReward(getPrevWeekKey())}
             rankClaiming={rankClaiming}
             dailyRecorded={daily.recorded && daily.date === getTodayStr()}
             onRetry={loadRank}
