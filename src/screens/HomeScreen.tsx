@@ -59,85 +59,35 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* ✍️ 핵심 소비/무지출 기록 콘솔 (최상단 전면 배치) */}
       <div className="glass-card primary-record-card" id="tutorial-step-1">
         {daily.recorded ? (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <span style={{ fontSize: 20 }}>🌿</span>
+          <div className="record-done-row">
+            <div className="record-done-main">
+              <span className="record-done-emoji">🌿</span>
               <div>
-                <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>오늘의 짠내 기록 완료! 🎉</p>
-                <p style={{ margin: '2px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.3 }}>
+                <p className="record-done-heading">오늘의 짠내 기록 완료! 🎉</p>
+                <p className="record-done-detail">
                   {(daily.spentAmount ?? 0) === 0 ? '무지출 달성!' : `오늘 ${formatAmount(daily.spentAmount ?? 0)} 기록됨`}
                 </p>
               </div>
             </div>
-            <button
-              onClick={onRecord}
-              disabled={submitting}
-              style={{
-                flexShrink: 0,
-                padding: '7px 14px',
-                borderRadius: 100,
-                border: '1px solid rgba(0, 245, 160, 0.3)',
-                background: 'rgba(0, 245, 160, 0.08)',
-                color: 'var(--primary)',
-                fontSize: 11,
-                fontWeight: 900,
-                cursor: 'pointer',
-              }}
-            >
+            <button className="record-add-btn" onClick={onRecord} disabled={submitting}>
               + 추가 기록
             </button>
           </div>
         ) : (
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+            <div className="record-cta-row">
               <img src="/images/savelog_main_character.png" className="custom-icon--lg" style={{ animation: 'floating 4s infinite ease-in-out' }} />
               <div>
-                <h4 style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#fff' }}>오늘 짠내 나는 저축 일기 쓰기 ✍️</h4>
-                <p style={{ margin: '1px 0 0 0', fontSize: 10, color: 'var(--text-mute)' }}>매일 기록하면 짠물 온도 상승 & 토스포인트 적립!</p>
+                <h4 className="record-cta-heading">오늘 짠내 나는 저축 일기 쓰기 ✍️</h4>
+                <p className="record-cta-detail">매일 기록하면 짠물 온도 상승 & 토스포인트 적립!</p>
               </div>
             </div>
 
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button
-                onClick={onQuickZeroSpend}
-                disabled={submitting}
-                style={{
-                  flex: 1.2,
-                  padding: '12px 0',
-                  borderRadius: 12,
-                  border: 'none',
-                  background: submitting ? 'rgba(255,255,255,0.06)' : 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)',
-                  color: submitting ? 'var(--text-mute)' : '#090A10',
-                  fontSize: 12,
-                  fontWeight: 900,
-                  cursor: submitting ? 'default' : 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 4,
-                  boxShadow: submitting ? 'none' : '0 4px 15px rgba(0, 245, 160, 0.25)',
-                  transition: 'all 0.2s'
-                }}
-              >
+            <div className="record-btn-row">
+              <button className="record-btn-primary" onClick={onQuickZeroSpend} disabled={submitting}>
                 {submitting ? '저장 중...' : '🌿 오늘 무지출 완료'}
               </button>
-
-              <button
-                onClick={onRecord}
-                disabled={submitting}
-                style={{
-                  flex: 0.8,
-                  padding: '12px 0',
-                  borderRadius: 12,
-                  border: '1px solid rgba(255,255,255,0.15)',
-                  background: 'rgba(255,255,255,0.06)',
-                  color: submitting ? 'var(--text-mute)' : '#fff',
-                  fontSize: 12,
-                  fontWeight: 800,
-                  cursor: submitting ? 'default' : 'pointer',
-                  transition: 'all 0.2s'
-                }}
-              >
+              <button className="record-btn-secondary" onClick={onRecord} disabled={submitting}>
                 소비 내역 쓰기 💸
               </button>
             </div>
@@ -233,24 +183,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             </div>
             <span className="pending-points-amount">{pendingPoints}원</span>
           </div>
-          <button
-            onClick={onClaimPending}
-            disabled={pendingClaiming}
-            style={{
-              width: '100%',
-              padding: '12px 0',
-              borderRadius: 12,
-              border: 'none',
-              background: pendingClaiming ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #FFC800 0%, #FF9500 100%)',
-              color: pendingClaiming ? 'var(--text-mute)' : '#090A10',
-              fontSize: 13,
-              fontWeight: 900,
-              cursor: pendingClaiming ? 'default' : 'pointer',
-              boxShadow: pendingClaiming ? 'none' : '0 4px 15px rgba(255, 200, 0, 0.25)',
-              textAlign: 'center',
-              transition: 'all 0.2s',
-            }}
-          >
+          <button className="pending-claim-btn" onClick={onClaimPending} disabled={pendingClaiming}>
             {pendingClaiming ? '광고 시청 중...' : '광고 보고 받기'}
           </button>
         </div>
@@ -377,9 +310,9 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                   <span className="rank-medal">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
-                  <span className="rank-nickname" style={{ color: row.user_id === userId ? 'var(--primary)' : 'var(--text-main)' }}>{row.nickname}</span>
+                  <span className="rank-nickname">{row.nickname}</span>
                 </div>
-                <span className="rank-amount" style={{ color: row.user_id === userId ? 'var(--primary)' : 'var(--text-sub)' }}>{formatAmount(row.total)}</span>
+                <span className="rank-amount">{formatAmount(row.total)}</span>
               </div>
             ))}
           </div>
@@ -394,26 +327,16 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* 하단 띠 배너 광고 */}
       <div
         className="mock-bottom-banner glass-card"
-        style={{
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          padding: '12px 16px',
-          borderRadius: 'var(--radius-md)',
-          border: '1px solid rgba(255, 255, 255, 0.08)',
-          background: 'linear-gradient(90deg, rgba(255,255,255,0.01) 0%, rgba(255,255,255,0.04) 100%)',
-          cursor: 'pointer'
-        }}
         onClick={() => window.open('https://toss.im', '_blank')}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-          <img src="/images/ad_toss_piggy.png" alt="Toss Piggy" style={{ width: 36, height: 36, objectFit: 'contain' }} />
-          <div style={{ textAlign: 'left' }}>
-            <p style={{ margin: 0, fontSize: 13, fontWeight: 800, color: 'var(--text-main)' }}>토스 숨은 돈 찾기 💰</p>
-            <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>잠자고 있는 계좌 속 숨은 꽁돈을 지금 조회해 보세요</p>
+        <div className="mock-banner-content">
+          <img src="/images/ad_toss_piggy.png" alt="Toss Piggy" className="mock-banner-img" />
+          <div>
+            <p className="mock-banner-title">토스 숨은 돈 찾기 💰</p>
+            <p className="mock-banner-desc">잠자고 있는 계좌 속 숨은 꽁돈을 지금 조회해 보세요</p>
           </div>
         </div>
-        <span style={{ fontSize: 9, fontWeight: 900, background: 'rgba(255,255,255,0.1)', color: 'var(--text-mute)', padding: '2px 5px', borderRadius: 2 }}>AD</span>
+        <span className="mock-banner-ad-badge">AD</span>
       </div>
 
       {/* 🎓 신규 사용자를 위한 고품격 안내 튜토리얼 Overlay */}

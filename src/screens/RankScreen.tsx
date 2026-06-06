@@ -76,20 +76,10 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
             <p className="my-rank-amount">{inZeroGroup ? '0원 🎉' : formatAmount(myRow.total)}</p>
             <Badge size="small" color={inZeroGroup ? 'green' : 'blue'} variant="weak">{myRow.days}일 기록</Badge>
             {myRow.days > 0 && myRow.total > 0 && (
-              <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--text-mute)' }}>
-                일평균 {formatAmount(Math.round(myRow.total / myRow.days))}
-              </p>
+              <p className="my-rank-sub">일평균 {formatAmount(Math.round(myRow.total / myRow.days))}</p>
             )}
-            {inZeroGroup && (
-              <p style={{ margin: '4px 0 0 0', fontSize: 10, color: 'var(--primary)', fontWeight: 700 }}>
-                👑 무지출 인증단
-              </p>
-            )}
-            {isSuspicious && (
-              <p style={{ margin: '4px 0 0 0', fontSize: 10, color: '#FF4D4F', fontWeight: 700 }}>
-                ⚠ 의심 반응이 많아 리워드가 제한됩니다
-              </p>
-            )}
+            {inZeroGroup && <p className="my-rank-zero">👑 무지출 인증단</p>}
+            {isSuspicious && <p className="my-rank-suspicious">⚠ 의심 반응이 많아 리워드가 제한됩니다</p>}
           </div>
         </div>
       )}
@@ -97,7 +87,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       {/* 도발 카드: 바로 위 순위 (유지출 그룹만) */}
       {inSpendGroup && mySpendIdx > 0 && (
         <div className="glass-card duel-card">
-          <p style={{ margin: 0, fontSize: 11, color: '#FF4D4F', fontWeight: 800, marginBottom: 6 }}>🔥 지금 역전 가능해요</p>
+          <p className="duel-title">🔥 지금 역전 가능해요</p>
           {(() => {
             const above = spendGroup[mySpendIdx - 1];
             const me = spendGroup[mySpendIdx];
@@ -126,15 +116,16 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
 
             return (
               <>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div className="duel-competitor-row">
                   <div>
-                    <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)' }}>{above.nickname}</span>
-                    <span style={{ fontSize: 11, color: 'var(--text-mute)', marginLeft: 6 }}>({mySpendIdx}위)</span>
+                    <span className="duel-competitor-name">{above.nickname}</span>
+                    <span className="duel-competitor-pos">({mySpendIdx}위)</span>
                   </div>
-                  <span style={{ fontSize: 12, fontWeight: 800, color: '#FF4D4F' }}>{diffLabel}</span>
+                  <span className="duel-diff">{diffLabel}</span>
                 </div>
-                <p style={{ margin: '6px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>{hint}</p>
+                <p className="duel-hint">{hint}</p>
                 <button
+                  className="duel-action-btn"
                   disabled={duelSent}
                   onClick={() => {
                     const above = spendGroup[mySpendIdx - 1];
@@ -143,18 +134,6 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
                     sendCheeringMessage(above.nickname, '⚡ 절약 대결을 신청했어요! 이번 주 누가 더 절약하나 같이 도전해봐요 🔥', myName, myPersona);
                     try { localStorage.setItem(`savelog_duel_${weekKey}`, 'true'); } catch {}
                     setDuelSent(true);
-                  }}
-                  style={{
-                    marginTop: 10,
-                    width: '100%',
-                    padding: '10px 0',
-                    borderRadius: 12,
-                    border: duelSent ? '1px solid rgba(255,255,255,0.08)' : '1px solid rgba(255, 77, 79, 0.3)',
-                    background: duelSent ? 'rgba(255,255,255,0.03)' : 'rgba(255, 77, 79, 0.08)',
-                    color: duelSent ? 'var(--text-mute)' : '#FF4D4F',
-                    fontSize: 12,
-                    fontWeight: 900,
-                    cursor: duelSent ? 'default' : 'pointer',
                   }}
                 >
                   {duelSent ? '대결 신청 완료 ✓' : '⚡ 1:1 절약 대결 신청하기'}
@@ -169,50 +148,31 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       <div className="glass-card reward-info-card">
         <p className="reward-info-title">주간 리워드</p>
         <div className="reward-rows">
-          <div className="reward-row" style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 900, marginBottom: 2 }}>💸 절약 순위 리워드 (유료 지출 그룹)</div>
-          <div className="reward-row" style={{ paddingLeft: 8 }}>🥇 1위 (3일↑) <span>+50원</span></div>
-          <div className="reward-row" style={{ paddingLeft: 8 }}>📊 상위 10% (3일↑) <span>+30원</span></div>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
-          <div className="reward-row" style={{ fontSize: 10, color: 'var(--text-mute)', fontWeight: 900, marginBottom: 2 }}>🌿 무지출 인증단 순위 리워드</div>
-          <div className="reward-row" style={{ paddingLeft: 8 }}>🥇 1위 (3일↑) <span>+50원</span></div>
-          <div style={{ height: 1, background: 'rgba(255,255,255,0.06)', margin: '4px 0' }} />
+          <div className="reward-row reward-row--section">💸 절약 순위 리워드 (유료 지출 그룹)</div>
+          <div className="reward-row reward-row--indent">🥇 1위 (3일↑) <span>+50원</span></div>
+          <div className="reward-row reward-row--indent">📊 상위 10% (3일↑) <span>+30원</span></div>
+          <div className="reward-rows-divider" />
+          <div className="reward-row reward-row--section">🌿 무지출 인증단 순위 리워드</div>
+          <div className="reward-row reward-row--indent">🥇 1위 (3일↑) <span>+50원</span></div>
+          <div className="reward-rows-divider" />
           <div className="reward-row">🔥 7일 완주 <span>+20원</span></div>
           <div className="reward-row">📝 매일 기록 <span>+3원</span></div>
           <div className="reward-row">❤️ 게시글 반응 <span>+1원</span></div>
         </div>
-        <p style={{ margin: '8px 0 0 0', fontSize: 10, color: 'var(--text-mute)', lineHeight: 1.5 }}>
-          ❤️ 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령
-        </p>
+        <p className="reward-info-note">❤️ 게시글 반응만 즉시 지급 · 나머지 모두 광고 시청 후 수령</p>
         {(inSpendGroup || inZeroGroup) && rankRewardAmount === 0 && !isSuspicious && myDays > 0 && myDays < 3 && (
-          <p style={{ margin: '10px 0 0 0', fontSize: 11, color: 'var(--text-mute)', textAlign: 'center' }}>
-            📅 순위 리워드는 3일 이상 기록 후 수령 가능해요 ({myDays}/3일)
-          </p>
+          <p className="reward-days-hint">📅 순위 리워드는 3일 이상 기록 후 수령 가능해요 ({myDays}/3일)</p>
         )}
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
+            className="rank-reward-btn"
             disabled={claimedThisWeek || rankClaiming}
             onClick={() => onClaimRankReward(rankRewardAmount)}
-            style={{
-              marginTop: 14,
-              width: '100%',
-              padding: '13px 0',
-              borderRadius: 12,
-              border: 'none',
-              background: claimedThisWeek || rankClaiming
-                ? 'rgba(255,255,255,0.05)'
-                : 'linear-gradient(135deg, #FFD700 0%, #FF9500 100%)',
-              color: claimedThisWeek || rankClaiming ? 'var(--text-mute)' : '#090A10',
-              fontSize: 13,
-              fontWeight: 900,
-              cursor: claimedThisWeek || rankClaiming ? 'default' : 'pointer',
-              boxShadow: claimedThisWeek || rankClaiming ? 'none' : '0 4px 15px rgba(255, 215, 0, 0.25)',
-              transition: 'all 0.2s',
-            }}
           >
             {claimedThisWeek ? `✅ 이번 주 리워드 수령 완료` : rankClaiming ? '광고 시청 중...' : `📺 광고 보고 +${rankRewardAmount}원 받기`}
           </button>
         )}
-        <p className="reward-note" style={{ marginTop: rankRewardAmount > 0 ? 8 : 0 }}>* 순위 리워드는 최소 3일 기록 후 광고 시청 시 지급됩니다</p>
+        <p className={`reward-note${rankRewardAmount > 0 ? ' reward-note--compact' : ''}`}>* 순위 리워드는 최소 3일 기록 후 광고 시청 시 지급됩니다</p>
       </div>
 
       {/* 순위 리스트 */}
@@ -225,22 +185,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           <p>순위를 불러오지 못했어요</p>
           <p className="empty-sub">네트워크 상태를 확인해 주세요</p>
           {onRetry && (
-            <button
-              onClick={onRetry}
-              style={{
-                marginTop: 12,
-                padding: '8px 20px',
-                borderRadius: 100,
-                border: '1px solid rgba(255,255,255,0.15)',
-                background: 'rgba(255,255,255,0.06)',
-                color: 'var(--text-sub)',
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: 'pointer',
-              }}
-            >
-              다시 시도
-            </button>
+            <button className="rank-empty-retry-btn" onClick={onRetry}>다시 시도</button>
           )}
         </div>
       ) : weekRank.length === 0 ? (
@@ -251,25 +196,20 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
       ) : (
         <div className="rank-list">
           {loadFailed && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', marginBottom: 8, background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 10 }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,200,0,0.9)', fontWeight: 700 }}>⚠ 순위 갱신 실패 · 마지막 데이터 표시 중</span>
+            <div className="rank-stale-banner">
+              <span className="rank-stale-text">⚠ 순위 갱신 실패 · 마지막 데이터 표시 중</span>
               {onRetry && (
-                <button
-                  onClick={onRetry}
-                  style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,200,0,0.9)', background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 100, padding: '3px 10px', cursor: 'pointer' }}
-                >
-                  재시도
-                </button>
+                <button className="rank-stale-retry-btn" onClick={onRetry}>재시도</button>
               )}
             </div>
           )}
           {/* 💸 유지출 절약 순위 */}
           {spendGroup.length > 0 && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: '4px 0 8px 0' }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
-                <span style={{ fontSize: 9, color: 'var(--text-mute)', fontWeight: 700, whiteSpace: 'nowrap' }}>💸 절약 순위</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(255,255,255,0.08)' }} />
+              <div className="rank-divider">
+                <div className="rank-divider-line" />
+                <span className="rank-divider-label">💸 절약 순위</span>
+                <div className="rank-divider-line" />
               </div>
               {spendGroup.map((row, i) => (
                 <div key={row.user_id} className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`}>
@@ -297,13 +237,13 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
           {/* 👑 무지출 인증단 */}
           {zeroGroup.length > 0 && (
             <>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, margin: `${spendGroup.length > 0 ? '12px' : '4px'} 0 8px 0` }}>
-                <div style={{ flex: 1, height: 1, background: 'rgba(0,245,160,0.15)' }} />
-                <span style={{ fontSize: 9, color: 'var(--primary)', fontWeight: 700, whiteSpace: 'nowrap' }}>👑 무지출 인증단</span>
-                <div style={{ flex: 1, height: 1, background: 'rgba(0,245,160,0.15)' }} />
+              <div className={`rank-divider${spendGroup.length > 0 ? ' rank-divider--zero' : ''}`}>
+                <div className="rank-divider-line rank-divider-line--zero" />
+                <span className="rank-divider-label rank-divider-label--zero">👑 무지출 인증단</span>
+                <div className="rank-divider-line rank-divider-line--zero" />
               </div>
               {zeroGroup.map((row, i) => (
-                <div key={row.user_id} className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`} style={{ border: '1px solid rgba(0, 245, 160, 0.15)', background: 'rgba(0,245,160,0.03)' }}>
+                <div key={row.user_id} className={`rank-row glass-card rank-row--zero ${row.user_id === userId ? 'rank-row--mine' : ''}`}>
                   <span className="rank-pos">
                     {i < 3 ? MEDAL[i] : <span className="rank-num">{i + 1}</span>}
                   </span>
