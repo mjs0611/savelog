@@ -787,7 +787,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                 {/* 인증샷 / 영수증 이미지 */}
                 {entry.image && (
-                  <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
+                  <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)}>
                     <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
                     {doubleTappedHearts[entry.id] && (
                       <div className="heart-double-tap-overlay">❤️</div>
