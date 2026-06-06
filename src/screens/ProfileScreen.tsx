@@ -186,22 +186,16 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       )}
 
       {/* 🛡️ 친구 공유하고 스트릭 보호권 받기 */}
-      <div
-        className="glass-card"
-        style={{ padding: '14px 16px', border: '1px solid rgba(99,179,237,0.25)', background: 'linear-gradient(135deg, rgba(99,179,237,0.06) 0%, rgba(255,255,255,0.01) 100%)', cursor: 'pointer' }}
-        onClick={handleShare}
-      >
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <span style={{ fontSize: 24 }}>🛡️</span>
+      <div className="glass-card share-shield-card" onClick={handleShare}>
+        <div className="share-shield-inner">
+          <div className="share-shield-left">
+            <span className="share-shield-icon">🛡️</span>
             <div>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: '#63B3ED' }}>친구에게 공유하고 보호권 받기</p>
-              <p style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4 }}>
-                하루 기록을 빠뜨려도 스트릭이 끊기지 않아요
-              </p>
+              <p className="share-shield-title">친구에게 공유하고 보호권 받기</p>
+              <p className="share-shield-desc">하루 기록을 빠뜨려도 스트릭이 끊기지 않아요</p>
             </div>
           </div>
-          <span style={{ fontSize: 20, color: '#63B3ED', fontWeight: 900 }}>›</span>
+          <span className="share-shield-arrow">›</span>
         </div>
       </div>
 
@@ -325,12 +319,12 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 내 쪽지함 📬 */}
       <div className="glass-card mailbox-card">
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
-          <p style={{ fontSize: 15, fontWeight: 800, display: 'flex', alignItems: 'center', gap: 5 }}>
+        <div className="mailbox-header">
+          <p className="mailbox-title">
             내 쪽지함
             <img src="/images/icon_mailbox.png" className="custom-icon" />
           </p>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <div className="mailbox-actions">
             {messages.length > 0 && (
               <>
                 <button
@@ -354,13 +348,11 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             )}
           </div>
         </div>
-        
+
         {messages.length === 0 ? (
-          <p style={{ fontSize: 13, color: 'var(--text-mute)', textAlign: 'center', padding: '10px 0' }}>
-            응원 쪽지 내역이 없어요.
-          </p>
+          <p className="mailbox-empty">응원 쪽지 내역이 없어요.</p>
         ) : (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          <div className="mailbox-list">
             {messages.map((msg) => {
               const isSent = msg.senderNickname === nickname;
               return (

@@ -719,6 +719,25 @@ input { font: inherit; outline: none; border: none; }
 .stat-value { font-size: 20px; font-weight: 900; color: var(--text-main); }
 .stat-label { font-size: 11px; color: var(--text-mute); font-weight: 700; text-transform: uppercase; }
 
+.share-shield-card {
+  padding: 14px 16px;
+  border: 1px solid rgba(99, 179, 237, 0.25) !important;
+  background: linear-gradient(135deg, rgba(99, 179, 237, 0.06) 0%, rgba(255, 255, 255, 0.01) 100%) !important;
+  cursor: pointer;
+}
+.share-shield-inner { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.share-shield-left { display: flex; align-items: center; gap: 10px; }
+.share-shield-icon { font-size: 24px; }
+.share-shield-title { margin: 0; font-size: 13px; font-weight: 900; color: #63B3ED; }
+.share-shield-desc { margin: 2px 0 0 0; font-size: 11px; color: var(--text-mute); line-height: 1.4; }
+.share-shield-arrow { font-size: 20px; color: #63B3ED; font-weight: 900; }
+
+.mailbox-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+.mailbox-title { font-size: 15px; font-weight: 800; display: flex; align-items: center; gap: 5px; margin: 0; }
+.mailbox-actions { display: flex; align-items: center; gap: 6px; }
+.mailbox-list { display: flex; flex-direction: column; gap: 10px; }
+.mailbox-empty { font-size: 13px; color: var(--text-mute); text-align: center; padding: 10px 0; }
+
 .week-entries-card {}
 .mailbox-card {}
 .week-entries-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
