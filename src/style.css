@@ -319,7 +319,16 @@ input { font: inherit; outline: none; border: none; }
 .home-greeting { font-size: 13px; color: var(--text-mute); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .home-week-range { font-size: 20px; font-weight: 800; color: var(--text-main); }
 .home-header-row { display: flex; align-items: center; }
-.home-logo-title {}
+.home-logo-title {
+  font-size: 21px;
+  font-weight: 900;
+  background: linear-gradient(90deg, #00F5A0, #00D2FF);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin: 0;
+  letter-spacing: -0.5px;
+}
 
 .home-points-badge {
   display: flex;
@@ -1274,7 +1283,17 @@ input { font: inherit; outline: none; border: none; }
   margin-left: 6px;
   text-transform: uppercase;
 }
-.feed-persona-tag {}
+.feed-persona-tag {
+  margin-left: 6px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 100px;
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  vertical-align: middle;
+}
 .zero-tag {
   background: rgba(0, 245, 160, 0.15);
   color: var(--primary);
@@ -1801,9 +1820,21 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* ⚖️ 밸런스 게임 다음 배틀 버튼 */
-.next-battle-btn {}
+.next-battle-btn {
+  width: 100%;
+  padding: 12px 0;
+  margin-top: 4px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 245, 160, 0.2);
+  background: rgba(0, 245, 160, 0.06);
+  color: var(--primary);
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+  transition: all 0.2s;
+}
 .next-battle-btn:hover {
-  background: rgba(0, 245, 160, 0.12) !important;
+  background: rgba(0, 245, 160, 0.12);
   box-shadow: 0 4px 12px rgba(0, 245, 160, 0.15);
   transform: translateY(-1px);
 }

@@ -465,19 +465,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                       <button
                         onClick={loadBalanceEntry}
                         className="next-battle-btn"
-                        style={{
-                          width: '100%',
-                          padding: '12px 0',
-                          marginTop: 4,
-                          borderRadius: 12,
-                          border: '1px solid rgba(0, 245, 160, 0.2)',
-                          background: 'rgba(0, 245, 160, 0.06)',
-                          color: 'var(--primary)',
-                          fontSize: 12,
-                          fontWeight: 900,
-                          cursor: 'pointer',
-                          transition: 'all 0.2s',
-                        }}
                       >
                         다음 지출 판정하기 →
                       </button>
@@ -719,18 +706,9 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           <span
                             className="feed-persona-tag"
                             style={{
-                              marginLeft: 6,
-                              fontSize: 10,
-                              fontWeight: 700,
                               background: `${p.color}15`,
                               color: p.color,
                               border: `1px solid ${p.color}25`,
-                              padding: '2px 6px',
-                              borderRadius: 100,
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              gap: '3px',
-                              verticalAlign: 'middle',
                             }}
                           >
                             <img src={p.icon} alt="" style={{ width: 11, height: 11, objectFit: 'contain' }} />

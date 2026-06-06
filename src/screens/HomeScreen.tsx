@@ -51,7 +51,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* 헤더 */}
       <div className="home-header-row" style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
         <div>
-          <h1 className="home-logo-title" style={{ fontSize: 21, fontWeight: 900, background: 'linear-gradient(90deg, #00F5A0, #00D2FF)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', margin: 0, letterSpacing: '-0.5px' }}>세이브로그</h1>
+          <h1 className="home-logo-title">세이브로그</h1>
           <p className="home-week-range" style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>{weekRangeStr}</p>
         </div>
       </div>
