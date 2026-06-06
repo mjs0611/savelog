@@ -1999,3 +1999,132 @@ input { font: inherit; outline: none; border: none; }
   transform: translateY(0);
 }
 
+/* 🌿 RecordScreen — 무지출 인증 섹션 */
+.zero-note-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 14px;
+  background: linear-gradient(135deg, rgba(0, 245, 160, 0.06), rgba(0, 245, 160, 0.02));
+  border: 1.5px dashed var(--primary);
+  border-radius: var(--radius-md);
+}
+.zero-note-title { margin: 0; font-size: 13px; font-weight: 900; color: var(--primary); }
+.zero-note-desc  { margin: 0; font-size: 11px; color: var(--text-mute); line-height: 1.5; }
+.zero-note-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+  font-family: inherit;
+}
+.zero-note-char-count { margin: 0; font-size: 10px; color: var(--text-mute); text-align: right; }
+.zero-note-actions { display: flex; gap: 8px; }
+.zero-note-cancel-btn {
+  flex: 1;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+}
+.zero-note-submit-btn {
+  flex: 2;
+  padding: 10px 0;
+  border-radius: 10px;
+  border: none;
+  background: linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%);
+  color: #090A10;
+  font-size: 12px;
+  font-weight: 900;
+  cursor: pointer;
+}
+.zero-note-submit-btn:disabled {
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text-mute);
+  cursor: default;
+}
+
+/* 📝 RecordScreen — 오늘 한마디 섹션 */
+.daily-note-section { display: flex; flex-direction: column; gap: 6px; }
+.daily-note-desc { margin: 0; font-size: 11px; color: var(--text-mute); line-height: 1.4; }
+.daily-note-textarea {
+  width: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #fff;
+  font-size: 13px;
+  padding: 10px 12px;
+  resize: none;
+  outline: none;
+  line-height: 1.6;
+  font-family: inherit;
+  transition: border-color 0.2s;
+}
+.daily-note-textarea--valid { border-color: var(--primary); }
+.daily-note-char-count { margin: 0; font-size: 10px; color: var(--text-mute); text-align: right; }
+
+/* ⚖️ RecordScreen — 밸런스 게임 opt-in 버튼 */
+.balance-game-opt-btn {
+  width: 100%;
+  padding: 12px 16px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.03);
+  color: var(--text-mute);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  text-align: left;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  transition: all 0.2s;
+}
+.balance-game-opt-btn--on {
+  border: 1.5px solid rgba(255, 200, 0, 0.5);
+  background: rgba(255, 200, 0, 0.08);
+  color: #FFC800;
+}
+.balance-game-opt-icon { font-size: 18px; }
+.balance-game-opt-title { margin: 0; font-size: 12px; font-weight: 900; }
+.balance-game-opt-desc { margin: 2px 0 0 0; font-size: 10px; color: var(--text-mute); }
+.balance-game-opt-btn--on .balance-game-opt-desc { color: rgba(255, 200, 0, 0.7); }
+
+/* 🖼️ RecordScreen — 이미지 제거 버튼 */
+.image-remove-btn {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.6);
+  border: none;
+  color: #fff;
+  font-weight: 800;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* 🌿 App.tsx — 무지출 한마디 모달 */
+.zero-note-modal-sheet {
+  padding: 24px 20px calc(24px + env(safe-area-inset-bottom, 0px));
+  gap: 0;
+}
+.zero-note-modal-title { margin: 0 0 6px 0; font-size: 15px; font-weight: 900; color: #fff; }
+.zero-note-modal-desc  { margin: 0 0 16px 0; font-size: 11px; color: var(--text-mute); line-height: 1.5; }
+.zero-note-modal-char-count { margin: 4px 0 20px 0; font-size: 10px; color: var(--text-mute); text-align: right; }
+

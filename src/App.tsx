@@ -535,33 +535,20 @@ export default function App() {
       {/* 무지출 한마디 모달 */}
       {showZeroNote && (
         <div className="modal-overlay" onClick={() => { if (!submitting) setShowZeroNote(false); }} style={{ zIndex: 9999 }}>
-          <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ padding: '24px 20px calc(24px + env(safe-area-inset-bottom, 0))', gap: 0 }}>
-            <p style={{ margin: '0 0 6px 0', fontSize: 15, fontWeight: 900, color: '#fff' }}>🌿 무지출 기록하기</p>
-            <p style={{ margin: '0 0 16px 0', fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.5 }}>
+          <div className="modal-sheet zero-note-modal-sheet" onClick={e => e.stopPropagation()}>
+            <p className="zero-note-modal-title">🌿 무지출 기록하기</p>
+            <p className="zero-note-modal-desc">
               오늘 어떻게 무지출을 달성했나요? 한 줄로 남겨보세요.<br />피드에 공유되어 다른 사람들과 나눌 수 있어요.
             </p>
             <textarea
+              className="zero-note-textarea"
               value={zeroNoteText}
               onChange={e => setZeroNoteText(e.target.value)}
               placeholder="예) 집에 있는 재료로 밥해먹고 커피도 참았어요 ☕"
               maxLength={80}
               rows={3}
-              style={{
-                width: '100%',
-                boxSizing: 'border-box',
-                background: 'rgba(255,255,255,0.06)',
-                border: '1px solid rgba(255,255,255,0.12)',
-                borderRadius: 12,
-                color: '#fff',
-                fontSize: 13,
-                padding: '12px 14px',
-                resize: 'none',
-                outline: 'none',
-                lineHeight: 1.6,
-                fontFamily: 'inherit',
-              }}
             />
-            <p style={{ margin: '4px 0 20px 0', fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNoteText.length}/80</p>
+            <p className="zero-note-modal-char-count">{zeroNoteText.length}/80</p>
             <Button
               size="medium"
               display="full"

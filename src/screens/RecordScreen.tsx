@@ -133,45 +133,32 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
 
           {/* 무지출 한마디 입력 — 추가 기록 모드에서는 숨김 */}
           {items.length === 0 && showZeroNote && !isAdditional && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 8, padding: '14px', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.06), rgba(0, 245, 160, 0.02))', border: '1.5px dashed var(--primary)', borderRadius: 'var(--radius-md)' }}>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>🌿 무지출 인증</p>
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.5 }}>오늘 어떻게 무지출을 달성했나요? 피드에 공유돼요.</p>
+            <div className="zero-note-section">
+              <p className="zero-note-title">🌿 무지출 인증</p>
+              <p className="zero-note-desc">오늘 어떻게 무지출을 달성했나요? 피드에 공유돼요.</p>
               <textarea
+                className="zero-note-textarea"
                 value={zeroNote}
                 onChange={e => setZeroNote(e.target.value)}
                 placeholder="예) 도시락 싸서 점심 해결, 배달 참기 성공 🎉"
                 maxLength={80}
                 rows={3}
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: '1px solid rgba(255,255,255,0.12)',
-                  borderRadius: 10,
-                  color: '#fff',
-                  fontSize: 13,
-                  padding: '10px 12px',
-                  resize: 'none',
-                  outline: 'none',
-                  lineHeight: 1.6,
-                  fontFamily: 'inherit',
-                }}
               />
-              <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{zeroNote.length}/80 · 5자 이상 입력</p>
-              <div style={{ display: 'flex', gap: 8 }}>
+              <p className="zero-note-char-count">{zeroNote.length}/80 · 5자 이상 입력</p>
+              <div className="zero-note-actions">
                 <button
+                  className="zero-note-cancel-btn"
                   disabled={submitting}
                   onClick={() => { setShowZeroNote(false); setZeroNote(''); }}
-                  style={{ flex: 1, padding: '10px 0', borderRadius: 10, border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.05)', color: 'var(--text-mute)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}
                 >
                   취소
                 </button>
                 <button
+                  className="zero-note-submit-btn"
                   disabled={zeroNote.trim().length < 5 || submitting}
                   onClick={async () => {
                     await onSubmit([{ category: '한마디', emoji: '💬', amount: 0, comment: zeroNote.trim() }]);
                   }}
-                  style={{ flex: 2, padding: '10px 0', borderRadius: 10, border: 'none', background: zeroNote.trim().length < 5 || submitting ? 'rgba(255,255,255,0.05)' : 'linear-gradient(135deg, #00F5A0 0%, #00D9F5 100%)', color: zeroNote.trim().length < 5 || submitting ? 'var(--text-mute)' : '#090A10', fontSize: 12, fontWeight: 900, cursor: zeroNote.trim().length < 5 || submitting ? 'default' : 'pointer' }}
                 >
                   {submitting ? '저장 중...' : '무지출 기록 완료'}
                 </button>
@@ -246,32 +233,18 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
 
           {/* 오늘 한마디 (첫 기록이고 항목이 1개 이상일 때 표시) */}
           {items.length > 0 && !showZeroNote && !isAdditional && (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+            <div className="daily-note-section">
               <p className="form-label" style={{ margin: 0 }}>오늘 한마디 <span style={{ color: 'var(--primary)', fontWeight: 900 }}>*</span></p>
-              <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', lineHeight: 1.4 }}>오늘 지출에 대한 한 줄 일기를 남겨요. 피드에 공유됩니다.</p>
+              <p className="daily-note-desc">오늘 지출에 대한 한 줄 일기를 남겨요. 피드에 공유됩니다.</p>
               <textarea
+                className={`daily-note-textarea${dailyNote.trim().length >= 5 ? ' daily-note-textarea--valid' : ''}`}
                 value={dailyNote}
                 onChange={e => setDailyNote(e.target.value)}
                 placeholder="예) 친구 생일이라 어쩔 수 없었어... 다음엔 아껴야지 😅"
                 maxLength={80}
                 rows={2}
-                style={{
-                  width: '100%',
-                  boxSizing: 'border-box',
-                  background: 'rgba(255,255,255,0.06)',
-                  border: `1px solid ${dailyNote.trim().length >= 5 ? 'var(--primary)' : 'rgba(255,255,255,0.12)'}`,
-                  borderRadius: 10,
-                  color: '#fff',
-                  fontSize: 13,
-                  padding: '10px 12px',
-                  resize: 'none',
-                  outline: 'none',
-                  lineHeight: 1.6,
-                  fontFamily: 'inherit',
-                  transition: 'border-color 0.2s',
-                }}
               />
-              <p style={{ margin: 0, fontSize: 10, color: 'var(--text-mute)', textAlign: 'right' }}>{dailyNote.length}/80 · 5자 이상 입력</p>
+              <p className="daily-note-char-count">{dailyNote.length}/80 · 5자 이상 입력</p>
             </div>
           )}
 
@@ -279,30 +252,15 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           {items.length > 0 && total > 0 && !isAdditional && !showZeroNote && (
             <button
               type="button"
+              className={`balance-game-opt-btn${isBalanceGame ? ' balance-game-opt-btn--on' : ''}`}
               onClick={() => setIsBalanceGame(v => !v)}
-              style={{
-                width: '100%',
-                padding: '12px 16px',
-                borderRadius: 12,
-                border: isBalanceGame ? '1.5px solid rgba(255,200,0,0.5)' : '1px solid rgba(255,255,255,0.1)',
-                background: isBalanceGame ? 'rgba(255,200,0,0.08)' : 'rgba(255,255,255,0.03)',
-                color: isBalanceGame ? '#FFC800' : 'var(--text-mute)',
-                fontSize: 12,
-                fontWeight: 800,
-                cursor: 'pointer',
-                textAlign: 'left',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                transition: 'all 0.2s',
-              }}
             >
-              <span style={{ fontSize: 18 }}>⚖️</span>
+              <span className="balance-game-opt-icon">⚖️</span>
               <div>
-                <p style={{ margin: 0, fontSize: 12, fontWeight: 900 }}>
+                <p className="balance-game-opt-title">
                   {isBalanceGame ? '밸런스 게임 등록됨 ✓' : '내 지출, 합리적일까? 다른 사람들한테 물어보기'}
                 </p>
-                <p style={{ margin: '2px 0 0 0', fontSize: 10, color: isBalanceGame ? 'rgba(255,200,0,0.7)' : 'var(--text-mute)' }}>
+                <p className="balance-game-opt-desc">
                   {isBalanceGame ? '피드 밸런스 게임에 올라가요 · 다시 누르면 취소' : '피드에서 다른 사람들이 과소비 / 합리적 판정을 해줘요'}
                 </p>
               </div>
@@ -321,23 +279,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               <div className="image-preview-container">
                 <img src={image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button
+                  className="image-remove-btn"
                   onClick={() => { setImage(null); setImageError(null); }}
-                  style={{
-                    position: 'absolute',
-                    top: 8,
-                    right: 8,
-                    width: 28,
-                    height: 28,
-                    borderRadius: '50%',
-                    background: 'rgba(0,0,0,0.6)',
-                    border: 'none',
-                    color: '#fff',
-                    fontWeight: 800,
-                    cursor: 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center'
-                  }}
                 >
                   ✕
                 </button>
