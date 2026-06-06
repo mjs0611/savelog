@@ -123,7 +123,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       ],
       nudgeHistory: ['이패드님이 가입했습니다.', '김토스님이 박절약님을 콕 찔렀습니다.']
     };
-    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
     setGroup(newGroup);
     showPotToast(`👥 ${randomName} 방을 개설했습니다!`);
   };
@@ -144,7 +143,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       ],
       nudgeHistory: [`초대 코드 ${code}로 입장했습니다.`, '김토스님이 박절약님을 콕 찔렀습니다.']
     };
-    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
     setGroup(newGroup);
     setInviteCode('');
     setShowInviteInput(false);
@@ -167,7 +165,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       ...group,
       nudgeHistory: updatedHistory
     };
-    localStorage.setItem('savelog_pot_group', JSON.stringify(updatedGroup));
     setGroup(updatedGroup);
     showPotToast(`💬 ${memberName}님에게 "지갑 지켜! 🛡️" 콕 찌르기를 보냈어요.`);
   };
