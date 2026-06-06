@@ -241,7 +241,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             </div>
 
             <div className="radar-chart-svg-wrap">
-              <svg width="200" height="184" style={{ overflow: 'visible' }}>
+              <svg width="200" height="184" className="radar-svg">
                 {/* 1. Concentric Pentagonal Grid */}
                 {gridPoints.map((pts, idx) => (
                   <polygon

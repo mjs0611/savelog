@@ -457,7 +457,7 @@ export default function App() {
 
       {/* 탭 콘텐츠 — display:none으로 마운트 유지 (재요청/플리커 방지) */}
       <div className="tab-content">
-        <div style={tab !== 'home' ? { display: 'none' } : {}}>
+        <div className={tab !== 'home' ? 'tab-panel--hidden' : ''}>
           <HomeScreen
             daily={daily}
             streak={streak}
@@ -472,7 +472,7 @@ export default function App() {
             pendingClaiming={pendingClaiming}
           />
         </div>
-        <div style={tab !== 'feed' ? { display: 'none' } : {}}>
+        <div className={tab !== 'feed' ? 'tab-panel--hidden' : ''}>
           <FeedScreen
             userId={userId}
             refreshToken={feedRefreshToken}
@@ -481,7 +481,7 @@ export default function App() {
             }}
           />
         </div>
-        <div style={tab !== 'rank' ? { display: 'none' } : {}}>
+        <div className={tab !== 'rank' ? 'tab-panel--hidden' : ''}>
           <RankScreen
             userId={userId}
             weekRank={weekRank}
@@ -494,7 +494,7 @@ export default function App() {
             onRetry={loadRank}
           />
         </div>
-        <div style={tab !== 'profile' ? { display: 'none' } : {}}>
+        <div className={tab !== 'profile' ? 'tab-panel--hidden' : ''}>
           <ProfileScreen
             userId={userId}
             nickname={nickname}

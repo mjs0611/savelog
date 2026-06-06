@@ -169,7 +169,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       setLoadFailed(false);
       setEntries(data);
 
-      // 현재 피드에 없는 엔트리의 댓글을 localStorage에서 정리
+      // 현재 피드에 없는 엔트리의 댓글·투표를 localStorage에서 정리
       // data가 빈 배열이어도 정리 실행 (validIds가 빈 Set이면 고아 키 전체 제거)
       const validIds = new Set(data.map((e) => e.id));
       setLocalComments((prev) => {
@@ -178,6 +178,16 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         );
         if (Object.keys(pruned).length < Object.keys(prev).length) {
           localStorage.setItem('feed_comments', JSON.stringify(pruned));
+        }
+        return pruned;
+      });
+      // feedVotes도 동일하게 정리 (피드에 없는 엔트리의 투표 기록 제거)
+      setFeedVotes((prev) => {
+        const pruned = Object.fromEntries(
+          Object.entries(prev).filter(([id]) => validIds.has(id))
+        );
+        if (Object.keys(pruned).length < Object.keys(prev).length) {
+          localStorage.setItem('savelog_feed_votes', JSON.stringify(pruned));
         }
         return pruned;
       });
@@ -571,15 +581,15 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   return (
                     <div key={friend.user_id} className="recommended-friend-row">
                       <div className="recommended-friend-info">
-                        <div className="feed-avatar" style={{ margin: 0, width: 32, height: 32, fontSize: 12, ...(p ? { borderColor: p.color } : {}) }}>
+                        <div className="feed-avatar feed-avatar--sm" style={p ? { borderColor: p.color } : {}}>
                           {friend.nickname.charAt(0).toUpperCase()}
                         </div>
                         <div className="recommended-friend-meta">
                           <div className="recommended-friend-name-row">
                             <span className="recommended-friend-name">{friend.nickname}</span>
                             {p && (
-                              <span style={{ fontSize: 8, background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25`, padding: '1px 4px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
-                                <img src={p.icon} alt="" style={{ width: 8, height: 8, objectFit: 'contain' }} />
+                              <span className="rec-persona-tag" style={{ background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25` }}>
+                                <img src={p.icon} alt="" />
                                 <span>{p.name}</span>
                               </span>
                             )}
@@ -942,7 +952,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       {/* 응원 쪽지 보내기 모달 */}
       {messageRecipientEntry && (
         <div className="story-modal-overlay" onClick={() => setMessageRecipientEntry(null)}>
-          <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
+          <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
             <div className="story-modal-header">
               <img src="/images/icon_mailbox.png" className="custom-icon story-modal-icon" />
               <div>

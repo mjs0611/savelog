@@ -116,6 +116,7 @@ input { font: inherit; outline: none; border: none; }
   overflow-y: auto;
   padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
 }
+.tab-panel--hidden { display: none; }
 
 /* ── Bottom Nav ─────────────────────────────────────────────────────────────── */
 
@@ -643,6 +644,18 @@ input { font: inherit; outline: none; border: none; }
 .feed-avatar--mine {
   background: linear-gradient(135deg, #FF9500, #FF4D4F);
 }
+.feed-avatar--sm { width: 32px; height: 32px; font-size: 12px; margin: 0; }
+
+/* 추천 짠친 인라인 페르소나 태그 (동적 color/bg는 인라인 유지) */
+.rec-persona-tag {
+  font-size: 8px;
+  padding: 1px 4px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+.rec-persona-tag img { width: 8px; height: 8px; object-fit: contain; }
 
 .feed-card-meta { display: flex; flex-direction: column; }
 .feed-nickname { font-size: 15px; font-weight: 800; color: var(--text-main); display: flex; align-items: center; }
@@ -1969,6 +1982,7 @@ input { font: inherit; outline: none; border: none; }
 .radar-chart-label { font-size: 13px; font-weight: 900; color: var(--text-main); }
 .radar-chart-header { margin-bottom: 14px; }
 .radar-chart-svg-wrap { display: flex; justify-content: center; align-items: center; position: relative; }
+.radar-svg { overflow: visible; }
 
 /* Scrollable overlay sheet content */
 .terms-content-box {
