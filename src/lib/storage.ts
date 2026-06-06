@@ -373,16 +373,15 @@ export function setMilestonePosted(key: string): void {
 
 // ── Group Challenge ─────────────────────────────────────────────────────────
 
-const CHALLENGE_KEY = 'savelog_active_challenge';
-
-export function getActiveChallengeId(): string | null {
-  return localStorage.getItem(CHALLENGE_KEY);
+export function getActiveChallengeId(weekKey: string): string | null {
+  return localStorage.getItem(`savelog_active_challenge_${weekKey}`);
 }
 
-export function setActiveChallengeId(id: string | null): void {
+export function setActiveChallengeId(id: string | null, weekKey: string): void {
   try {
-    if (id === null) localStorage.removeItem(CHALLENGE_KEY);
-    else localStorage.setItem(CHALLENGE_KEY, id);
+    const key = `savelog_active_challenge_${weekKey}`;
+    if (id === null) localStorage.removeItem(key);
+    else localStorage.setItem(key, id);
   } catch {}
 }
 
@@ -433,6 +432,16 @@ export function cleanupStaleKeys(): void {
             if (start < cutoff) toRemove.push(key);
           } catch {}
         }
+      }
+      // 이전 버전 챌린지 키 (비-주차 스코프) 제거
+      if (key === 'savelog_active_challenge') toRemove.push(key);
+      // 주차 스코프 챌린지 키 만료 정리
+      if (key.startsWith('savelog_active_challenge_')) {
+        const weekKey = key.slice('savelog_active_challenge_'.length);
+        try {
+          const { start } = getWeekRange(weekKey);
+          if (start < cutoff) toRemove.push(key);
+        } catch {}
       }
     }
     toRemove.forEach((k) => localStorage.removeItem(k));

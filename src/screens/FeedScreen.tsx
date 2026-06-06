@@ -52,15 +52,15 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   // 댓글 스레드 펼침 상태 (2개 초과 시)
   const [commentExpanded, setCommentExpanded] = useState<Record<string, boolean>>({});
 
-  // 그룹 챌린지 참여 상태
-  const [activeChallenge, setActiveChallenge] = useState<string | null>(() => getActiveChallengeId());
-
   // 이번 주 챌린지 (주차별 결정론적 선택)
+  const currentWeekKey = getWeekKey();
   const weekChallenge = (() => {
-    const wk = getWeekKey();
-    const hash = wk.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+    const hash = currentWeekKey.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
     return WEEKLY_CHALLENGES[Math.abs(hash) % WEEKLY_CHALLENGES.length];
   })();
+
+  // 그룹 챌린지 참여 상태 (주차별 스코프)
+  const [activeChallenge, setActiveChallenge] = useState<string | null>(() => getActiveChallengeId(currentWeekKey));
 
   // 로컬 댓글 상태 저장 (실제 서비스처럼 동작)
   const [localComments, setLocalComments] = useState<Record<string, { sender: string; text: string }[]>>(() => {
@@ -310,11 +310,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
   function handleToggleChallenge(id: string) {
     if (activeChallenge === id) {
-      setActiveChallengeId(null);
+      setActiveChallengeId(null, currentWeekKey);
       setActiveChallenge(null);
       showFeedToast('챌린지에서 나왔어요.');
     } else {
-      setActiveChallengeId(id);
+      setActiveChallengeId(id, currentWeekKey);
       setActiveChallenge(id);
       showFeedToast('챌린지 참여 완료! 💪 이번 주 함께 버텨봐요');
     }
