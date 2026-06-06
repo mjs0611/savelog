@@ -331,7 +331,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               </p>
             )}
             {image ? (
-              <div className="image-preview-container" style={{ position: 'relative', width: '100%', height: 160, borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="image-preview-container">
                 <img src={image} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 <button
                   onClick={() => { setImage(null); setImageError(null); }}
@@ -356,25 +356,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 </button>
               </div>
             ) : (
-              <label
-                className="image-upload-label"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 8,
-                  width: '100%',
-                  padding: '16px',
-                  background: 'rgba(255, 255, 255, 0.03)',
-                  border: '1px dashed rgba(255, 255, 255, 0.15)',
-                  borderRadius: 'var(--radius-sm)',
-                  cursor: 'pointer',
-                  color: 'var(--text-sub)',
-                  fontSize: '14px',
-                  fontWeight: 700,
-                  transition: 'all 0.2s ease',
-                }}
-              >
+              <label className="image-upload-label">
                 <span>📸</span>
                 <span>인증샷 / 영수증 첨부</span>
                 <input
