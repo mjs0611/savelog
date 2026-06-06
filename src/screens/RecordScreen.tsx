@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Button, TextField } from '@toss/tds-mobile';
 import type { SpendingItem } from '../lib/supabase';
 import { formatAmount } from '../lib/utils';

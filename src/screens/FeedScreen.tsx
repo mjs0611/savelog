@@ -59,12 +59,16 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   async function handleFeedVote(entryId: string, vote: 'over' | 'ok') {
     if (feedVotes[entryId] || feedVotingRef.current.has(entryId)) return;
     feedVotingRef.current.add(entryId);
-    const nextVotes = { ...feedVotes, [entryId]: vote };
-    setFeedVotes(nextVotes); // optimistic UI update
+    // optimistic UI update — functional update로 동시 투표 충돌 방지
+    setFeedVotes(prev => ({ ...prev, [entryId]: vote }));
     try {
       await submitBalanceVote(entryId, userId, vote);
-      // API 성공 후 localStorage에 확정 저장
-      localStorage.setItem('savelog_feed_votes', JSON.stringify(nextVotes));
+      // API 성공 후 최신 상태 기준으로 localStorage 확정 저장 (동시 투표 유실 방지)
+      setFeedVotes(prev => {
+        const updated = { ...prev, [entryId]: vote };
+        localStorage.setItem('savelog_feed_votes', JSON.stringify(updated));
+        return updated;
+      });
       onGrantFeedReward?.();
       showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
     } catch {
