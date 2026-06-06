@@ -40,7 +40,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [entriesLoading, setEntriesLoading] = useState(true);
   const [entriesError, setEntriesError] = useState(false);
   const [entriesRetry, setEntriesRetry] = useState(0);
-  const [messages, setMessages] = useState<CheeringMessage[]>([]);
+  const [messages, setMessages] = useState<CheeringMessage[]>(() => getCheeringMessages());
   const [clearConfirm, setClearConfirm] = useState(false);
   const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
