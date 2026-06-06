@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
@@ -24,6 +24,11 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
   const [duelSent, setDuelSent] = useState<boolean>(() => {
     try { return localStorage.getItem(`savelog_duel_${getWeekKey()}`) === 'true'; } catch { return false; }
   });
+
+  // 주가 바뀌면 duelSent 재동기화 (앱을 주 경계 넘어 열어둔 경우)
+  useEffect(() => {
+    try { setDuelSent(localStorage.getItem(`savelog_duel_${weekKey}`) === 'true'); } catch {}
+  }, [weekKey]);
 
   // 무지출/유지출 리그 분리
   const spendGroup = weekRank.filter(r => r.total > 0);
