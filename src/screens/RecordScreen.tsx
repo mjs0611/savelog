@@ -68,6 +68,12 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
 
+  // creatorMode 전환 시 이미지 초기화 (다른 모드의 이미지가 잘못 첨부되는 버그 방지)
+  React.useEffect(() => {
+    setImage(null);
+    setImageError(null);
+  }, [creatorMode]);
+
   const total = items.reduce((s, i) => s + i.amount, 0);
 
   function addItem() {

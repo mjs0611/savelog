@@ -115,6 +115,8 @@ export default function App() {
         loadRank();
         // 주차가 바뀌었을 때 prevWeekRank도 갱신 (리워드 판단 staleness 방지)
         fetchWeekRank(getPrevWeekKey()).then(data => { if (data) setPrevWeekRank(data); }).catch(() => {});
+        // 백그라운드 복귀 시 피드 갱신 (stale 피드 방지)
+        setFeedRefreshToken(t => t + 1);
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);
