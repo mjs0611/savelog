@@ -133,6 +133,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   }, [refreshToken, userId]);
 
   useEffect(() => {
+    return () => {
+      if (toastTimerRef.current) clearTimeout(toastTimerRef.current);
+    };
+  }, []);
+
+  useEffect(() => {
     // 밸런스 게임은 userId 변경 시에만 리셋 (피드 새로고침마다 리셋되지 않도록)
     loadBalanceEntry();
     // Supabase에서 팔로우 목록 동기화 (로컬캐시 덮어쓰기)
@@ -546,7 +552,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           {loadFailed ? (
             <>
               <p>피드를 불러오지 못했어요</p>
-              <p className="empty-sub">네트워크 상태를 확인하고 새로고침 버튼을 눌러보세요</p>
+              <p className="empty-sub">네트워크 상태를 확인해 주세요</p>
+              <button onClick={() => load(false)} className="rank-empty-retry-btn">다시 시도</button>
             </>
           ) : (
             <>

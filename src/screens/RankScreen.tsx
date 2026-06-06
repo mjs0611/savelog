@@ -58,7 +58,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, onCl
 
       {/* 내 순위 요약 */}
       {(inSpendGroup || inZeroGroup) && myRow && (
-        <div className="glass-card my-rank-card" style={isSuspicious ? { border: '1px solid rgba(255,77,79,0.3)', background: 'rgba(255,77,79,0.04)' } : inZeroGroup ? { border: '1px solid rgba(0,245,160,0.2)', background: 'rgba(0,245,160,0.03)' } : {}}>
+        <div className={`glass-card my-rank-card${isSuspicious ? ' my-rank-card--suspicious' : inZeroGroup ? ' my-rank-card--zero' : ''}`}>
           <div className="my-rank-left">
             {inSpendGroup ? (
               <>
