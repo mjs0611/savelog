@@ -1,5 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
-import React from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import type { DailyState, StreakData } from '../lib/storage';
 import { getDailyMission, getPersona, PERSONAS, getNickname } from '../lib/storage';
@@ -184,35 +183,34 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const chosenOne = mockMembers[Math.floor(Math.random() * mockMembers.length)];
         const actionType = Math.random() > 0.5 ? 'spend' : 'nudge';
         
+        // 모든 랜덤 값과 사이드이펙트를 updater 바깥에서 계산 (strict mode double-invoke 방지)
+        let historyEntry: string;
+        let memberUpdate: ((m: PotMember) => PotMember) | null = null;
+        let toastMsg: string | null = null;
+
+        if (actionType === 'spend') {
+          const addedSpend = Math.floor(Math.random() * 3000) + 1000;
+          historyEntry = `${chosenOne}님이 ${formatAmount(addedSpend)} 소비를 기록했습니다.`;
+          memberUpdate = (m) => m.name === chosenOne ? { ...m, spent: m.spent + addedSpend } : m;
+        } else {
+          const target = mockMembers.filter(n => n !== chosenOne)[Math.floor(Math.random() * 2)];
+          const comment = Math.random() > 0.5 ? '지갑 지키세요! 🛡️' : '커피 참읍시다 ☕';
+          historyEntry = `${chosenOne}님이 ${target}님을 콕 찔렀습니다: "${comment}"`;
+          if (Math.random() > 0.5) {
+            toastMsg = `💬 ${chosenOne}님이 나를 콕 찔렀어요: "${comment}"`;
+          }
+        }
+
         setGroup(prevGroup => {
           if (!prevGroup) return null;
-          let updatedMembers = [...prevGroup.members];
-          let updatedHistory = [...prevGroup.nudgeHistory];
-          
-          if (actionType === 'spend') {
-            const addedSpend = Math.floor(Math.random() * 3000) + 1000;
-            updatedMembers = prevGroup.members.map(m => 
-              m.name === chosenOne ? { ...m, spent: m.spent + addedSpend } : m
-            );
-            updatedHistory.unshift(`${chosenOne}님이 ${formatAmount(addedSpend)} 소비를 기록했습니다.`);
-          } else {
-            const target = mockMembers.filter(n => n !== chosenOne)[Math.floor(Math.random() * 2)];
-            const comment = Math.random() > 0.5 ? '지갑 지키세요! 🛡️' : '커피 참읍시다 ☕';
-            updatedHistory.unshift(`${chosenOne}님이 ${target}님을 콕 찔렀습니다: "${comment}"`);
-            
-            if (Math.random() > 0.5) {
-              showPotToast(`💬 ${chosenOne}님이 나를 콕 찔렀어요: "${comment}"`);
-            }
-          }
-          
-          const newGroup = {
-            ...prevGroup,
-            members: updatedMembers,
-            nudgeHistory: updatedHistory.slice(0, 15)
-          };
+          const updatedMembers = memberUpdate ? prevGroup.members.map(memberUpdate) : prevGroup.members;
+          const updatedHistory = [historyEntry, ...prevGroup.nudgeHistory].slice(0, 15);
+          const newGroup = { ...prevGroup, members: updatedMembers, nudgeHistory: updatedHistory };
           localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
           return newGroup;
         });
+
+        if (toastMsg) showPotToast(toastMsg);
       }
     }, 12000);
     
