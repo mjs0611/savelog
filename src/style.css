@@ -1632,6 +1632,7 @@ input { font: inherit; outline: none; border: none; }
   padding: 24px;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
+  animation: fadeInOverlay 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }
 .story-modal-sheet {
   width: 100%;
@@ -1650,32 +1651,33 @@ input { font: inherit; outline: none; border: none; }
   align-items: center;
   gap: 16px;
   text-align: left;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+  padding-bottom: 16px;
 }
 .story-modal-emoji {
   font-size: 52px;
 }
 .story-modal-name {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 900;
-  color: var(--text-main);
+  color: var(--primary);
   margin: 0;
 }
 .story-modal-label {
-  font-size: 13px;
+  font-size: 11px;
   color: var(--text-mute);
-  margin-top: 4px;
+  margin-top: 2px;
   font-weight: 700;
 }
 .story-modal-content {
-  background: rgba(255, 255, 255, 0.02);
-  border: 1px solid rgba(255, 255, 255, 0.05);
-  border-radius: var(--radius-md);
-  padding: 24px 20px;
-  min-height: 100px;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
+  flex-direction: column;
+  gap: 12px;
+  align-items: flex-start;
+  background: none;
+  border: none;
+  padding: 0;
+  min-height: unset;
 }
 .story-modal-text {
   font-size: 16px;
@@ -1686,7 +1688,8 @@ input { font: inherit; outline: none; border: none; }
 }
 .story-modal-footer {
   display: flex;
-  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 8px;
 }
 
 /* ── 리액션 파티클 애니메이션 ─────────────────────────────────────────────── */
@@ -1927,10 +1930,6 @@ input { font: inherit; outline: none; border: none; }
   to   { opacity: 1; transform: scale(1); }
 }
 
-.story-modal-overlay {
-  animation: fadeInOverlay 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-}
-
 /* 🎴 짠물 밸런스 게임 카드 호버 및 바운시 애니메이션 */
 .balance-game-card {
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), box-shadow 0.3s ease;
@@ -1984,6 +1983,15 @@ input { font: inherit; outline: none; border: none; }
   color: #07070a;
   border: none;
   font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.2s;
+  vertical-align: middle;
+  padding: 2.5px 8px;
 }
 .header-follow-btn:hover {
   transform: scale(1.05);
@@ -2006,6 +2014,7 @@ input { font: inherit; outline: none; border: none; }
   background: linear-gradient(135deg, rgba(255, 255, 255, 0.05), rgba(255, 255, 255, 0.01));
   border: 1px solid rgba(0, 245, 160, 0.12) !important;
   box-shadow: 0 8px 32px rgba(0, 245, 160, 0.04) !important;
+  padding: 16px !important;
 }
 
 /* 🗓️ 피드 탭 필터바 */
@@ -2036,6 +2045,24 @@ input { font: inherit; outline: none; border: none; }
 .challenge-info { flex: 1; min-width: 0; }
 .challenge-name { margin: 0 0 2px 0; font-size: 13px; font-weight: 900; color: #fff; }
 .challenge-desc { margin: 0; font-size: 11px; color: var(--text-mute); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.challenge-join-btn {
+  flex-shrink: 0;
+  padding: 8px 14px;
+  border-radius: 100px;
+  border: none;
+  background: linear-gradient(135deg, #00F5A0, #00D9F5);
+  color: #090A10;
+  font-size: 11px;
+  font-weight: 900;
+  cursor: pointer;
+  font-family: inherit;
+  transition: all 0.2s;
+}
+.challenge-join-btn--active {
+  border: 1px solid rgba(0, 245, 160, 0.3) !important;
+  background: rgba(0, 245, 160, 0.12) !important;
+  color: var(--primary) !important;
+}
 
 /* ✉️ 응원 쪽지 템플릿 칩 */
 .message-template-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
@@ -2318,4 +2345,138 @@ input { font: inherit; outline: none; border: none; }
 .zero-note-modal-title { margin: 0 0 6px 0; font-size: 15px; font-weight: 900; color: #fff; }
 .zero-note-modal-desc  { margin: 0 0 16px 0; font-size: 11px; color: var(--text-mute); line-height: 1.5; }
 .zero-note-modal-char-count { margin: 4px 0 20px 0; font-size: 10px; color: var(--text-mute); text-align: right; }
+
+/* ✉️ 응원 쪽지 모달 텍스트에리어 */
+.message-modal-textarea {
+  width: 100%;
+  height: 90px;
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-sm);
+  padding: 12px;
+  color: var(--text-main);
+  font-size: 13px;
+  resize: none;
+  outline: none;
+  margin-top: 8px;
+  font-family: inherit;
+}
+.message-modal-char-count {
+  align-self: flex-end;
+  font-size: 10px;
+  color: var(--text-mute);
+}
+
+/* 💬 피드 한마디 항목 */
+.feed-note {
+  margin: 4px 0 8px 0;
+  font-size: 12px;
+  color: var(--text-sub);
+  line-height: 1.5;
+  font-style: italic;
+  padding-left: 4px;
+  border-left: 2px solid var(--primary);
+}
+
+/* 🏆 피드 총액 마일스톤 */
+.feed-total--milestone {
+  color: #FFD700 !important;
+  font-size: 13px;
+}
+
+/* 👥 팔로우 탭 비어있을 때 */
+.follow-empty-state {
+  text-align: center;
+  padding: 24px 0 16px 0;
+}
+.follow-empty-icon { font-size: 28px; margin: 0 0 8px 0; }
+.follow-empty-title { margin: 0; font-size: 13px; font-weight: 700; color: var(--text-main); }
+.follow-empty-desc { margin: 4px 0 0 0; font-size: 11px; color: var(--text-mute); }
+
+/* 👥 추천 짠친 섹션 내부 레이아웃 */
+.recommended-friends-header {
+  margin: 0 0 12px 0;
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--primary);
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.recommended-friends-list { display: flex; flex-direction: column; gap: 10px; }
+.recommended-friend-row { display: flex; align-items: center; justify-content: space-between; padding: 6px 0; }
+.recommended-friend-info { display: flex; align-items: center; gap: 10px; }
+.recommended-friend-meta { display: flex; flex-direction: column; gap: 2px; }
+.recommended-friend-name-row { display: flex; align-items: center; gap: 4px; }
+.recommended-friend-name { font-size: 12px; font-weight: 800; color: #fff; }
+.recommended-follow-btn {
+  padding: 5px 12px;
+  border-radius: 100px;
+  font-size: 10px;
+  font-weight: 900;
+  cursor: pointer;
+  box-shadow: 0 4px 10px rgba(0, 245, 160, 0.15);
+  transition: all 0.2s;
+  background: var(--primary);
+  color: #07070a;
+  border: none;
+  font-family: inherit;
+}
+
+/* 💸 밸런스 게임 영수증 */
+.balance-receipt-wrap { display: flex; flex-direction: column; gap: 12px; }
+.balance-receipt-author { margin: 0; font-size: 11px; color: var(--text-mute); font-weight: 700; }
+.balance-receipt-box {
+  padding: 12px 14px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.02);
+  border: 1px dashed rgba(255, 255, 255, 0.1);
+}
+.balance-receipt-items { display: flex; flex-direction: column; gap: 6px; }
+.balance-receipt-item { display: flex; justify-content: space-between; align-items: center; }
+.balance-receipt-item-label { font-size: 12px; color: var(--text-sub); }
+.balance-receipt-item-amount { font-size: 12px; font-weight: 800; color: #fff; }
+.balance-receipt-total {
+  display: flex;
+  justify-content: space-between;
+  padding: 6px 0 0 0;
+  border-top: 1px dashed rgba(255, 255, 255, 0.08);
+  margin-top: 4px;
+}
+.balance-receipt-total-label { font-size: 11px; color: var(--text-mute); font-weight: 700; }
+.balance-receipt-total-amount { font-size: 13px; font-weight: 900; color: var(--primary); }
+.balance-note {
+  margin: 0;
+  font-size: 11px;
+  color: var(--text-sub);
+  font-style: italic;
+  padding-left: 8px;
+  border-left: 2px solid var(--primary);
+  line-height: 1.5;
+}
+
+/* 💸 밸런스 게임 결과 레이아웃 */
+.balance-results { display: flex; flex-direction: column; gap: 10px; margin-top: 4px; }
+.balance-result-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+}
+.balance-result-over { color: #FF4D4F; display: inline-flex; align-items: center; gap: 4px; }
+.balance-result-ok   { color: #00F5A0; display: inline-flex; align-items: center; gap: 4px; }
+.balance-result-total { color: var(--text-mute); }
+.balance-result-badge { font-size: 9px; padding: 1px 5px; border-radius: 4px; }
+.balance-result-badge--over { background: rgba(255, 77, 79, 0.15); }
+.balance-result-badge--ok   { background: rgba(0, 245, 160, 0.15); }
+.balance-bar-container {
+  height: 14px;
+  border-radius: 100px;
+  overflow: hidden;
+  display: flex;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.02);
+}
+.balance-vote-buttons { display: flex; gap: 12px; }
 

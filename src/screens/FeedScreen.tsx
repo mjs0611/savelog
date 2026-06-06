@@ -376,69 +376,55 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
             const noteItem = entry.items.find(it => it.category === '한마디');
             return (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="balance-receipt-wrap">
                 {/* 닉네임 */}
-                <p style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>
-                  {entry.nickname}님의 지출
-                </p>
+                <p className="balance-receipt-author">{entry.nickname}님의 지출</p>
 
                 {/* 지출 항목 영수증 컨테이너 */}
-                <div style={{ padding: '12px 14px', borderRadius: 12, background: 'rgba(255, 255, 255, 0.02)', border: '1px dashed rgba(255, 255, 255, 0.1)' }}>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                <div className="balance-receipt-box">
+                  <div className="balance-receipt-items">
                     {spendItems.map((item, i) => (
-                      <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <span style={{ fontSize: 12, color: 'var(--text-sub)' }}>{item.emoji} {item.comment || item.category}</span>
-                        <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{item.amount.toLocaleString('ko-KR')}원</span>
+                      <div key={i} className="balance-receipt-item">
+                        <span className="balance-receipt-item-label">{item.emoji} {item.comment || item.category}</span>
+                        <span className="balance-receipt-item-amount">{item.amount.toLocaleString('ko-KR')}원</span>
                       </div>
                     ))}
-                    <div style={{ display: 'flex', justifyContent: 'space-between', padding: '6px 0 0 0', borderTop: '1px dashed rgba(255,255,255,0.08)', marginTop: 4 }}>
-                      <span style={{ fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>합계</span>
-                      <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--primary)' }}>{entry.total_amount.toLocaleString('ko-KR')}원</span>
+                    <div className="balance-receipt-total">
+                      <span className="balance-receipt-total-label">합계</span>
+                      <span className="balance-receipt-total-amount">{entry.total_amount.toLocaleString('ko-KR')}원</span>
                     </div>
                   </div>
                 </div>
 
                 {/* 한마디 */}
                 {noteItem && (
-                  <p style={{ margin: 0, fontSize: 11, color: 'var(--text-sub)', fontStyle: 'italic', paddingLeft: 8, borderLeft: '2px solid var(--primary)', lineHeight: 1.5 }}>
-                    💬 {noteItem.comment}
-                  </p>
+                  <p className="balance-note">💬 {noteItem.comment}</p>
                 )}
 
                 {balanceVoted ? (
                   /* 투표 후 결과 */
                   balanceStats ? (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: 11, fontWeight: 700 }}>
-                        <span style={{ color: '#FF4D4F', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
+                    <div className="balance-results">
+                      <div className="balance-result-row">
+                        <span className="balance-result-over">
                           과소비 {balanceStats.over}%
-                          {balanceVoted === 'over' && <span style={{ fontSize: 9, background: 'rgba(255,77,79,0.15)', padding: '1px 5px', borderRadius: 4 }}>내 판정 💸</span>}
+                          {balanceVoted === 'over' && <span className="balance-result-badge balance-result-badge--over">내 판정 💸</span>}
                         </span>
-                        <span style={{ color: 'var(--text-mute)' }}>총 {totalVotes}명 참여</span>
-                        <span style={{ color: '#00F5A0', display: 'inline-flex', alignItems: 'center', gap: 4 }}>
-                          {balanceVoted === 'ok' && <span style={{ fontSize: 9, background: 'rgba(0,245,160,0.15)', padding: '1px 5px', borderRadius: 4 }}>내 판정 🌿</span>}
+                        <span className="balance-result-total">총 {totalVotes}명 참여</span>
+                        <span className="balance-result-ok">
+                          {balanceVoted === 'ok' && <span className="balance-result-badge balance-result-badge--ok">내 판정 🌿</span>}
                           합리적 {balanceStats.ok}%
                         </span>
                       </div>
-                      
-                      <div style={{ height: 14, borderRadius: 100, overflow: 'hidden', display: 'flex', border: '1px solid rgba(255,255,255,0.06)', background: 'rgba(255,255,255,0.02)' }}>
+
+                      <div className="balance-bar-container">
                         <div
                           className="balance-bar-fill"
-                          style={{
-                            width: `${balanceStats.over}%`,
-                            background: 'linear-gradient(90deg, #FF4D4F, #FF7875)',
-                            height: '100%',
-                            transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                          }}
+                          style={{ width: `${balanceStats.over}%`, background: 'linear-gradient(90deg, #FF4D4F, #FF7875)', height: '100%' }}
                         />
                         <div
                           className="balance-bar-fill"
-                          style={{
-                            width: `${balanceStats.ok}%`,
-                            background: 'linear-gradient(90deg, #36CFC9, #00F5A0)',
-                            height: '100%',
-                            transition: 'width 0.8s cubic-bezier(0.16, 1, 0.3, 1)',
-                          }}
+                          style={{ width: `${balanceStats.ok}%`, background: 'linear-gradient(90deg, #36CFC9, #00F5A0)', height: '100%' }}
                         />
                       </div>
                       
@@ -455,7 +441,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   )
                 ) : (
                   /* 투표 전 버튼 */
-                  <div style={{ display: 'flex', gap: 12 }}>
+                  <div className="balance-vote-buttons">
                     <button
                       onClick={async () => {
                         if (balanceVotingRef.current) return;
@@ -471,7 +457,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                         }
                       }}
                       className="balance-vote-card balance-vote-card--over"
-                      style={{ flex: 1 }}
                     >
                       <span className="vote-emoji">💸</span>
                       <span className="vote-title">과소비</span>
@@ -492,7 +477,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                         }
                       }}
                       className="balance-vote-card balance-vote-card--ok"
-                      style={{ flex: 1 }}
                     >
                       <span className="vote-emoji">🌿</span>
                       <span className="vote-title">합리적</span>
@@ -519,19 +503,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           </div>
           <button
             onClick={() => handleToggleChallenge(weekChallenge.id)}
-            style={{
-              flexShrink: 0,
-              padding: '8px 14px',
-              borderRadius: 100,
-              border: activeChallenge === weekChallenge.id ? '1px solid rgba(0,245,160,0.3)' : 'none',
-              background: activeChallenge === weekChallenge.id
-                ? 'rgba(0,245,160,0.12)'
-                : 'linear-gradient(135deg, #00F5A0, #00D9F5)',
-              color: activeChallenge === weekChallenge.id ? 'var(--primary)' : '#090A10',
-              fontSize: 11,
-              fontWeight: 900,
-              cursor: 'pointer',
-            }}
+            className={`challenge-join-btn${activeChallenge === weekChallenge.id ? ' challenge-join-btn--active' : ''}`}
           >
             {activeChallenge === weekChallenge.id ? '참여 중 ✓' : '참여하기'}
           </button>
@@ -555,42 +527,35 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       ) : (
         <div className="feed-list">
           {loadFailed && (
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 12px', marginBottom: 8, background: 'rgba(255,200,0,0.06)', border: '1px solid rgba(255,200,0,0.2)', borderRadius: 10 }}>
-              <span style={{ fontSize: 11, color: 'rgba(255,200,0,0.9)', fontWeight: 700 }}>⚠ 피드 갱신 실패 · 마지막 데이터 표시 중</span>
-              <button
-                onClick={() => load(false)}
-                style={{ fontSize: 10, fontWeight: 800, color: 'rgba(255,200,0,0.9)', background: 'rgba(255,200,0,0.12)', border: '1px solid rgba(255,200,0,0.3)', borderRadius: 100, padding: '3px 10px', cursor: 'pointer' }}
-              >
-                재시도
-              </button>
+            <div className="rank-stale-banner">
+              <span className="rank-stale-text">⚠ 피드 갱신 실패 · 마지막 데이터 표시 중</span>
+              <button onClick={() => load(false)} className="rank-stale-retry-btn">재시도</button>
             </div>
           )}
           {displayedEntries.length === 0 && feedTab === 'follow' && (
-            <div style={{ textAlign: 'center', padding: '24px 0 16px 0', color: 'var(--text-mute)' }}>
-              <p style={{ fontSize: 28, margin: '0 0 8px 0' }}>👥</p>
-              <p style={{ margin: 0, fontSize: 13, fontWeight: 700, color: 'var(--text-main)' }}>팔로우한 짠친이 없어요</p>
-              <p style={{ margin: '4px 0 0 0', fontSize: 11, color: 'var(--text-mute)' }}>
+            <div className="follow-empty-state">
+              <p className="follow-empty-icon">👥</p>
+              <p className="follow-empty-title">팔로우한 짠친이 없어요</p>
+              <p className="follow-empty-desc">
                 {recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
               </p>
             </div>
           )}
           {feedTab === 'follow' && recommendedFriends.length > 0 && (
-            <div className="glass-card recommended-friends-box" style={{ padding: 16 }}>
-              <h4 style={{ margin: '0 0 12px 0', fontSize: 12, fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
-                ✨ 추천 짠친
-              </h4>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+            <div className="glass-card recommended-friends-box">
+              <h4 className="recommended-friends-header">✨ 추천 짠친</h4>
+              <div className="recommended-friends-list">
                 {recommendedFriends.map((friend) => {
                   const p = friend.persona ? PERSONAS[friend.persona] : null;
                   return (
-                    <div key={friend.user_id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 0' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div key={friend.user_id} className="recommended-friend-row">
+                      <div className="recommended-friend-info">
                         <div className="feed-avatar" style={{ margin: 0, width: 32, height: 32, fontSize: 12, ...(p ? { borderColor: p.color } : {}) }}>
                           {friend.nickname.charAt(0).toUpperCase()}
                         </div>
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                            <span style={{ fontSize: 12, fontWeight: 800, color: '#fff' }}>{friend.nickname}</span>
+                        <div className="recommended-friend-meta">
+                          <div className="recommended-friend-name-row">
+                            <span className="recommended-friend-name">{friend.nickname}</span>
                             {p && (
                               <span style={{ fontSize: 8, background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25`, padding: '1px 4px', borderRadius: 4, display: 'inline-flex', alignItems: 'center', gap: 2 }}>
                                 <img src={p.icon} alt="" style={{ width: 8, height: 8, objectFit: 'contain' }} />
@@ -607,16 +572,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           showFeedToast(nowFollowing ? `${friend.nickname}님을 팔로우했어요 👥` : `${friend.nickname}님 팔로우 해제`);
                           toggleFollowSupabase(userId, friend.user_id, friend.nickname).catch(() => {});
                         }}
-                        className="header-follow-btn"
-                        style={{
-                          padding: '5px 12px',
-                          borderRadius: 100,
-                          fontSize: 10,
-                          fontWeight: 900,
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 10px rgba(0, 245, 160, 0.15)',
-                          transition: 'all 0.2s',
-                        }}
+                        className="recommended-follow-btn"
                       >
                         + 팔로우
                       </button>
@@ -663,18 +619,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           <button
                             onClick={() => handleToggleFollow(entry)}
                             className={`header-follow-btn ${followedUsers[entry.user_id] ? 'following' : ''}`}
-                            style={{
-                              marginLeft: 6,
-                              padding: '2.5px 8px',
-                              borderRadius: 100,
-                              fontSize: 10,
-                              fontWeight: 800,
-                              cursor: 'pointer',
-                              display: 'inline-flex',
-                              alignItems: 'center',
-                              transition: 'all 0.2s',
-                              verticalAlign: 'middle',
-                            }}
+                            style={{ marginLeft: 6 }}
                           >
                             {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
                           </button>
@@ -708,7 +653,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                       <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
                     </div>
                   </div>
-                  <div className={`feed-total ${!isMilestone && entry.total_amount === 0 ? 'feed-total--zero' : ''}`} style={isMilestone ? { color: '#FFD700', fontSize: 13 } : {}}>
+                  <div className={`feed-total ${!isMilestone && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : ''}`}>
                     {isMilestone ? '🏆 달성' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
                   </div>
                 </div>
@@ -720,9 +665,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                 {/* 오늘 한마디 (💬 한마디 특수 항목) */}
                 {entry.items.filter(it => it.category === '한마디').map((it, i) => (
-                  <p key={i} style={{ margin: '4px 0 8px 0', fontSize: 12, color: 'var(--text-sub)', lineHeight: 1.5, fontStyle: 'italic', paddingLeft: 4, borderLeft: '2px solid var(--primary)' }}>
-                    💬 {it.comment}
-                  </p>
+                  <p key={i} className="feed-note">💬 {it.comment}</p>
                 ))}
 
                 {/* 지출 항목 */}
@@ -885,19 +828,19 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       {messageRecipientEntry && (
         <div className="story-modal-overlay" onClick={() => setMessageRecipientEntry(null)}>
           <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()} style={{ maxWidth: 340 }}>
-            <div className="story-modal-header" style={{ borderBottom: '1px solid rgba(255,255,255,0.06)', paddingBottom: 16 }}>
+            <div className="story-modal-header">
               <img src="/images/icon_mailbox.png" className="custom-icon" style={{ width: 28, height: 28, objectFit: 'contain' }} />
               <div>
-                <h3 className="story-modal-name" style={{ fontSize: 16, color: 'var(--primary)' }}>
+                <h3 className="story-modal-name">
                   {messageRecipientEntry.nickname}님에게 응원 보내기
                 </h3>
-                <p className="story-modal-label" style={{ fontSize: 11, color: 'var(--text-mute)', marginTop: 2 }}>
+                <p className="story-modal-label">
                   익명으로 전달되는 짠내 응원 쪽지입니다.
                 </p>
               </div>
             </div>
-            
-            <div className="story-modal-content" style={{ display: 'flex', flexDirection: 'column', gap: 12, alignItems: 'flex-start' }}>
+
+            <div className="story-modal-content">
               {/* 퀵 템플릿 칩 */}
               <div className="message-template-chips">
                 {[
@@ -921,48 +864,17 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 onChange={(e) => setMessageText(e.target.value)}
                 placeholder="전달하고 싶은 익명의 응원 메시지를 직접 작성해 보세요..."
                 maxLength={100}
-                style={{
-                  width: '100%',
-                  height: 90,
-                  background: 'rgba(255,255,255,0.03)',
-                  border: '1px solid rgba(255,255,255,0.08)',
-                  borderRadius: 'var(--radius-sm)',
-                  padding: 12,
-                  color: 'var(--text-main)',
-                  fontSize: 13,
-                  resize: 'none',
-                  outline: 'none',
-                  marginTop: 8
-                }}
+                className="message-modal-textarea"
               />
-              <span style={{ alignSelf: 'flex-end', fontSize: 10, color: 'var(--text-mute)' }}>
-                {messageText.length}/100자
-              </span>
+              <span className="message-modal-char-count">{messageText.length}/100자</span>
             </div>
 
-            <div className="story-modal-footer" style={{ display: 'flex', gap: 8, marginTop: 8 }}>
+            <div className="story-modal-footer">
               <div style={{ flex: 1 }}>
-                <Button
-                  size="large"
-                  display="full"
-                  color="dark"
-                  variant="weak"
-                  onClick={() => setMessageRecipientEntry(null)}
-                >
-                  취소
-                </Button>
+                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setMessageRecipientEntry(null)}>취소</Button>
               </div>
               <div style={{ flex: 1 }}>
-                <Button
-                  size="large"
-                  display="full"
-                  color="primary"
-                  variant="fill"
-                  disabled={!messageText.trim()}
-                  onClick={handleSendMessageSubmit}
-                >
-                  쪽지 보내기
-                </Button>
+                <Button size="large" display="full" color="primary" variant="fill" disabled={!messageText.trim()} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
               </div>
             </div>
           </div>
