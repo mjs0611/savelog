@@ -64,11 +64,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     try {
       await submitBalanceVote(entryId, userId, vote);
       // API 성공 후 최신 상태 기준으로 localStorage 확정 저장 (동시 투표 유실 방지)
-      setFeedVotes(prev => {
-        const updated = { ...prev, [entryId]: vote };
-        localStorage.setItem('savelog_feed_votes', JSON.stringify(updated));
-        return updated;
-      });
+      setFeedVotes(prev => ({ ...prev, [entryId]: vote }));
       onGrantFeedReward?.();
       showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
     } catch {
@@ -154,6 +150,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     };
   }, []);
 
+  // feedVotes → localStorage 동기화 (state updater 밖에서 처리)
+  useEffect(() => {
+    localStorage.setItem('savelog_feed_votes', JSON.stringify(feedVotes));
+  }, [feedVotes]);
+
   useEffect(() => {
     // 밸런스 게임은 userId 변경 시에만 리셋 (피드 새로고침마다 리셋되지 않도록)
     loadBalanceEntry();
@@ -198,20 +199,16 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         const pruned = Object.fromEntries(
           Object.entries(prev).filter(([id]) => validIds.has(id))
         );
-        if (Object.keys(pruned).length < Object.keys(prev).length) {
-          localStorage.setItem('feed_comments', JSON.stringify(pruned));
-        }
+        if (Object.keys(pruned).length === Object.keys(prev).length) return prev;
+        localStorage.setItem('feed_comments', JSON.stringify(pruned));
         return pruned;
       });
-      // feedVotes도 동일하게 정리 (피드에 없는 엔트리의 투표 기록 제거)
+      // feedVotes도 동일하게 정리 (피드에 없는 엔트리의 투표 기록 제거, localStorage는 useEffect가 처리)
       setFeedVotes((prev) => {
         const pruned = Object.fromEntries(
           Object.entries(prev).filter(([id]) => validIds.has(id))
         );
-        if (Object.keys(pruned).length < Object.keys(prev).length) {
-          localStorage.setItem('savelog_feed_votes', JSON.stringify(pruned));
-        }
-        return pruned;
+        return Object.keys(pruned).length < Object.keys(prev).length ? pruned : prev;
       });
     } catch {
       if (loadId !== loadIdRef.current) return;
