@@ -606,7 +606,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               </p>
             </div>
           )}
-          {feedTab === 'follow' && Object.keys(followedUsers).length === 0 && recommendedFriends.length > 0 && (
+          {feedTab === 'follow' && recommendedFriends.length > 0 && (
             <div className="glass-card recommended-friends-box" style={{ padding: 16 }}>
               <h4 style={{ margin: '0 0 12px 0', fontSize: 12, fontWeight: 800, color: 'var(--primary)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 ✨ 추천 짠친

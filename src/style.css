@@ -318,6 +318,8 @@ input { font: inherit; outline: none; border: none; }
 }
 .home-greeting { font-size: 13px; color: var(--text-mute); font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
 .home-week-range { font-size: 20px; font-weight: 800; color: var(--text-main); }
+.home-header-row { display: flex; align-items: center; }
+.home-logo-title {}
 
 .home-points-badge {
   display: flex;
@@ -583,9 +585,15 @@ input { font: inherit; outline: none; border: none; }
   border-color: rgba(0, 245, 160, 0.25);
   box-shadow: 0 4px 12px rgba(0, 245, 160, 0.1);
 }
-.reaction-btn--doubt.reaction-btn--active { 
-  background: rgba(255, 149, 0, 0.12); 
-  color: var(--warning); 
+.reaction-btn--trust.reaction-btn--active {
+  background: rgba(0, 245, 160, 0.12);
+  color: var(--primary);
+  border-color: rgba(0, 245, 160, 0.25);
+  box-shadow: 0 4px 12px rgba(0, 245, 160, 0.1);
+}
+.reaction-btn--doubt.reaction-btn--active {
+  background: rgba(255, 149, 0, 0.12);
+  color: var(--warning);
   border-color: rgba(255, 149, 0, 0.25);
   box-shadow: 0 4px 12px rgba(255, 149, 0, 0.1);
 }
