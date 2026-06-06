@@ -113,6 +113,8 @@ export default function App() {
         setStreak(getEffectiveStreak());
         setStreakShields(getStreakShields());
         loadRank();
+        // 주차가 바뀌었을 때 prevWeekRank도 갱신 (리워드 판단 staleness 방지)
+        fetchWeekRank(getPrevWeekKey()).then(data => { if (data) setPrevWeekRank(data); }).catch(() => {});
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);
