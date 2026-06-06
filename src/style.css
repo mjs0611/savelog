@@ -823,6 +823,9 @@ input { font: inherit; outline: none; border: none; }
 /* 항목 추가 폼 */
 .item-form { display: flex; flex-direction: column; gap: 16px; }
 .form-label { font-size: 13px; font-weight: 800; color: var(--text-sub); text-transform: uppercase; letter-spacing: 0.5px; }
+.no-spend-quick-btn {}
+.image-upload-section {}
+.image-preview-container {}
 
 .cat-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .cat-btn {
@@ -1106,6 +1109,7 @@ input { font: inherit; outline: none; border: none; }
 .persona-big-emoji, .persona-big-3d-icon {
   animation: floating 3s ease-in-out infinite;
 }
+.persona-big-emoji-container {}
 .persona-desc {
   font-size: 15px;
   line-height: 1.6;
@@ -1219,6 +1223,7 @@ input { font: inherit; outline: none; border: none; }
   margin-left: 6px;
   text-transform: uppercase;
 }
+.feed-persona-tag {}
 .zero-tag {
   background: rgba(0, 245, 160, 0.15);
   color: var(--primary);
