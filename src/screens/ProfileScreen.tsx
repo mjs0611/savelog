@@ -241,7 +241,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         ] as const;
 
         return (
-          <div className="glass-card radar-chart-card" style={{ padding: 18, border: '1px solid rgba(255,255,255,0.08)' }}>
+          <div className="glass-card radar-chart-card">
             <div style={{ marginBottom: 14 }}>
               <span style={{ fontSize: 13, fontWeight: 900, color: 'var(--text-main)' }}>소비 오각형 스탯 📊</span>
             </div>

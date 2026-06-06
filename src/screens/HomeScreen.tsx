@@ -49,15 +49,15 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   return (
     <div className="screen screen-home">
       {/* 헤더 */}
-      <div className="home-header-row" style={{ display: 'flex', alignItems: 'center', marginBottom: 16 }}>
+      <div className="home-header-row">
         <div>
           <h1 className="home-logo-title">세이브로그</h1>
-          <p className="home-week-range" style={{ margin: '2px 0 0 0', fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>{weekRangeStr}</p>
+          <p className="home-week-range">{weekRangeStr}</p>
         </div>
       </div>
 
       {/* ✍️ 핵심 소비/무지출 기록 콘솔 (최상단 전면 배치) */}
-      <div className="glass-card primary-record-card" id="tutorial-step-1" style={{ padding: 14, border: '1.5px solid var(--primary)', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.04) 0%, rgba(255,255,255,0.01) 100%)', boxShadow: '0 8px 24px rgba(0, 245, 160, 0.05)' }}>
+      <div className="glass-card primary-record-card" id="tutorial-step-1">
         {daily.recorded ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
@@ -150,7 +150,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const spent = daily.spentAmount ?? 0;
         const temp = daily.recorded ? (spent === 0 ? 100 : Math.max(10, Math.min(99, Math.round(100 - (spent / 1000))))) : 0;
         return (
-          <div className="glass-card savings-temp-card" style={{ padding: '12px 14px' }}>
+          <div className="glass-card savings-temp-card">
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}>
               <span style={{ fontSize: 13, fontWeight: 800, color: 'var(--text-main)', display: 'flex', alignItems: 'center', gap: 4 }}>
                 오늘의 절약 온도
@@ -362,7 +362,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 이번 주 내 현황 */}
       {myRow && (
-        <div className="glass-card week-summary-card" style={{ padding: '12px 14px' }}>
+        <div className="glass-card week-summary-card">
           <p className="week-summary-label" style={{ margin: 0, fontSize: 11, color: 'var(--text-mute)', fontWeight: 700 }}>이번 주 내 소비</p>
           <p className="week-summary-amount" style={{ margin: '4px 0 8px 0', fontSize: 18, fontWeight: 900, color: 'var(--text-main)' }}>{formatAmount(myRow.total)}</p>
           <div className="week-summary-meta" style={{ display: 'flex', gap: 6 }}>
@@ -383,7 +383,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 순위 미리보기 — 유지출 그룹 상위 3명 */}
       {spendGroup.length > 0 && (
-        <div className="glass-card rank-preview-card" style={{ padding: '12px 14px' }}>
+        <div className="glass-card rank-preview-card">
           <p className="rank-preview-title" style={{ margin: '0 0 10px 0', fontSize: 13, fontWeight: 800 }}>이번 주 절약왕 🏆</p>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
             {spendGroup.slice(0, 3).map((row, i) => (
