@@ -205,9 +205,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           if (!prevGroup) return null;
           const updatedMembers = memberUpdate ? prevGroup.members.map(memberUpdate) : prevGroup.members;
           const updatedHistory = [historyEntry, ...prevGroup.nudgeHistory].slice(0, 15);
-          const newGroup = { ...prevGroup, members: updatedMembers, nudgeHistory: updatedHistory };
-          localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
-          return newGroup;
+          return { ...prevGroup, members: updatedMembers, nudgeHistory: updatedHistory };
         });
 
         if (toastMsg) showPotToast(toastMsg);
@@ -241,6 +239,13 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       if (potToastTimerRef.current) clearTimeout(potToastTimerRef.current);
     };
   }, []);
+
+  // group → localStorage 동기화 (state updater 바깥에서 처리)
+  useEffect(() => {
+    if (group !== null) {
+      localStorage.setItem('savelog_pot_group', JSON.stringify(group));
+    }
+  }, [group]);
 
   const [tutorialStep, setTutorialStep] = useState<number | null>(() => {
     try {

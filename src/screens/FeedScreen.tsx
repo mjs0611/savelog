@@ -63,8 +63,6 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     setFeedVotes(prev => ({ ...prev, [entryId]: vote }));
     try {
       await submitBalanceVote(entryId, userId, vote);
-      // API 성공 후 최신 상태 기준으로 localStorage 확정 저장 (동시 투표 유실 방지)
-      setFeedVotes(prev => ({ ...prev, [entryId]: vote }));
       onGrantFeedReward?.();
       showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
     } catch {
