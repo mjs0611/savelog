@@ -1697,6 +1697,9 @@ input { font: inherit; outline: none; border: none; }
 
 /* 🐹 다마고치 가상 펫 장착 모션 효과 */
 .pet-card {
+  padding: 12px 14px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02) 0%, rgba(255, 255, 255, 0) 100%);
   transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
 }
 .pet-card:hover {

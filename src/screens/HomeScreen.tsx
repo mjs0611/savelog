@@ -187,7 +187,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         const petLevel = Math.min(5, 1 + Math.floor(streak.totalDays / 3));
 
         return (
-          <div className="glass-card pet-card" id="tutorial-step-3" style={{ padding: '12px 14px', border: '1px solid rgba(255,255,255,0.08)', background: 'linear-gradient(135deg, rgba(255,255,255,0.02) 0%, rgba(255,255,255,0) 100%)' }}>
+          <div className="glass-card pet-card" id="tutorial-step-3">
             <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
               {/* 캐릭터 바디 및 장착된 악세사리 */}
               <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
