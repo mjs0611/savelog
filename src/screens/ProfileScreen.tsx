@@ -423,11 +423,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <div key={entry.id} className="week-entry-row">
                 <span className="week-entry-date">{formatDate(entry.date)}</span>
                 <div className="week-entry-items">
-                  {entry.items.filter(it => it.category !== '한마디').map((item, i) => (
-                    <span key={i} className="week-entry-item-chip">
-                      {item.emoji} {item.category}
-                    </span>
-                  ))}
+                  {(() => {
+                    const chips = entry.items.filter(it => it.category !== '한마디');
+                    if (chips.length === 0) return <span className="week-entry-item-chip">🌿 무지출</span>;
+                    return chips.map((item, i) => (
+                      <span key={i} className="week-entry-item-chip">{item.emoji} {item.category}</span>
+                    ));
+                  })()}
                 </div>
                 <span className={`week-entry-amount ${entry.total_amount === 0 ? 'week-entry-amount--zero' : ''}`}>
                   {formatAmount(entry.total_amount)}
