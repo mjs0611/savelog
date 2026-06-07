@@ -1,9 +1,46 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
+import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
 import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, type BalanceEntry } from '../lib/supabase';
 import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
+import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
+
+function FeedBannerSlot() {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!TossAds.initialize.isSupported()) return;
+
+    let attached: { destroy: () => void } | undefined;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function attach() {
+      if (!containerRef.current) return;
+      attached = TossAds.attachBanner(FEED_BANNER_AD_ID, containerRef.current, {
+        theme: 'dark',
+        tone: 'blackAndWhite',
+        variant: 'card',
+        callbacks: {
+          onAdFailedToRender: () => {
+            retryTimer = setTimeout(attach, 500);
+          },
+        },
+      });
+    }
+
+    initBannerAds();
+    attach();
+
+    return () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      attached?.destroy();
+    };
+  }, []);
+
+  return <div ref={containerRef} style={{ width: '100%' }} />;
+}
 
 interface SaltyStory {
   id: string;
@@ -1270,7 +1307,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 </div>
               ) : (
                 <div className="feed-list">
-                  {groupFilteredEntries.map((entry) => renderFeedCard(entry))}
+                  {groupFilteredEntries.map((entry, idx) => (
+                    <React.Fragment key={entry.id}>
+                      {renderFeedCard(entry)}
+                      {(idx + 1) % 5 === 0 && <FeedBannerSlot />}
+                    </React.Fragment>
+                  ))}
                 </div>
               )}
             </div>
@@ -1521,7 +1563,12 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   </div>
                 </div>
               )}
-              {displayedEntries.map((entry) => renderFeedCard(entry))}
+              {displayedEntries.map((entry, idx) => (
+                <React.Fragment key={entry.id}>
+                  {renderFeedCard(entry)}
+                  {(idx + 1) % 5 === 0 && <FeedBannerSlot />}
+                </React.Fragment>
+              ))}
             </div>
           )}
         </>

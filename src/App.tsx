@@ -29,7 +29,7 @@ import {
   type DailyState,
 } from './lib/storage';
 import { initAit, grantPendingReward, grantRankReward, grantFeedReward } from './lib/tosspoint';
-import { preloadReward, showReward } from './lib/ads';
+import { preloadReward, showReward, initBannerAds } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey } from './lib/utils';
 import HomeScreen from './screens/HomeScreen';
@@ -94,6 +94,7 @@ export default function App() {
 
   useEffect(() => {
     initAit();
+    initBannerAds();
     if (getPendingPoints() > 0) preloadReward();
     loadRank();
     // 지난 주 순위 로드 (리워드 수령 판단용)

@@ -1,9 +1,48 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
+import { TossAds } from '@apps-in-toss/web-framework';
 import type { DailyState, StreakData } from '../lib/storage';
 import { getDailyMission, getPersona, PERSONAS, getNickname } from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
+import { BANNER_AD_ID, initBannerAds } from '../lib/ads';
+
+function BannerAdSlot({ adGroupId }: { adGroupId: string }) {
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!TossAds.initialize.isSupported()) return;
+
+    let attached: { destroy: () => void } | undefined;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+
+    function attach() {
+      if (!containerRef.current) return;
+      attached = TossAds.attachBanner(adGroupId, containerRef.current, {
+        theme: 'dark',
+        tone: 'blackAndWhite',
+        variant: 'expanded',
+        callbacks: {
+          onAdFailedToRender: () => {
+            // 초기화 직후 attach를 시도했다면 500ms 후 재시도
+            retryTimer = setTimeout(attach, 500);
+          },
+        },
+      });
+    }
+
+    // initBannerAds는 멱등 — App에서 이미 호출했지만 혹시 모를 경우 방어
+    initBannerAds();
+    attach();
+
+    return () => {
+      if (retryTimer) clearTimeout(retryTimer);
+      attached?.destroy();
+    };
+  }, [adGroupId]);
+
+  return <div ref={containerRef} style={{ width: '100%', height: '96px' }} />;
+}
 
 
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
@@ -719,20 +758,8 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         </div>
       )}
 
-      {/* 하단 띠 배너 광고 */}
-      <div
-        className="mock-bottom-banner glass-card"
-        onClick={() => window.open('https://toss.im', '_blank')}
-      >
-        <div className="mock-banner-content">
-          <img src="/images/ad_toss_piggy.png" alt="Toss Piggy" className="mock-banner-img" />
-          <div>
-            <p className="mock-banner-title">토스 숨은 돈 찾기 💰</p>
-            <p className="mock-banner-desc">잠자고 있는 계좌 속 숨은 꽁돈을 지금 조회해 보세요</p>
-          </div>
-        </div>
-        <span className="mock-banner-ad-badge">AD</span>
-      </div>
+      {/* 하단 배너 광고 */}
+      <BannerAdSlot adGroupId={BANNER_AD_ID} />
 
       {/* 🎓 신규 사용자를 위한 고품격 안내 튜토리얼 Overlay */}
       {tutorialStep !== null && (() => {

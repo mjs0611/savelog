@@ -1,9 +1,31 @@
-import { loadFullScreenAd, showFullScreenAd } from '@apps-in-toss/web-framework';
+import { loadFullScreenAd, showFullScreenAd, TossAds } from '@apps-in-toss/web-framework';
 
 const INTERSTITIAL_AD_ID = 'ait.v2.live.053f92000a934368';
 const REWARD_AD_ID = 'ait.v2.live.903cd8fed5b3414d';
+// 배너 광고 그룹 ID
+export const BANNER_AD_ID = 'ait.v2.live.65961476dd6544a3';       // 리스트형 배너 (홈)
+export const FEED_BANNER_AD_ID = 'ait.v2.live.da678a1789cb4454';  // 이미지(피드형) 배너
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
+
+let bannerInitialized = false;
+let bannerInitializing = false;
+
+export function initBannerAds() {
+  if (!IS_AIT || !TossAds.initialize.isSupported()) return;
+  if (bannerInitialized || bannerInitializing) return;
+  bannerInitializing = true;
+  TossAds.initialize({
+    callbacks: {
+      onInitialized: () => { bannerInitialized = true; bannerInitializing = false; },
+      onInitializationFailed: (e) => { console.warn('[BannerAd] init failed', e); bannerInitializing = false; },
+    },
+  });
+}
+
+export function isBannerReady() {
+  return bannerInitialized;
+}
 
 let interstitialLoaded = false;
 let interstitialLoading = false;
