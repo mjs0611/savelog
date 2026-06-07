@@ -608,9 +608,13 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           {displayedEntries.length === 0 && feedTab === 'follow' && (
             <div className="follow-empty-state">
               <p className="follow-empty-icon">👥</p>
-              <p className="follow-empty-title">팔로우한 짠친이 없어요</p>
+              <p className="follow-empty-title">
+                {Object.keys(followedUsers).length > 0 ? '팔로우한 짠친의 기록이 없어요' : '팔로우한 짠친이 없어요'}
+              </p>
               <p className="follow-empty-desc">
-                {recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
+                {Object.keys(followedUsers).length > 0
+                  ? '팔로우한 짠친들이 아직 기록을 남기지 않았어요'
+                  : recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
               </p>
             </div>
           )}
