@@ -219,6 +219,15 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 📊 소비 성향 육각형 레이더 차트 Widget */}
       {(() => {
+        // 엔트리 로딩 중에는 스켈레톤 표시 (weekTotal=0으로 인한 부풀려진 스탯 방지)
+        if (entriesLoading) return (
+          <div className="glass-card radar-chart-card">
+            <div className="radar-chart-header">
+              <span className="radar-chart-label">소비 오각형 스탯 📊</span>
+            </div>
+            <div className="skeleton-card" style={{ height: '200px', marginTop: '12px' }} />
+          </div>
+        );
         // 스탯 연산
         const selfControl = Math.max(30, Math.min(100, 100 - Math.floor(weekTotal / 5000)));
         const savings = Math.max(40, Math.min(100, 40 + streak.streak * 10));
@@ -362,7 +371,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         ) : (
           <div className="mailbox-list">
             {messages.map((msg) => {
-              const isSent = msg.senderNickname === nickname;
+              const isSent = msg.sentByMe ?? (msg.senderNickname === nickname);
               return (
                 <div key={msg.id} className={`mailbox-msg-row${isSent ? ' mailbox-msg-row--sent' : ''}`}>
                   <div className="mailbox-msg-meta">

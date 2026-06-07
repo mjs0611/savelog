@@ -478,6 +478,7 @@ export default function App() {
           <FeedScreen
             userId={userId}
             refreshToken={feedRefreshToken}
+            weekRank={weekRank}
             onGrantFeedReward={() => {
               grantFeedReward(1).catch(() => {});
             }}

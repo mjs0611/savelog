@@ -1,14 +1,95 @@
 import React, { useEffect, useState } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
-import type { EntryWithReactions } from '../lib/supabase';
+import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
 import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, type BalanceEntry } from '../lib/supabase';
 import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
+
+interface SaltyStory {
+  id: string;
+  userId: string;
+  nickname: string;
+  persona: string | null;
+  text: string;
+  bgGradient: string;
+  createdAt: string;
+}
+
+const MOCK_STORIES: SaltyStory[] = [
+  {
+    id: 'story-1',
+    userId: 'user-toss',
+    nickname: '김토스',
+    persona: 'hamster',
+    text: '오늘 점심은 회사 탕비실 컵라면+삼김으로 0원 방어 성공! 🍜',
+    bgGradient: 'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
+    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
+  },
+  {
+    id: 'story-2',
+    userId: 'user-ipad',
+    nickname: '이패드',
+    persona: 'flexer',
+    text: '신상 운동화 장바구니에서 삭제함... 내 통장을 지켰다 👟✨',
+    bgGradient: 'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)',
+    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
+  },
+  {
+    id: 'story-3',
+    userId: 'user-save',
+    nickname: '박절약',
+    persona: 'keeper',
+    text: '커피머신 캡슐 직구로 아메리카노 한 잔 400원 개이득! ☕',
+    bgGradient: 'linear-gradient(135deg, #5EE7DF 0%, #B490CA 100%)',
+    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
+  }
+];
+
+interface SaltyGroup {
+  id: string;
+  name: string;
+  creator: string;
+  desc: string;
+  dailyBudget: number;
+  members: string[];
+  averageSpent: number;
+}
+
+const PRESET_GROUPS: SaltyGroup[] = [
+  {
+    id: 'group-delivery',
+    name: '🍳 배달금지 무지출단',
+    creator: '김토스',
+    desc: '이번 주 배달 앱 삭제하고 집밥만 든든하게 먹는 모임',
+    dailyBudget: 10000,
+    members: ['김토스', '박절약', '이패드'],
+    averageSpent: 28000,
+  },
+  {
+    id: 'group-coffee',
+    name: '☕ 스타벅스 탈출기',
+    creator: '박절약',
+    desc: '하루 5천 원짜리 카페 음료 끊고 탕비실/카누로 버티기',
+    dailyBudget: 5000,
+    members: ['박절약', '이패드'],
+    averageSpent: 12000,
+  },
+  {
+    id: 'group-shopping',
+    name: '🛍️ 아이쇼핑 금지 위원회',
+    creator: '이패드',
+    desc: '의류, 화장품 충동구매 금지! 생존 소비만 인정',
+    dailyBudget: 15000,
+    members: ['이패드', '김토스'],
+    averageSpent: 94000,
+  }
+];
 
 interface Props {
   userId: string;
   onGrantFeedReward?: () => void;
   refreshToken?: number;
+  weekRank?: WeekRankRow[];
 }
 
 const COMMENT_CHIPS = ['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'];
@@ -20,7 +101,7 @@ const WEEKLY_CHALLENGES = [
   { id: 'no-shopping', title: '쇼핑 금지 챌린지', desc: '온라인 쇼핑 0원 7일', emoji: '🛒' },
 ];
 
-export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0 }: Props) {
+export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0, weekRank = [] }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const initialLoaded = React.useRef(false);
@@ -44,8 +125,98 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   const [reactionRewardedEntries, setReactionRewardedEntries] = useState<Set<string>>(() => new Set());
 
   // 팔로우 / 탭 필터
-  const [feedTab, setFeedTab] = useState<'all' | 'follow'>('all');
+  const [feedTab, setFeedTab] = useState<'all' | 'follow' | 'group'>('all');
   const [followedUsers, setFollowedUsers] = useState<Record<string, string>>(() => getFollowedUsers());
+
+  // 📸 짠물 스토리 관련 상태
+  const [userStories, setUserStories] = useState<SaltyStory[]>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_stories');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const allStories = React.useMemo(() => {
+    return [...userStories, ...MOCK_STORIES];
+  }, [userStories]);
+  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
+  const [storyProgress, setStoryProgress] = useState(0);
+  const [showAddStoryModal, setShowAddStoryModal] = useState(false);
+  const [newStoryText, setNewStoryText] = useState('');
+  const [newStoryBg, setNewStoryBg] = useState('linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)');
+  const [storyDoubleTapped, setStoryDoubleTapped] = useState<Record<string, boolean>>({});
+
+  // 👥 절약 그룹 리그 관련 상태
+  const [myGroup, setMyGroup] = useState<string | null>(() => {
+    try {
+      return localStorage.getItem('savelog_my_group');
+    } catch {
+      return null;
+    }
+  });
+  const [customGroups, setCustomGroups] = useState<SaltyGroup[]>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_custom_groups');
+      return saved ? JSON.parse(saved) : [];
+    } catch {
+      return [];
+    }
+  });
+  const allGroups = React.useMemo(() => {
+    return [...PRESET_GROUPS, ...customGroups];
+  }, [customGroups]);
+  const [showCreateGroupModal, setShowCreateGroupModal] = useState(false);
+  const [newGroupName, setNewGroupName] = useState('');
+  const [newGroupDesc, setNewGroupDesc] = useState('');
+  const [newGroupBudget, setNewGroupBudget] = useState(10000);
+
+  interface GroupMessage {
+    sender: string;
+    text: string;
+    time: string;
+  }
+
+  const [groupMessages, setGroupMessages] = useState<Record<string, GroupMessage[]>>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_group_messages');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return {
+      'group-delivery': [
+        { sender: '김토스', text: '오늘 저녁은 집밥 김치볶음밥 갑니다 🍳', time: '1시간 전' },
+        { sender: '이패드', text: '엽떡 유혹 겨우 참아냈네요... 휴 💦', time: '30분 전' }
+      ],
+      'group-coffee': [
+        { sender: '박절약', text: '맥심 모카골드로 아침 커피 해결 완료! ☕', time: '3시간 전' },
+        { sender: '이패드', text: '커피머신 사고 캡슐 직구하니까 든든합니다', time: '1시간 전' }
+      ],
+      'group-shopping': [
+        { sender: '이패드', text: '이번 주 옷 사면 손목을 자르겠습니다.. 🛍️', time: '2시간 전' }
+      ]
+    };
+  });
+  const [newGroupMessageText, setNewGroupMessageText] = useState('');
+
+  const handlePostGroupMessage = () => {
+    if (!myGroup || !newGroupMessageText.trim()) return;
+    const senderName = getNickname() || '나';
+    const newMessage: GroupMessage = {
+      sender: senderName,
+      text: newGroupMessageText.trim(),
+      time: '방금'
+    };
+    
+    setGroupMessages(prev => {
+      const currentList = prev[myGroup] || [];
+      const updatedList = [...currentList, newMessage];
+      const updated = { ...prev, [myGroup]: updatedList };
+      localStorage.setItem('savelog_group_messages', JSON.stringify(updated));
+      return updated;
+    });
+    setNewGroupMessageText('');
+    showFeedToast('💬 그룹 방명록에 글을 남겼습니다!');
+  };
 
   const [feedVotes, setFeedVotes] = useState<Record<string, 'over' | 'ok'>>(() => {
     try {
@@ -120,6 +291,133 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   const feedVotingRef = React.useRef<Set<string>>(new Set());
 
   const myPersonaKey = getPersona();
+
+  // 스토리 자동 진행 타이머 효과
+  useEffect(() => {
+    if (activeStoryIndex === null) {
+      setStoryProgress(0);
+      return;
+    }
+
+    setStoryProgress(0);
+    const duration = 4000;
+    const intervalTime = 40;
+    const steps = duration / intervalTime;
+    let currentStep = 0;
+
+    const timer = setInterval(() => {
+      currentStep++;
+      const progress = Math.min(100, (currentStep / steps) * 100);
+      setStoryProgress(progress);
+
+      if (currentStep >= steps) {
+        clearInterval(timer);
+        setActiveStoryIndex(prev => {
+          if (prev === null) return null;
+          if (prev < allStories.length - 1) {
+            return prev + 1;
+          } else {
+            return null;
+          }
+        });
+      }
+    }, intervalTime);
+
+    return () => clearInterval(timer);
+  }, [activeStoryIndex, allStories.length]);
+
+  const spawnStoryParticles = (emoji: string, x: number, y: number) => {
+    const newParticles = Array.from({ length: 8 }).map((_, i) => ({
+      id: Date.now() + Math.random() + i,
+      emoji,
+      x: x + (Math.random() * 80 - 40),
+      y: y - 20 + (Math.random() * 40 - 20),
+    }));
+    setParticles((prev) => [...prev, ...newParticles]);
+    setTimeout(() => {
+      setParticles((prev) => prev.filter((p) => !newParticles.some((np) => np.id === p.id)));
+    }, 1000);
+  };
+
+  const handleAddStory = () => {
+    if (!newStoryText.trim()) return;
+    const nickname = getNickname() || '나';
+    const persona = getPersona();
+    const newStory: SaltyStory = {
+      id: `story-user-${Date.now()}`,
+      userId,
+      nickname,
+      persona,
+      text: newStoryText.trim(),
+      bgGradient: newStoryBg,
+      createdAt: new Date().toISOString()
+    };
+    
+    const updated = [newStory, ...userStories];
+    localStorage.setItem('savelog_stories', JSON.stringify(updated));
+    setUserStories(updated);
+    setShowAddStoryModal(false);
+    setNewStoryText('');
+    showFeedToast('🚀 내 짠물 스토리를 업로드했습니다!');
+  };
+
+  const handleCreateGroupSubmit = () => {
+    if (!newGroupName.trim() || !newGroupDesc.trim()) return;
+    const creatorName = getNickname() || '나';
+    const newGroup: SaltyGroup = {
+      id: `group-custom-${Date.now()}`,
+      name: `👥 ${newGroupName.trim()}`,
+      creator: creatorName,
+      desc: newGroupDesc.trim(),
+      dailyBudget: Number(newGroupBudget) || 10000,
+      members: [creatorName, '김토스', '이패드'],
+      averageSpent: 45000,
+    };
+
+    const updated = [newGroup, ...customGroups];
+    localStorage.setItem('savelog_custom_groups', JSON.stringify(updated));
+    setCustomGroups(updated);
+    localStorage.setItem('savelog_my_group', newGroup.id);
+    setMyGroup(newGroup.id);
+    setShowCreateGroupModal(false);
+    setNewGroupName('');
+    setNewGroupDesc('');
+    setNewGroupBudget(10000);
+    showFeedToast(`👥 ${newGroupName.trim()} 그룹이 생성되었습니다!`);
+  };
+
+  const handleJoinGroup = (groupId: string) => {
+    localStorage.setItem('savelog_my_group', groupId);
+    setMyGroup(groupId);
+    const gName = allGroups.find(g => g.id === groupId)?.name || '그룹';
+    showFeedToast(`👥 ${gName} 그룹에 참여했습니다!`);
+  };
+
+  const handleLeaveGroup = () => {
+    localStorage.removeItem('savelog_my_group');
+    setMyGroup(null);
+    showFeedToast('그룹에서 탈퇴했습니다.');
+  };
+
+  // 현재 가입 그룹 정보
+  const activeGroup = React.useMemo(() => {
+    if (!myGroup) return null;
+    return allGroups.find(g => g.id === myGroup) || null;
+  }, [myGroup, allGroups]);
+
+  // 그룹 멤버 실시간 필터링 피드
+  const groupMembersSet = React.useMemo(() => {
+    if (!activeGroup) return new Set<string>();
+    return new Set<string>(activeGroup.members);
+  }, [activeGroup]);
+
+  const groupFilteredEntries = React.useMemo(() => {
+    if (!activeGroup) return [];
+    return entries.filter(e => {
+      const nick = e.nickname || '';
+      return groupMembersSet.has(nick) || e.user_id === userId;
+    });
+  }, [entries, activeGroup, groupMembersSet, userId]);
 
   // 추천 짠친 계산
   const recommendedFriends = React.useMemo(() => {
@@ -383,6 +681,342 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     ? entries.filter(e => e.user_id === userId || !!followedUsers[e.user_id])
     : entries;
 
+  const renderFeedCard = (entry: EntryWithReactions) => {
+    const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
+    const p = personaKey ? PERSONAS[personaKey] : null;
+    
+    // 지출 레벨 파악 (0원 무지출 / 5만원 이상 FLEX)
+    const isMilestone = entry.items.some(it => it.category === '마일스톤');
+    const isTipPost = entry.items.some(it => it.category === '꿀팁');
+    const isDilemmaPost = entry.items.some(it => it.category === '소비 고민') || entry.is_balance_game;
+    const isZeroSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount === 0;
+    const isFlexSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount > 50000;
+    const cardClass = isMilestone
+      ? 'feed-card--milestone'
+      : isTipPost
+      ? 'feed-card--tip'
+      : isDilemmaPost
+      ? 'feed-card--dilemma'
+      : isZeroSpend
+      ? 'feed-card--zero'
+      : isFlexSpend
+      ? 'feed-card--flex'
+      : '';
+
+    const comments = localComments[entry.id] || [];
+    const isExpanded = !!commentExpanded[entry.id];
+    const visibleComments = isExpanded ? comments : comments.slice(0, 2);
+
+    return (
+      <div
+        key={entry.id}
+        className={`feed-card glass-card ${cardClass} ${entry.user_id === userId ? 'feed-card--mine' : ''}`}
+      >
+        {/* 카드 헤더 */}
+        <div className="feed-card-header">
+          <div className="feed-avatar-wrap">
+            <div
+              className={`feed-avatar ${entry.user_id === userId ? 'feed-avatar--mine' : ''}`}
+              style={p ? { borderColor: p.color } : {}}
+            >
+              {entry.nickname ? entry.nickname.charAt(0).toUpperCase() : '?'}
+            </div>
+            <div className="feed-card-meta">
+              <span className="feed-nickname">
+                {entry.nickname}
+                {entry.user_id !== userId && (
+                  <button
+                    onClick={() => handleToggleFollow(entry)}
+                    className={`header-follow-btn ${followedUsers[entry.user_id] ? 'following' : ''}`}
+                  >
+                    {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
+                  </button>
+                )}
+                {entry.user_id === userId && (
+                  <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
+                )}
+                {p && (
+                  <span
+                    className="feed-persona-tag"
+                    style={{
+                      background: `${p.color}15`,
+                      color: p.color,
+                      border: `1px solid ${p.color}25`,
+                    }}
+                  >
+                    <img src={p.icon} alt="" />
+                    <span>{p.name}</span>
+                  </span>
+                )}
+                {isTipPost && (
+                  <span className="feed-tier-tag tip-tag">💡 절약 꿀팁</span>
+                )}
+                {isDilemmaPost && (
+                  <span className="feed-tier-tag dilemma-tag">⚖️ 소비 고민</span>
+                )}
+                {isMilestone && (
+                  <span className="feed-tier-tag feed-tier-tag--milestone">🏆 마일스톤</span>
+                )}
+                {isZeroSpend && (
+                  <span className="feed-tier-tag zero-tag">👑 무지출</span>
+                )}
+                {isFlexSpend && (
+                  <span className="feed-tier-tag flex-tag">🚨 FLEX</span>
+                )}
+              </span>
+              <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
+            </div>
+          </div>
+          <div className={`feed-total ${!isMilestone && !isTipPost && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : isTipPost ? 'feed-total--tip' : isDilemmaPost ? 'feed-total--dilemma' : ''}`}>
+            {isMilestone ? '🏆 달성' : isTipPost ? '💡 꿀팁' : isDilemmaPost ? '⚖️ 배틀 중' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
+          </div>
+        </div>
+
+        {/* 마일스톤 달성 메시지 */}
+        {entry.items.filter(it => it.category === '마일스톤').map((it, i) => (
+          <p key={i} className="feed-milestone-note">{it.comment}</p>
+        ))}
+
+        {/* 절약 꿀팁 내용 */}
+        {isTipPost && (
+          <div className="tip-post-body">
+            {entry.items.filter(it => it.category === '꿀팁').map((it, i) => (
+              <p key={i}>{it.comment}</p>
+            ))}
+          </div>
+        )}
+
+        {/* 소비 고민 및 inline 투표 */}
+        {isDilemmaPost && (() => {
+          const dilemmaItem = entry.items.find(it => it.category === '소비 고민');
+          const text = dilemmaItem?.comment || '';
+          const amount = dilemmaItem?.amount || entry.total_amount || 0;
+          
+          const myVote = feedVotes[entry.id];
+          const hasVoted = !!myVote || entry.user_id === userId;
+          
+          const seed = entry.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
+          const overPctBase = (seed % 40) + 30; // 30% ~ 70%
+          
+          let overPct = overPctBase;
+          let okPct = 100 - overPct;
+          if (myVote === 'over') {
+            overPct = Math.min(95, overPct + 5);
+            okPct = 100 - overPct;
+          } else if (myVote === 'ok') {
+            okPct = Math.min(95, okPct + 5);
+            overPct = 100 - okPct;
+          }
+          
+          const totalFeedVotes = (seed % 30) + 12 + (myVote ? 1 : 0);
+
+          return (
+            <div className="dilemma-post-body">
+              {text && <p>{text}</p>}
+
+              <div className="dilemma-amount-box">
+                <span className="dilemma-amount-label">예상 소비액</span>
+                <span className="dilemma-amount-value">{amount.toLocaleString('ko-KR')}원</span>
+              </div>
+
+              {hasVoted ? (
+                <div className="dilemma-result-section">
+                  <div className="dilemma-result-labels">
+                    <span className="dilemma-result-over">
+                      과소비 {overPct}%
+                      {myVote === 'over' && <span className="dilemma-my-badge dilemma-my-badge--over">내 판정 💸</span>}
+                    </span>
+                    <span className="dilemma-result-total">총 {totalFeedVotes}명 참여</span>
+                    <span className="dilemma-result-ok">
+                      {myVote === 'ok' && <span className="dilemma-my-badge dilemma-my-badge--ok">내 판정 🌿</span>}
+                      합리적 {okPct}%
+                    </span>
+                  </div>
+
+                  <div className="dilemma-bar">
+                    <div className="dilemma-bar-over" style={{ width: `${overPct}%` }} />
+                    <div className="dilemma-bar-ok" style={{ width: `${okPct}%` }} />
+                  </div>
+                </div>
+              ) : (
+                <div className="dilemma-vote-btns">
+                  <button
+                    onClick={() => handleFeedVote(entry.id, 'over')}
+                    className="balance-vote-card balance-vote-card--over"
+                  >
+                    <span className="vote-emoji">💸</span>
+                    <span className="vote-title">과소비</span>
+                  </button>
+                  <button
+                    onClick={() => handleFeedVote(entry.id, 'ok')}
+                    className="balance-vote-card balance-vote-card--ok"
+                  >
+                    <span className="vote-emoji">🌿</span>
+                    <span className="vote-title">합리적</span>
+                  </button>
+                </div>
+              )}
+            </div>
+          );
+        })()}
+
+        {/* 오늘 한마디 (💬 한마디 특수 항목) */}
+        {entry.items.filter(it => it.category === '한마디').map((it, i) => (
+          <p key={i} className="feed-note">💬 {it.comment}</p>
+        ))}
+
+        {/* 지출 항목 */}
+        {(() => {
+          const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤' && it.category !== '꿀팁' && it.category !== '소비 고민');
+          if (spendItems.length === 0) return null;
+          return (
+            <div className="feed-items">
+              {spendItems.map((item, i) => (
+                <div key={i} className="feed-item">
+                  <span className="feed-item-emoji">{item.emoji}</span>
+                  <div className="feed-item-info">
+                    <span className="feed-item-cat">{item.category}</span>
+                    {item.comment && <span className="feed-item-comment">{item.comment}</span>}
+                  </div>
+                  <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
+                    {item.amount === 0 ? '0원' : formatAmount(item.amount)}
+                  </span>
+                </div>
+              ))}
+            </div>
+          );
+        })()}
+
+        {/* 인증샷 / 영수증 이미지 */}
+        {entry.image && (
+          <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)}>
+            <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
+            {doubleTappedHearts[entry.id] && (
+              <div className="heart-double-tap-overlay">❤️</div>
+            )}
+          </div>
+        )}
+
+        {/* 리액션 카운트 — 정보 표시 라인 (인스타 스타일) */}
+        {(entry.trust_count > 0 || entry.doubt_count > 0) && (
+          <div className="feed-reaction-counts">
+            {entry.trust_count > 0 && <span>❤️ {entry.trust_count}명</span>}
+            {entry.doubt_count > 0 && <span>🤔 {entry.doubt_count}명</span>}
+          </div>
+        )}
+
+        {/* 액션 버튼 행 */}
+        {entry.user_id !== userId && (
+          <div className="feed-actions-row">
+            {/* 왼쪽: 감정 리액션 버튼 (카운트 없음) */}
+            <div className="feed-reactions-group">
+              <button
+                className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
+                onClick={(e) => handleReact(entry, 'trust', e)}
+                disabled={toggling.has(entry.id)}
+              >
+                ❤️ 짠내난다
+              </button>
+              <button
+                className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
+                onClick={(e) => handleReact(entry, 'doubt', e)}
+                disabled={toggling.has(entry.id)}
+              >
+                🤔 진짜야?
+              </button>
+            </div>
+
+            {/* 오른쪽: 아이콘 액션 */}
+            <div className="feed-actions-group">
+              {/* 응원 쪽지 */}
+              <button
+                className="action-icon-btn"
+                title="응원 쪽지 보내기"
+                onClick={() => { setMessageRecipientEntry(entry); setMessageText(''); }}
+              >
+                ✉️
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* 신뢰도 경고 */}
+        {entry.doubt_count >= 3 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
+          <div className="doubt-warning">
+            🚨 일부 사용자가 의심하고 있어요 ({Math.round(entry.doubt_count / (entry.trust_count + entry.doubt_count) * 100)}%)
+          </div>
+        )}
+
+        {/* 댓글 스레드 — SNS 스타일 */}
+        {entry.user_id !== userId && !isMilestone && (() => {
+          return (
+            <div className="feed-thread-section">
+              {/* 댓글 목록 */}
+              {comments.length > 0 && (
+                <div className="feed-thread-list">
+                  {visibleComments.map((c, i) => (
+                    <div key={i} className="feed-thread-row">
+                      <div className="feed-thread-avatar">{c.sender[0] ?? '나'}</div>
+                      <div className="feed-thread-content">
+                        <span className="feed-thread-name">{c.sender}</span>
+                        <span className="feed-thread-text">{c.text}</span>
+                      </div>
+                    </div>
+                  ))}
+                  {comments.length > 2 && !isExpanded && (
+                    <button
+                      className="feed-thread-more"
+                      onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: true }))}
+                    >
+                      댓글 {comments.length - 2}개 더 보기
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* 퀵 칩 */}
+              <div className="feed-thread-chips">
+                {COMMENT_CHIPS.map((cmt) => {
+                  const used = comments.some(c => c.sender === '나' && c.text === cmt);
+                  return (
+                    <button
+                      key={cmt}
+                      className={`comment-chip-btn${used ? ' comment-chip-btn--used' : ''}`}
+                      onClick={() => addComment(entry.id, cmt)}
+                      disabled={used}
+                    >
+                      {cmt}
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* 댓글 직접 입력 */}
+              <div className="feed-thread-input-row">
+                <input
+                  type="text"
+                  value={commentInputs[entry.id] || ''}
+                  onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
+                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
+                  placeholder="댓글 달기..."
+                  maxLength={60}
+                  className="feed-thread-input"
+                />
+                <button
+                  onClick={() => submitCommentInput(entry.id)}
+                  disabled={!(commentInputs[entry.id] || '').trim()}
+                  className="feed-thread-submit"
+                >
+                  게시
+                </button>
+              </div>
+            </div>
+          );
+        })()}
+      </div>
+    );
+  };
+
   if (loading) {
     return (
       <div className="screen screen-feed">
@@ -404,596 +1038,493 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         <button className="refresh-btn" onClick={() => load(entries.length > 0)}>↻</button>
       </div>
 
-      {/* 탭 필터: 전체 / 팔로우 */}
+      {/* 📸 짠물 스토리 가로 목록 */}
+      <div className="story-row-container">
+        {/* 내 스토리 추가 버튼 */}
+        <div className="story-circle-wrapper" onClick={() => setShowAddStoryModal(true)}>
+          <div className="story-circle story-circle--add">
+            <span className="story-add-plus">+</span>
+          </div>
+          <span className="story-username">내 스토리</span>
+        </div>
+
+        {/* 스토리 목록 */}
+        {allStories.map((story, idx) => {
+          const p = story.persona ? PERSONAS[story.persona] : null;
+          return (
+            <div
+              key={story.id}
+              className="story-circle-wrapper"
+              onClick={() => setActiveStoryIndex(idx)}
+            >
+              <div className="story-circle" style={p ? { borderColor: p.color } : {}}>
+                {story.nickname.charAt(0).toUpperCase()}
+              </div>
+              <span className="story-username">{story.nickname}</span>
+            </div>
+          );
+        })}
+      </div>
+
+      {/* 탭 필터: 전체 / 팔로우 / 절약 그룹 */}
       <div className="feed-tab-bar">
-        {(['all', 'follow'] as const).map((t) => (
+        {(['all', 'follow', 'group'] as const).map((t) => (
           <button
             key={t}
             className={`feed-tab-btn${feedTab === t ? ' feed-tab-btn--active' : ''}`}
             onClick={() => setFeedTab(t)}
           >
-            {t === 'all' ? '전체' : `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}`}
+            {t === 'all' ? '전체' : t === 'follow' ? `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}` : '절약 그룹'}
           </button>
         ))}
       </div>
 
-      {/* ⚖️ 밸런스 게임 — 실제 유저 기록 기반 */}
-      {balanceEntry !== 'empty' && (
-        <div className="glass-card balance-game-card-glow">
-          <div className="balance-card-header">
-            <span className="balance-card-title">⚖️ 실시간 짠물 배틀</span>
-            {balanceEntry !== 'loading' && typeof balanceEntry === 'object' && (
-              <span className="balance-card-status">판정 진행 중</span>
-            )}
-          </div>
-
-          {balanceEntry === 'loading' ? (
-            <div className="balance-loading-lg" />
-          ) : typeof balanceEntry === 'object' && balanceEntry !== null ? (() => {
-            const entry = balanceEntry;
-            const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
-            const noteItem = entry.items.find(it => it.category === '한마디');
-            return (
-              <div className="balance-receipt-wrap">
-                {/* 닉네임 */}
-                <p className="balance-receipt-author">{entry.nickname}님의 지출</p>
-
-                {/* 지출 항목 영수증 컨테이너 */}
-                <div className="balance-receipt-box">
-                  <div className="balance-receipt-items">
-                    {spendItems.map((item, i) => (
-                      <div key={i} className="balance-receipt-item">
-                        <span className="balance-receipt-item-label">{item.emoji} {item.comment || item.category}</span>
-                        <span className="balance-receipt-item-amount">{item.amount.toLocaleString('ko-KR')}원</span>
-                      </div>
-                    ))}
-                    <div className="balance-receipt-total">
-                      <span className="balance-receipt-total-label">합계</span>
-                      <span className="balance-receipt-total-amount">{entry.total_amount.toLocaleString('ko-KR')}원</span>
-                    </div>
+      {feedTab === 'group' ? (
+        activeGroup === null ? (
+          /* 그룹 미가입 상태 - 그룹 디렉토리 */
+          <div className="group-directory">
+            <div className="group-directory-header">
+              <h3 className="group-sec-title">🔥 추천 절약 그룹</h3>
+              <button className="create-group-btn" onClick={() => setShowCreateGroupModal(true)}>
+                + 내 그룹 만들기
+              </button>
+            </div>
+            <p className="group-directory-sub">함께 지출을 기록하고 예산 리그에 도전해 보세요.</p>
+            <div className="group-list">
+              {allGroups.map((group) => (
+                <div key={group.id} className="group-item-card glass-card">
+                  <div className="group-item-header">
+                    <span className="group-item-name">{group.name}</span>
+                    <span className="group-item-members">👤 {group.members.length}명</span>
                   </div>
-                </div>
-
-                {/* 한마디 */}
-                {noteItem && (
-                  <p className="balance-note">💬 {noteItem.comment}</p>
-                )}
-
-                {balanceVoted ? (
-                  /* 투표 후 결과 */
-                  balanceStats ? (
-                    <div className="balance-results">
-                      <div className="balance-result-row">
-                        <span className="balance-result-over">
-                          과소비 {balanceStats.over}%
-                          {balanceVoted === 'over' && <span className="balance-result-badge balance-result-badge--over">내 판정 💸</span>}
-                        </span>
-                        <span className="balance-result-total">총 {totalVotes}명 참여</span>
-                        <span className="balance-result-ok">
-                          {balanceVoted === 'ok' && <span className="balance-result-badge balance-result-badge--ok">내 판정 🌿</span>}
-                          합리적 {balanceStats.ok}%
-                        </span>
-                      </div>
-
-                      <div className="balance-bar-container">
-                        <div
-                          className="balance-bar-fill balance-bar-fill--over"
-                          style={{ width: `${balanceStats.over}%` }}
-                        />
-                        <div
-                          className="balance-bar-fill balance-bar-fill--ok"
-                          style={{ width: `${balanceStats.ok}%` }}
-                        />
-                      </div>
-                      
-                      <button
-                        onClick={loadBalanceEntry}
-                        className="next-battle-btn"
-                      >
-                        다음 지출 판정하기 →
-                      </button>
+                  <p className="group-item-desc">{group.desc}</p>
+                  <div className="group-item-footer">
+                    <div className="group-item-meta">
+                      <span>하루: <strong>{group.dailyBudget.toLocaleString('ko-KR')}원</strong></span>
+                      <span className="dot-separator">·</span>
+                      <span>주 평균: <strong>{group.averageSpent.toLocaleString('ko-KR')}원</strong></span>
                     </div>
-                  ) : (
-                    /* 집계 중 스켈레톤 */
-                    <div className="balance-loading-sm" />
-                  )
-                ) : (
-                  /* 투표 전 버튼 */
-                  <div className="balance-vote-buttons">
-                    <button
-                      onClick={async () => {
-                        if (balanceVotingRef.current) return;
-                        balanceVotingRef.current = true;
-                        setBalanceVoted('over');
-                        // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
-                        setFeedVotes(prev => ({ ...prev, [entry.id]: 'over' }));
-                        try {
-                          const stats = await submitBalanceVote(entry.id, userId, 'over');
-                          setBalanceStats(stats);
-                          onGrantFeedReward?.();
-                          showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
-                        } catch {
-                          setBalanceStats(null);
-                          setBalanceVoted(null);
-                          setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
-                          showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
-                        } finally {
-                          balanceVotingRef.current = false;
-                        }
-                      }}
-                      className="balance-vote-card balance-vote-card--over"
-                    >
-                      <span className="vote-emoji">💸</span>
-                      <span className="vote-title">과소비</span>
-                      <span className="vote-desc">참을 수 없던 사치</span>
-                    </button>
-                    <button
-                      onClick={async () => {
-                        if (balanceVotingRef.current) return;
-                        balanceVotingRef.current = true;
-                        setBalanceVoted('ok');
-                        // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
-                        setFeedVotes(prev => ({ ...prev, [entry.id]: 'ok' }));
-                        try {
-                          const stats = await submitBalanceVote(entry.id, userId, 'ok');
-                          setBalanceStats(stats);
-                          onGrantFeedReward?.();
-                          showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
-                        } catch {
-                          setBalanceStats(null);
-                          setBalanceVoted(null);
-                          setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
-                          showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
-                        } finally {
-                          balanceVotingRef.current = false;
-                        }
-                      }}
-                      className="balance-vote-card balance-vote-card--ok"
-                    >
-                      <span className="vote-emoji">🌿</span>
-                      <span className="vote-title">합리적</span>
-                      <span className="vote-desc">생존형 필수 소비</span>
+                    <button className="group-join-btn" onClick={() => handleJoinGroup(group.id)}>
+                      가입
                     </button>
                   </div>
-                )}
-              </div>
-            );
-          })() : null}
-        </div>
-      )}
-
-      {/* 💪 이번 주 그룹 챌린지 */}
-      <div className="glass-card challenge-card">
-        <div className="challenge-card-header">
-          <span className="challenge-card-title">💪 이번 주 그룹 챌린지</span>
-        </div>
-        <div className="challenge-card-body">
-          <span className="challenge-emoji">{weekChallenge.emoji}</span>
-          <div className="challenge-info">
-            <p className="challenge-name">{weekChallenge.title}</p>
-            <p className="challenge-desc">{weekChallenge.desc}</p>
-          </div>
-          <button
-            onClick={() => handleToggleChallenge(weekChallenge.id)}
-            className={`challenge-join-btn${activeChallenge === weekChallenge.id ? ' challenge-join-btn--active' : ''}`}
-          >
-            {activeChallenge === weekChallenge.id ? '참여 중 ✓' : '참여하기'}
-          </button>
-        </div>
-      </div>
-
-      {entries.length === 0 ? (
-        <div className="empty-state">
-          {loadFailed ? (
-            <>
-              <p>피드를 불러오지 못했어요</p>
-              <p className="empty-sub">네트워크 상태를 확인해 주세요</p>
-              <button onClick={() => load(false)} className="rank-empty-retry-btn">다시 시도</button>
-            </>
-          ) : (
-            <>
-              <p>아직 기록이 없어요</p>
-              <p className="empty-sub">첫 번째로 오늘 소비를 기록해 보세요!</p>
-            </>
-          )}
-        </div>
-      ) : (
-        <div className="feed-list">
-          {loadFailed && (
-            <div className="rank-stale-banner">
-              <span className="rank-stale-text">⚠ 피드 갱신 실패 · 마지막 데이터 표시 중</span>
-              <button onClick={() => load(false)} className="rank-stale-retry-btn">재시도</button>
-            </div>
-          )}
-          {displayedEntries.length === 0 && feedTab === 'follow' && (
-            <div className="follow-empty-state">
-              <p className="follow-empty-icon">👥</p>
-              <p className="follow-empty-title">
-                {Object.keys(followedUsers).length > 0 ? '팔로우한 짠친의 기록이 없어요' : '팔로우한 짠친이 없어요'}
-              </p>
-              <p className="follow-empty-desc">
-                {Object.keys(followedUsers).length > 0
-                  ? '팔로우한 짠친들이 아직 기록을 남기지 않았어요'
-                  : recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
-              </p>
-            </div>
-          )}
-          {feedTab === 'follow' && recommendedFriends.length > 0 && (
-            <div className="glass-card recommended-friends-box">
-              <h4 className="recommended-friends-header">✨ 추천 짠친</h4>
-              <div className="recommended-friends-list">
-                {recommendedFriends.map((friend) => {
-                  const p = friend.persona ? PERSONAS[friend.persona] : null;
-                  return (
-                    <div key={friend.user_id} className="recommended-friend-row">
-                      <div className="recommended-friend-info">
-                        <div className="feed-avatar feed-avatar--sm" style={p ? { borderColor: p.color } : {}}>
-                          {friend.nickname.charAt(0).toUpperCase()}
-                        </div>
-                        <div className="recommended-friend-meta">
-                          <div className="recommended-friend-name-row">
-                            <span className="recommended-friend-name">{friend.nickname}</span>
-                            {p && (
-                              <span className="rec-persona-tag" style={{ background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25` }}>
-                                <img src={p.icon} alt="" />
-                                <span>{p.name}</span>
-                              </span>
-                            )}
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        onClick={() => {
-                          const nowFollowing = toggleFollow(friend.user_id, friend.nickname);
-                          setFollowedUsers(getFollowedUsers());
-                          showFeedToast(nowFollowing ? `${friend.nickname}님을 팔로우했어요 👥` : `${friend.nickname}님 팔로우 해제`);
-                          toggleFollowSupabase(userId, friend.user_id, friend.nickname).catch(() => {});
-                        }}
-                        className="recommended-follow-btn"
-                      >
-                        + 팔로우
-                      </button>
-                    </div>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-          {displayedEntries.map((entry) => {
-            const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
-            const p = personaKey ? PERSONAS[personaKey] : null;
-            
-            // 지출 레벨 파악 (0원 무지출 / 5만원 이상 FLEX)
-            const isMilestone = entry.items.some(it => it.category === '마일스톤');
-            const isTipPost = entry.items.some(it => it.category === '꿀팁');
-            const isDilemmaPost = entry.items.some(it => it.category === '소비 고민') || entry.is_balance_game;
-            const isZeroSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount === 0;
-            const isFlexSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount > 50000;
-            const cardClass = isMilestone
-              ? 'feed-card--milestone'
-              : isTipPost
-              ? 'feed-card--tip'
-              : isDilemmaPost
-              ? 'feed-card--dilemma'
-              : isZeroSpend
-              ? 'feed-card--zero'
-              : isFlexSpend
-              ? 'feed-card--flex'
-              : '';
-
-            return (
-              <div
-                key={entry.id}
-                className={`feed-card glass-card ${cardClass} ${entry.user_id === userId ? 'feed-card--mine' : ''}`}
-              >
-                {/* 카드 헤더 */}
-                <div className="feed-card-header">
-                  <div className="feed-avatar-wrap">
-                    <div
-                      className={`feed-avatar ${entry.user_id === userId ? 'feed-avatar--mine' : ''}`}
-                      style={p ? { borderColor: p.color } : {}}
-                    >
-                      {entry.nickname ? entry.nickname.charAt(0).toUpperCase() : '?'}
-                    </div>
-                    <div className="feed-card-meta">
-                      <span className="feed-nickname">
-                        {entry.nickname}
-                        {entry.user_id !== userId && (
-                          <button
-                            onClick={() => handleToggleFollow(entry)}
-                            className={`header-follow-btn ${followedUsers[entry.user_id] ? 'following' : ''}`}
-                          >
-                            {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
-                          </button>
-                        )}
-                        {entry.user_id === userId && (
-                          <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
-                        )}
-                        {p && (
-                          <span
-                            className="feed-persona-tag"
-                            style={{
-                              background: `${p.color}15`,
-                              color: p.color,
-                              border: `1px solid ${p.color}25`,
-                            }}
-                          >
-                            <img src={p.icon} alt="" />
-                            <span>{p.name}</span>
-                          </span>
-                        )}
-                        {isTipPost && (
-                          <span className="feed-tier-tag tip-tag">💡 절약 꿀팁</span>
-                        )}
-                        {isDilemmaPost && (
-                          <span className="feed-tier-tag dilemma-tag">⚖️ 소비 고민</span>
-                        )}
-                        {isMilestone && (
-                          <span className="feed-tier-tag feed-tier-tag--milestone">🏆 마일스톤</span>
-                        )}
-                        {isZeroSpend && (
-                          <span className="feed-tier-tag zero-tag">👑 무지출</span>
-                        )}
-                        {isFlexSpend && (
-                          <span className="feed-tier-tag flex-tag">🚨 FLEX</span>
-                        )}
-                      </span>
-                      <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
-                    </div>
-                  </div>
-                  <div className={`feed-total ${!isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : isTipPost ? 'feed-total--tip' : isDilemmaPost ? 'feed-total--dilemma' : ''}`}>
-                    {isMilestone ? '🏆 달성' : isTipPost ? '💡 꿀팁' : isDilemmaPost ? '⚖️ 배틀 중' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
-                  </div>
                 </div>
+              ))}
+            </div>
+          </div>
+        ) : (
+          /* 그룹 가입 상태 - 그룹 대시보드 */
+          <div className="group-dashboard">
+            <div className="group-info-card glass-card">
+              <div className="group-info-header">
+                <div>
+                  <h3 className="group-title">{activeGroup.name}</h3>
+                  <p className="group-desc">{activeGroup.desc}</p>
+                </div>
+                <button className="group-leave-btn" onClick={handleLeaveGroup}>그룹 탈퇴</button>
+              </div>
+              <div className="group-info-stats">
+                <div className="group-stat-col">
+                  <span className="stat-label">하루 예산</span>
+                  <span className="stat-val">{activeGroup.dailyBudget.toLocaleString('ko-KR')}원</span>
+                </div>
+                <div className="group-stat-col">
+                  <span className="stat-label">멤버 수</span>
+                  <span className="stat-val">{activeGroup.members.length}명</span>
+                </div>
+                <div className="group-stat-col">
+                  <span className="stat-label">우리 그룹 평균</span>
+                  {(() => {
+                    const userSpent = weekRank?.find((r) => r.user_id === userId)?.total ?? 0;
+                    const otherCount = Math.max(1, activeGroup.members.includes(getNickname() || '나') ? activeGroup.members.length - 1 : activeGroup.members.length);
+                    const otherSpentTotal = activeGroup.averageSpent * otherCount;
+                    const avgSpent = Math.round((otherSpentTotal + userSpent) / (otherCount + 1));
+                    return (
+                      <span className="stat-val">{avgSpent.toLocaleString('ko-KR')}원</span>
+                    );
+                  })()}
+                </div>
+              </div>
+            </div>
 
-                {/* 마일스톤 달성 메시지 */}
-                {entry.items.filter(it => it.category === '마일스톤').map((it, i) => (
-                  <p key={i} className="feed-milestone-note">{it.comment}</p>
+            {/* 주간 공동 예산 소진율 Gauge */}
+            <div className="group-budget-gauge-box glass-card">
+              {(() => {
+                const userSpent = weekRank?.find((r) => r.user_id === userId)?.total ?? 0;
+                const otherCount = Math.max(1, activeGroup.members.includes(getNickname() || '나') ? activeGroup.members.length - 1 : activeGroup.members.length);
+                const otherSpentTotal = activeGroup.averageSpent * otherCount;
+                const avgSpent = Math.round((otherSpentTotal + userSpent) / (otherCount + 1));
+                
+                const weeklyBudget = activeGroup.dailyBudget * 7;
+                const usePercent = Math.min(200, Math.round((avgSpent / weeklyBudget) * 100));
+                
+                const isSafe = usePercent < 70;
+                const isWarning = usePercent >= 70 && usePercent <= 100;
+                const stateColor = isSafe ? '#00F5A0' : isWarning ? '#FFC800' : '#FF4D4F';
+                const stateText = isSafe ? '🌿 안전 (예산 준수 중)' : isWarning ? '⚠️ 경고 (예산 간당간당)' : '🚨 초과! (절약 요망)';
+                
+                return (
+                  <>
+                    <div className="gauge-header">
+                      <span className="gauge-label">📊 주간 공동 예산 소진율</span>
+                      <span className="gauge-percent" style={{ color: stateColor }}>{usePercent}%</span>
+                    </div>
+                    <div className="gauge-bar-bg">
+                      <div className="gauge-bar-fill" style={{ width: `${Math.min(100, usePercent)}%`, background: stateColor }} />
+                    </div>
+                    <div className="gauge-footer">
+                      <span className="gauge-status-desc">{stateText}</span>
+                      <span className="gauge-budget-info">{avgSpent.toLocaleString('ko-KR')}원 / {weeklyBudget.toLocaleString('ko-KR')}원</span>
+                    </div>
+                  </>
+                );
+              })()}
+            </div>
+
+            {/* 리그 순위 판 (Leagues Leaderboard) */}
+            <div className="group-league-board glass-card">
+              <h4 className="league-title">🏆 실시간 절약 리그</h4>
+              <p className="league-sub">평균 지출이 적을수록 높은 순위를 차지합니다.</p>
+              <div className="league-rows">
+                {(() => {
+                  const userSpent = weekRank?.find((r) => r.user_id === userId)?.total ?? 0;
+                  
+                  const sortedGroups = allGroups.map((g) => {
+                    const isMine = g.id === activeGroup.id;
+                    const otherCount = Math.max(1, g.members.includes(getNickname() || '나') ? g.members.length - 1 : g.members.length);
+                    const otherSpentTotal = g.averageSpent * otherCount;
+                    const avgSpent = isMine 
+                      ? Math.round((otherSpentTotal + userSpent) / (otherCount + 1))
+                      : g.averageSpent;
+                    return {
+                      ...g,
+                      avgSpent,
+                      isMine
+                    };
+                  }).sort((a, b) => a.avgSpent - b.avgSpent);
+
+                  return sortedGroups.map((g, index) => {
+                    const medal = index === 0 ? '🥇' : index === 1 ? '🥈' : index === 2 ? '🥉' : `${index + 1}위`;
+                    return (
+                      <div key={g.id} className={`league-row${g.isMine ? ' league-row--mine' : ''}`}>
+                        <span className="league-rank">{medal}</span>
+                        <span className="league-name">
+                          {g.name}
+                          {g.isMine && <span className="my-group-tag">우리 그룹</span>}
+                        </span>
+                        <span className="league-spent">{g.avgSpent.toLocaleString('ko-KR')}원</span>
+                      </div>
+                    );
+                  });
+                })()}
+              </div>
+            </div>
+
+            {/* 💬 그룹 한마디 방명록 (Guestbook) */}
+            <div className="group-guestbook glass-card">
+              <h4 className="guestbook-title">💬 실시간 그룹 응원 방명록</h4>
+              <p className="guestbook-sub">그룹원들과 응원 메시지나 절약 다짐을 나누어보세요.</p>
+              
+              <div className="guestbook-messages">
+                {((groupMessages[activeGroup.id]) || []).map((msg, index) => (
+                  <div key={index} className="guestbook-msg-row">
+                    <div className="msg-sender-wrap">
+                      <span className="msg-sender">{msg.sender}</span>
+                    </div>
+                    <span className="msg-text">{msg.text}</span>
+                    <span className="msg-time">{msg.time}</span>
+                  </div>
                 ))}
-
-                {/* 절약 꿀팁 내용 */}
-                {isTipPost && (
-                  <div className="tip-post-body">
-                    {entry.items.filter(it => it.category === '꿀팁').map((it, i) => (
-                      <p key={i}>{it.comment}</p>
-                    ))}
-                  </div>
+                {((groupMessages[activeGroup.id]) || []).length === 0 && (
+                  <p className="guestbook-empty">작성된 방명록이 없습니다. 첫 한마디를 적어보세요!</p>
                 )}
+              </div>
 
-                {/* 소비 고민 및 inline 투표 */}
-                {isDilemmaPost && (() => {
-                  const dilemmaItem = entry.items.find(it => it.category === '소비 고민');
-                  const text = dilemmaItem?.comment || '';
-                  const amount = dilemmaItem?.amount || entry.total_amount || 0;
-                  
-                  const myVote = feedVotes[entry.id];
-                  const hasVoted = !!myVote || entry.user_id === userId;
-                  
-                  const seed = entry.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-                  const overPctBase = (seed % 40) + 30; // 30% ~ 70%
-                  
-                  let overPct = overPctBase;
-                  let okPct = 100 - overPct;
-                  if (myVote === 'over') {
-                    overPct = Math.min(95, overPct + 5);
-                    okPct = 100 - overPct;
-                  } else if (myVote === 'ok') {
-                    okPct = Math.min(95, okPct + 5);
-                    overPct = 100 - okPct;
-                  }
-                  
-                  const totalFeedVotes = (seed % 30) + 12 + (myVote ? 1 : 0);
+              <div className="guestbook-input-row">
+                <input
+                  type="text"
+                  placeholder="응원이나 오늘 지출 각오 한마디..."
+                  value={newGroupMessageText}
+                  onChange={(e) => setNewGroupMessageText(e.target.value.slice(0, 50))}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { e.preventDefault(); handlePostGroupMessage(); } }}
+                  maxLength={50}
+                  className="guestbook-input"
+                />
+                <button
+                  onClick={handlePostGroupMessage}
+                  disabled={!newGroupMessageText.trim()}
+                  className="guestbook-submit-btn"
+                >
+                  등록
+                </button>
+              </div>
+            </div>
 
-                  return (
-                    <div className="dilemma-post-body">
-                      {text && <p>{text}</p>}
+            {/* 그룹 전용 피드 */}
+            <div className="group-feed">
+              <h4 className="group-feed-title">💬 우리 그룹 소식통</h4>
+              {groupFilteredEntries.length === 0 ? (
+                <div className="empty-state">
+                  <p>우리 그룹 멤버의 이번 주 지출 기록이 없어요.</p>
+                  <p className="empty-sub">첫 지출을 올려서 공유해 보세요!</p>
+                </div>
+              ) : (
+                <div className="feed-list">
+                  {groupFilteredEntries.map((entry) => renderFeedCard(entry))}
+                </div>
+              )}
+            </div>
+          </div>
+        )
+      ) : (
+        /* 일반 피드 (전체 & 팔로우 탭) */
+        <>
+          {/* ⚖️ 밸런스 게임 — 실제 유저 기록 기반 */}
+          {balanceEntry !== 'empty' && (
+            <div className="glass-card balance-game-card-glow">
+              <div className="balance-card-header">
+                <span className="balance-card-title">⚖️ 실시간 짠물 배틀</span>
+                {balanceEntry !== 'loading' && typeof balanceEntry === 'object' && (
+                  <span className="balance-card-status">판정 진행 중</span>
+                )}
+              </div>
 
-                      <div className="dilemma-amount-box">
-                        <span className="dilemma-amount-label">예상 소비액</span>
-                        <span className="dilemma-amount-value">{amount.toLocaleString('ko-KR')}원</span>
+              {balanceEntry === 'loading' ? (
+                <div className="balance-loading-lg" />
+              ) : typeof balanceEntry === 'object' && balanceEntry !== null ? (() => {
+                const entry = balanceEntry;
+                const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
+                const noteItem = entry.items.find(it => it.category === '한마디');
+                return (
+                  <div className="balance-receipt-wrap">
+                    {/* 닉네임 */}
+                    <p className="balance-receipt-author">{entry.nickname}님의 지출</p>
+
+                    {/* 지출 항목 영수증 컨테이너 */}
+                    <div className="balance-receipt-box">
+                      <div className="balance-receipt-items">
+                        {spendItems.map((item, i) => (
+                          <div key={i} className="balance-receipt-item">
+                            <span className="balance-receipt-item-label">{item.emoji} {item.comment || item.category}</span>
+                            <span className="balance-receipt-item-amount">{item.amount.toLocaleString('ko-KR')}원</span>
+                          </div>
+                        ))}
+                        <div className="balance-receipt-total">
+                          <span className="balance-receipt-total-label">합계</span>
+                          <span className="balance-receipt-total-amount">{entry.total_amount.toLocaleString('ko-KR')}원</span>
+                        </div>
                       </div>
+                    </div>
 
-                      {hasVoted ? (
-                        <div className="dilemma-result-section">
-                          <div className="dilemma-result-labels">
-                            <span className="dilemma-result-over">
-                              과소비 {overPct}%
-                              {myVote === 'over' && <span className="dilemma-my-badge dilemma-my-badge--over">내 판정 💸</span>}
+                    {/* 한마디 */}
+                    {noteItem && (
+                      <p className="balance-note">💬 {noteItem.comment}</p>
+                    )}
+
+                    {balanceVoted ? (
+                      /* 투표 후 결과 */
+                      balanceStats ? (
+                        <div className="balance-results">
+                          <div className="balance-result-row">
+                            <span className="balance-result-over">
+                              과소비 {balanceStats.over}%
+                              {balanceVoted === 'over' && <span className="balance-result-badge balance-result-badge--over">내 판정 💸</span>}
                             </span>
-                            <span className="dilemma-result-total">총 {totalFeedVotes}명 참여</span>
-                            <span className="dilemma-result-ok">
-                              {myVote === 'ok' && <span className="dilemma-my-badge dilemma-my-badge--ok">내 판정 🌿</span>}
-                              합리적 {okPct}%
+                            <span className="balance-result-total">총 {totalVotes}명 참여</span>
+                            <span className="balance-result-ok">
+                              {balanceVoted === 'ok' && <span className="balance-result-badge balance-result-badge--ok">내 판정 🌿</span>}
+                              합리적 {balanceStats.ok}%
                             </span>
                           </div>
 
-                          <div className="dilemma-bar">
-                            <div className="dilemma-bar-over" style={{ width: `${overPct}%` }} />
-                            <div className="dilemma-bar-ok" style={{ width: `${okPct}%` }} />
+                          <div className="balance-bar-container">
+                            <div
+                              className="balance-bar-fill balance-bar-fill--over"
+                              style={{ width: `${balanceStats.over}%` }}
+                            />
+                            <div
+                              className="balance-bar-fill balance-bar-fill--ok"
+                              style={{ width: `${balanceStats.ok}%` }}
+                            />
                           </div>
+                          
+                          <button
+                            onClick={loadBalanceEntry}
+                            className="next-battle-btn"
+                          >
+                            다음 지출 판정하기 →
+                          </button>
                         </div>
                       ) : (
-                        <div className="dilemma-vote-btns">
-                          <button
-                            onClick={() => handleFeedVote(entry.id, 'over')}
-                            className="balance-vote-card balance-vote-card--over"
-                          >
-                            <span className="vote-emoji">💸</span>
-                            <span className="vote-title">과소비</span>
-                          </button>
-                          <button
-                            onClick={() => handleFeedVote(entry.id, 'ok')}
-                            className="balance-vote-card balance-vote-card--ok"
-                          >
-                            <span className="vote-emoji">🌿</span>
-                            <span className="vote-title">합리적</span>
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  );
-                })()}
-
-                {/* 오늘 한마디 (💬 한마디 특수 항목) */}
-                {entry.items.filter(it => it.category === '한마디').map((it, i) => (
-                  <p key={i} className="feed-note">💬 {it.comment}</p>
-                ))}
-
-                {/* 지출 항목 */}
-                {(() => {
-                  const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤' && it.category !== '꿀팁' && it.category !== '소비 고민');
-                  if (spendItems.length === 0) return null;
-                  return (
-                    <div className="feed-items">
-                      {spendItems.map((item, i) => (
-                        <div key={i} className="feed-item">
-                          <span className="feed-item-emoji">{item.emoji}</span>
-                          <div className="feed-item-info">
-                            <span className="feed-item-cat">{item.category}</span>
-                            {item.comment && <span className="feed-item-comment">{item.comment}</span>}
-                          </div>
-                          <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
-                            {item.amount === 0 ? '0원' : formatAmount(item.amount)}
-                          </span>
-                        </div>
-                      ))}
-                    </div>
-                  );
-                })()}
-
-                {/* 인증샷 / 영수증 이미지 */}
-                {entry.image && (
-                  <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)}>
-                    <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
-                    {doubleTappedHearts[entry.id] && (
-                      <div className="heart-double-tap-overlay">❤️</div>
-                    )}
-                  </div>
-                )}
-
-                {/* 리액션 카운트 — 정보 표시 라인 (인스타 스타일) */}
-                {(entry.trust_count > 0 || entry.doubt_count > 0) && (
-                  <div className="feed-reaction-counts">
-                    {entry.trust_count > 0 && <span>❤️ {entry.trust_count}명</span>}
-                    {entry.doubt_count > 0 && <span>🤔 {entry.doubt_count}명</span>}
-                  </div>
-                )}
-
-                {/* 액션 버튼 행 */}
-                {entry.user_id !== userId && (
-                  <div className="feed-actions-row">
-                    {/* 왼쪽: 감정 리액션 버튼 (카운트 없음) */}
-                    <div className="feed-reactions-group">
-                      <button
-                        className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
-                        onClick={(e) => handleReact(entry, 'trust', e)}
-                        disabled={toggling.has(entry.id)}
-                      >
-                        ❤️ 짠내난다
-                      </button>
-                      <button
-                        className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
-                        onClick={(e) => handleReact(entry, 'doubt', e)}
-                        disabled={toggling.has(entry.id)}
-                      >
-                        🤔 진짜야?
-                      </button>
-                    </div>
-
-                    {/* 오른쪽: 아이콘 액션 */}
-                    <div className="feed-actions-group">
-                      {/* 응원 쪽지 */}
-                      <button
-                        className="action-icon-btn"
-                        title="응원 쪽지 보내기"
-                        onClick={() => { setMessageRecipientEntry(entry); setMessageText(''); }}
-                      >
-                        ✉️
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* 신뢰도 경고 */}
-                {entry.doubt_count >= 3 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
-                  <div className="doubt-warning">
-                    🚨 일부 사용자가 의심하고 있어요 ({Math.round(entry.doubt_count / (entry.trust_count + entry.doubt_count) * 100)}%)
-                  </div>
-                )}
-
-                {/* 댓글 스레드 — SNS 스타일 */}
-                {entry.user_id !== userId && !isMilestone && (() => {
-                  const comments = localComments[entry.id] || [];
-                  const isExpanded = !!commentExpanded[entry.id];
-                  const visible = isExpanded ? comments : comments.slice(0, 2);
-                  return (
-                    <div className="feed-thread-section">
-                      {/* 댓글 목록 */}
-                      {comments.length > 0 && (
-                        <div className="feed-thread-list">
-                          {visible.map((c, i) => (
-                            <div key={i} className="feed-thread-row">
-                              <div className="feed-thread-avatar">{c.sender[0] ?? '나'}</div>
-                              <div className="feed-thread-content">
-                                <span className="feed-thread-name">{c.sender}</span>
-                                <span className="feed-thread-text">{c.text}</span>
-                              </div>
-                            </div>
-                          ))}
-                          {comments.length > 2 && !isExpanded && (
-                            <button
-                              className="feed-thread-more"
-                              onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: true }))}
-                            >
-                              댓글 {comments.length - 2}개 더 보기
-                            </button>
-                          )}
-                        </div>
-                      )}
-
-                      {/* 퀵 칩 */}
-                      <div className="feed-thread-chips">
-                        {COMMENT_CHIPS.map((cmt) => {
-                          const used = comments.some(c => c.sender === '나' && c.text === cmt);
-                          return (
-                            <button
-                              key={cmt}
-                              className={`comment-chip-btn${used ? ' comment-chip-btn--used' : ''}`}
-                              onClick={() => addComment(entry.id, cmt)}
-                              disabled={used}
-                            >
-                              {cmt}
-                            </button>
-                          );
-                        })}
-                      </div>
-
-                      {/* 댓글 직접 입력 */}
-                      <div className="feed-thread-input-row">
-                        <input
-                          type="text"
-                          value={commentInputs[entry.id] || ''}
-                          onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
-                          onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
-                          placeholder="댓글 달기..."
-                          maxLength={60}
-                          className="feed-thread-input"
-                        />
+                        /* 집계 중 스켈레톤 */
+                        <div className="balance-loading-sm" />
+                      )
+                    ) : (
+                      /* 투표 전 버튼 */
+                      <div className="balance-vote-buttons">
                         <button
-                          onClick={() => submitCommentInput(entry.id)}
-                          disabled={!(commentInputs[entry.id] || '').trim()}
-                          className="feed-thread-submit"
+                          onClick={async () => {
+                            if (balanceVotingRef.current) return;
+                            balanceVotingRef.current = true;
+                            setBalanceVoted('over');
+                            // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
+                            setFeedVotes(prev => ({ ...prev, [entry.id]: 'over' }));
+                            try {
+                              const stats = await submitBalanceVote(entry.id, userId, 'over');
+                              setBalanceStats(stats);
+                              onGrantFeedReward?.();
+                              showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+                            } catch {
+                              setBalanceStats(null);
+                              setBalanceVoted(null);
+                              setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
+                              showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
+                            } finally {
+                              balanceVotingRef.current = false;
+                            }
+                          }}
+                          className="balance-vote-card balance-vote-card--over"
                         >
-                          게시
+                          <span className="vote-emoji">💸</span>
+                          <span className="vote-title">과소비</span>
+                          <span className="vote-desc">참을 수 없던 사치</span>
+                        </button>
+                        <button
+                          onClick={async () => {
+                            if (balanceVotingRef.current) return;
+                            balanceVotingRef.current = true;
+                            setBalanceVoted('ok');
+                            // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
+                            setFeedVotes(prev => ({ ...prev, [entry.id]: 'ok' }));
+                            try {
+                              const stats = await submitBalanceVote(entry.id, userId, 'ok');
+                              setBalanceStats(stats);
+                              onGrantFeedReward?.();
+                              showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+                            } catch {
+                              setBalanceStats(null);
+                              setBalanceVoted(null);
+                              setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
+                              showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
+                            } finally {
+                              balanceVotingRef.current = false;
+                            }
+                          }}
+                          className="balance-vote-card balance-vote-card--ok"
+                        >
+                          <span className="vote-emoji">🌿</span>
+                          <span className="vote-title">합리적</span>
+                          <span className="vote-desc">생존형 필수 소비</span>
                         </button>
                       </div>
-                    </div>
-                  );
-                })()}
+                    )}
+                  </div>
+                );
+              })() : null}
+            </div>
+          )}
+
+          {/* 💪 이번 주 그룹 챌린지 */}
+          <div className="glass-card challenge-card">
+            <div className="challenge-card-header">
+              <span className="challenge-card-title">💪 이번 주 그룹 챌린지</span>
+            </div>
+            <div className="challenge-card-body">
+              <span className="challenge-emoji">{weekChallenge.emoji}</span>
+              <div className="challenge-info">
+                <p className="challenge-name">{weekChallenge.title}</p>
+                <p className="challenge-desc">{weekChallenge.desc}</p>
               </div>
-            );
-          })}
-        </div>
+              <button
+                onClick={() => handleToggleChallenge(weekChallenge.id)}
+                className={`challenge-join-btn${activeChallenge === weekChallenge.id ? ' challenge-join-btn--active' : ''}`}
+              >
+                {activeChallenge === weekChallenge.id ? '참여 중 ✓' : '참여하기'}
+              </button>
+            </div>
+          </div>
+
+          {entries.length === 0 ? (
+            <div className="empty-state">
+              {loadFailed ? (
+                <>
+                  <p>피드를 불러오지 못했어요</p>
+                  <p className="empty-sub">네트워크 상태를 확인해 주세요</p>
+                  <button onClick={() => load(false)} className="rank-empty-retry-btn">다시 시도</button>
+                </>
+              ) : (
+                <>
+                  <p>아직 기록이 없어요</p>
+                  <p className="empty-sub">첫 번째로 오늘 소비를 기록해 보세요!</p>
+                </>
+              )}
+            </div>
+          ) : (
+            <div className="feed-list">
+              {loadFailed && (
+                <div className="rank-stale-banner">
+                  <span className="rank-stale-text">⚠ 피드 갱신 실패 · 마지막 데이터 표시 중</span>
+                  <button onClick={() => load(false)} className="rank-stale-retry-btn">재시도</button>
+                </div>
+              )}
+              {displayedEntries.length === 0 && feedTab === 'follow' && (
+                <div className="follow-empty-state">
+                  <p className="follow-empty-icon">👥</p>
+                  <p className="follow-empty-title">
+                    {Object.keys(followedUsers).length > 0 ? '팔로우한 짠친의 기록이 없어요' : '팔로우한 짠친이 없어요'}
+                  </p>
+                  <p className="follow-empty-desc">
+                    {Object.keys(followedUsers).length > 0
+                      ? '팔로우한 짠친들이 아직 기록을 남기지 않았어요'
+                      : recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
+                  </p>
+                </div>
+              )}
+              {feedTab === 'follow' && recommendedFriends.length > 0 && (
+                <div className="glass-card recommended-friends-box">
+                  <h4 className="recommended-friends-header">✨ 추천 짠친</h4>
+                  <div className="recommended-friends-list">
+                    {recommendedFriends.map((friend) => {
+                      const p = friend.persona ? PERSONAS[friend.persona] : null;
+                      return (
+                        <div key={friend.user_id} className="recommended-friend-row">
+                          <div className="recommended-friend-info">
+                            <div className="feed-avatar feed-avatar--sm" style={p ? { borderColor: p.color } : {}}>
+                              {friend.nickname.charAt(0).toUpperCase()}
+                            </div>
+                            <div className="recommended-friend-meta">
+                              <div className="recommended-friend-name-row">
+                                <span className="recommended-friend-name">{friend.nickname}</span>
+                                {p && (
+                                  <span className="rec-persona-tag" style={{ background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25` }}>
+                                    <img src={p.icon} alt="" />
+                                    <span>{p.name}</span>
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() => {
+                              const nowFollowing = toggleFollow(friend.user_id, friend.nickname);
+                              setFollowedUsers(getFollowedUsers());
+                              showFeedToast(nowFollowing ? `${friend.nickname}님을 팔로우했어요 👥` : `${friend.nickname}님 팔로우 해제`);
+                              toggleFollowSupabase(userId, friend.user_id, friend.nickname).catch(() => {});
+                            }}
+                            className="recommended-follow-btn"
+                          >
+                            + 팔로우
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+              {displayedEntries.map((entry) => renderFeedCard(entry))}
+            </div>
+          )}
+        </>
       )}
 
       {/* 응원 쪽지 보내기 모달 */}
@@ -1047,6 +1578,221 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               </div>
               <div>
                 <Button size="large" display="full" color="primary" variant="fill" disabled={!messageText.trim()} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 📸 짠물 스토리 전체화면 뷰어 */}
+      {activeStoryIndex !== null && (() => {
+        const story = allStories[activeStoryIndex];
+        const p = story.persona ? PERSONAS[story.persona] : null;
+        return (
+          <div className="story-viewer-overlay" onClick={() => setActiveStoryIndex(null)}>
+            <div
+              className="story-viewer-card"
+              style={{ background: story.bgGradient }}
+              onClick={(e) => e.stopPropagation()}
+              onDoubleClick={(e) => {
+                const rect = e.currentTarget.getBoundingClientRect();
+                const clickX = e.clientX || (rect.left + rect.width / 2);
+                const clickY = e.clientY || (rect.top + 200);
+                
+                setStoryDoubleTapped(prev => ({ ...prev, [story.id]: true }));
+                setTimeout(() => {
+                  setStoryDoubleTapped(prev => ({ ...prev, [story.id]: false }));
+                }, 800);
+                
+                spawnStoryParticles('❤️', clickX, clickY);
+                showFeedToast(`${story.nickname}님에게 ❤️ 반응을 보냈습니다!`);
+              }}
+            >
+              {/* 스토리 진행 표시기 */}
+              <div className="story-progress-indicator-bar">
+                {allStories.map((s, idx) => {
+                  let width = '0%';
+                  if (idx < activeStoryIndex) width = '100%';
+                  else if (idx === activeStoryIndex) width = `${storyProgress}%`;
+                  return (
+                    <div key={s.id} className="story-progress-segment-bg">
+                      <div className="story-progress-segment-fill" style={{ width }} />
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* 스토리 작성자 정보 */}
+              <div className="story-viewer-header">
+                <div className="story-viewer-user">
+                  <div className="story-viewer-avatar" style={p ? { borderColor: p.color } : {}}>
+                    {story.nickname.charAt(0).toUpperCase()}
+                  </div>
+                  <div>
+                    <span className="story-viewer-name">{story.nickname}</span>
+                    <span className="story-viewer-time">{timeAgo(story.createdAt)}</span>
+                  </div>
+                </div>
+                {/* 🎵 음악 재생기 시뮬레이션 */}
+                <div className="story-music-badge">
+                  <span className="music-icon">🎵</span>
+                  <span className="music-title">짠내 로파이 (Savings Lofi)</span>
+                  <div className="equalizer-bars">
+                    <span className="eq-bar eq-bar-1"></span>
+                    <span className="eq-bar eq-bar-2"></span>
+                    <span className="eq-bar eq-bar-3"></span>
+                  </div>
+                </div>
+                <button className="story-viewer-close-btn" onClick={() => setActiveStoryIndex(null)}>✕</button>
+              </div>
+
+              {/* 스토리 내용 */}
+              <div className="story-viewer-body">
+                <p className="story-viewer-text">{story.text}</p>
+                {storyDoubleTapped[story.id] && (
+                  <div className="heart-double-tap-overlay">❤️</div>
+                )}
+              </div>
+
+              {/* 터치 네비게이션 구역 */}
+              <div
+                className="story-viewer-nav-area story-viewer-nav-area--left"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveStoryIndex(prev => (prev !== null && prev > 0) ? prev - 1 : null);
+                }}
+              />
+              <div
+                className="story-viewer-nav-area story-viewer-nav-area--right"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setActiveStoryIndex(prev => (prev !== null && prev < allStories.length - 1) ? prev + 1 : null);
+                }}
+              />
+
+              {/* 하단 리액션 및 이모지 응원 단축키 */}
+              <div className="story-viewer-footer">
+                {['❤️', '👏', '🔥', '💸', '🌿'].map((emoji) => (
+                  <button
+                    key={emoji}
+                    className="story-reaction-btn"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      const rect = e.currentTarget.getBoundingClientRect();
+                      spawnStoryParticles(emoji, rect.left + rect.width / 2, rect.top);
+                      showFeedToast(`${story.nickname}님에게 ${emoji} 보냈습니다!`);
+                    }}
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 📸 내 스토리 올리기 모달 */}
+      {showAddStoryModal && (
+        <div className="story-modal-overlay" onClick={() => setShowAddStoryModal(false)}>
+          <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
+            <div className="story-modal-header">
+              <h3 className="story-modal-name">내 짠물 스토리 올리기 📸</h3>
+              <p className="story-modal-label">24시간 동안 노출되는 절약 일기를 적어보세요.</p>
+            </div>
+            <div className="story-modal-content">
+              <textarea
+                value={newStoryText}
+                onChange={(e) => setNewStoryText(e.target.value.slice(0, 100))}
+                placeholder="오늘의 소소한 지갑 사정이나 절약 꿀팁을 100자 내로 공유하세요..."
+                className="message-modal-textarea"
+                maxLength={100}
+              />
+              <div className="story-bg-selection-row">
+                <span className="story-bg-label">배경 카드 색상</span>
+                <div className="story-bg-options">
+                  {[
+                    'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
+                    'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)',
+                    'linear-gradient(135deg, #5EE7DF 0%, #B490CA 100%)',
+                    'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)',
+                    'linear-gradient(135deg, #2CD8D5 0%, #C5C1FF 56%, #FFBAC3 100%)',
+                    'linear-gradient(135deg, #09203F 0%, #537895 100%)'
+                  ].map((grad) => (
+                    <button
+                      key={grad}
+                      className={`story-bg-opt-circle${newStoryBg === grad ? ' story-bg-opt-circle--selected' : ''}`}
+                      style={{ background: grad }}
+                      onClick={() => setNewStoryBg(grad)}
+                    />
+                  ))}
+                </div>
+              </div>
+            </div>
+            <div className="story-modal-footer">
+              <div>
+                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setShowAddStoryModal(false)}>취소</Button>
+              </div>
+              <div>
+                <Button size="large" display="full" color="primary" variant="fill" disabled={!newStoryText.trim()} onClick={handleAddStory}>스토리 공유</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 👥 절약 그룹 만들기 모달 */}
+      {showCreateGroupModal && (
+        <div className="story-modal-overlay" onClick={() => setShowCreateGroupModal(false)}>
+          <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
+            <div className="story-modal-header">
+              <h3 className="story-modal-name">새로운 절약 그룹 개설 👥</h3>
+              <p className="story-modal-label">목표와 하루 지출 예산을 설정하고 짠친들을 모집하세요.</p>
+            </div>
+            <div className="story-modal-content">
+              <div className="group-form-field">
+                <label className="group-form-label">그룹 이름</label>
+                <input
+                  type="text"
+                  placeholder="예) 올리브영 불매위원회, 식비 5만원 챌린지"
+                  value={newGroupName}
+                  onChange={(e) => setNewGroupName(e.target.value.slice(0, 20))}
+                  maxLength={20}
+                  className="feed-thread-input"
+                  style={{ width: '100%', marginBottom: 12 }}
+                />
+              </div>
+              <div className="group-form-field">
+                <label className="group-form-label">그룹 설명</label>
+                <textarea
+                  placeholder="그룹의 규칙이나 각오를 적어주세요..."
+                  value={newGroupDesc}
+                  onChange={(e) => setNewGroupDesc(e.target.value.slice(0, 100))}
+                  className="message-modal-textarea"
+                  style={{ minHeight: 60, marginBottom: 12 }}
+                  maxLength={100}
+                />
+              </div>
+              <div className="group-form-field">
+                <label className="group-form-label">하루 예산 한도 (원): <strong>{newGroupBudget.toLocaleString('ko-KR')}원</strong></label>
+                <input
+                  type="range"
+                  min="0"
+                  max="100000"
+                  step="5000"
+                  value={newGroupBudget}
+                  onChange={(e) => setNewGroupBudget(Number(e.target.value))}
+                  className="group-budget-range"
+                  style={{ width: '100%', marginTop: 8 }}
+                />
+              </div>
+            </div>
+            <div className="story-modal-footer">
+              <div>
+                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setShowCreateGroupModal(false)}>취소</Button>
+              </div>
+              <div>
+                <Button size="large" display="full" color="primary" variant="fill" disabled={!newGroupName.trim() || !newGroupDesc.trim()} onClick={handleCreateGroupSubmit}>그룹 개설</Button>
               </div>
             </div>
           </div>

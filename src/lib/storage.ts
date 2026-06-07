@@ -257,6 +257,7 @@ export interface CheeringMessage {
   timestamp: string;
   created_at?: string; // ISO string; if present, use for timeAgo display instead of timestamp
   recipientNickname?: string;
+  sentByMe?: boolean; // 닉네임 변경 후에도 내가 보낸 쪽지 구분 유지
 }
 
 const MESSAGES_KEY = 'savelog_user_messages';
@@ -285,7 +286,8 @@ export function sendCheeringMessage(recipientNickname: string, text: string, sen
       text: text.trim(),
       timestamp: '방금 전',
       created_at: new Date().toISOString(),
-      recipientNickname
+      recipientNickname,
+      sentByMe: true,
     };
     currentMessages.unshift(newMessage);
     localStorage.setItem(MESSAGES_KEY, JSON.stringify(currentMessages.slice(0, 100)));
