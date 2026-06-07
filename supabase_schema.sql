@@ -65,3 +65,21 @@ alter table balance_votes enable row level security;
 create policy "Anyone can read balance_votes"   on balance_votes for select using (true);
 create policy "Anyone can insert balance_votes" on balance_votes for insert with check (true);
 create policy "Anyone can update balance_votes" on balance_votes for update using (true);
+
+-- ── 팔로우 (2025-06 추가) ──────────────────────────────────────────────────────
+create table if not exists follows (
+  id                  uuid default gen_random_uuid() primary key,
+  follower_id         text not null,
+  followed_id         text not null,
+  followed_nickname   text not null,
+  created_at          timestamptz default now(),
+  unique (follower_id, followed_id)
+);
+
+create index if not exists on follows (follower_id);
+create index if not exists on follows (followed_id);
+
+alter table follows enable row level security;
+create policy "Anyone can read follows"   on follows for select using (true);
+create policy "Anyone can insert follows" on follows for insert with check (true);
+create policy "Anyone can delete follows" on follows for delete using (true);
