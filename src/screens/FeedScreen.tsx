@@ -512,6 +512,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           setBalanceStats(stats);
                         } catch {
                           setBalanceStats({ over: 50, ok: 50 });
+                          setBalanceVoted(null);
+                          setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
                         } finally {
                           balanceVotingRef.current = false;
                         }
@@ -534,6 +536,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           setBalanceStats(stats);
                         } catch {
                           setBalanceStats({ over: 50, ok: 50 });
+                          setBalanceVoted(null);
+                          setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
                         } finally {
                           balanceVotingRef.current = false;
                         }
