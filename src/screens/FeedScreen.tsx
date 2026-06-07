@@ -499,6 +499,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                         if (balanceVotingRef.current) return;
                         balanceVotingRef.current = true;
                         setBalanceVoted('over');
+                        // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
+                        setFeedVotes(prev => ({ ...prev, [entry.id]: 'over' }));
                         try {
                           const stats = await submitBalanceVote(entry.id, userId, 'over');
                           setBalanceStats(stats);
@@ -519,6 +521,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                         if (balanceVotingRef.current) return;
                         balanceVotingRef.current = true;
                         setBalanceVoted('ok');
+                        // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
+                        setFeedVotes(prev => ({ ...prev, [entry.id]: 'ok' }));
                         try {
                           const stats = await submitBalanceVote(entry.id, userId, 'ok');
                           setBalanceStats(stats);
