@@ -61,16 +61,22 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     feedVotingRef.current.add(entryId);
     // optimistic UI update — functional update로 동시 투표 충돌 방지
     setFeedVotes(prev => ({ ...prev, [entryId]: vote }));
+    // 이 항목이 상단 밸런스게임 섹션에 현재 표시 중이면 balanceVoted도 optimistic 동기화
+    // (인라인 투표 후 상단 섹션에 투표 버튼이 다시 노출되는 UX 버그 방지)
+    const isCurrentBalanceEntry = typeof balanceEntry === 'object' && balanceEntry !== null && balanceEntry.id === entryId;
+    if (isCurrentBalanceEntry) setBalanceVoted(vote);
     try {
-      await submitBalanceVote(entryId, userId, vote);
+      const stats = await submitBalanceVote(entryId, userId, vote);
       onGrantFeedReward?.();
       showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+      if (isCurrentBalanceEntry) setBalanceStats(stats);
     } catch {
       // 실패한 엔트리만 롤백 — 동시 진행 중인 다른 투표에 영향 없도록 functional update 사용
       setFeedVotes(prev => {
         const { [entryId]: _, ...rest } = prev;
         return rest;
       });
+      if (isCurrentBalanceEntry) setBalanceVoted(null);
       showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
     } finally {
       feedVotingRef.current.delete(entryId);

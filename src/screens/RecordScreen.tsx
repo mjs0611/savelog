@@ -136,7 +136,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
     }
 
     if (creatorMode === 'dilemma') {
-      if (dilemmaText.trim().length < 5 || !dilemmaCostStr) return;
+      if (dilemmaText.trim().length < 5 || !dilemmaCostStr || dilemmaCostStr === '0') return;
       const cost = parseInt(dilemmaCostStr.replace(/,/g, ''), 10) || 0;
       const withNote: SpendingItem[] = [
         { category: '소비 고민', emoji: '⚖️', amount: cost, comment: `[${dilemmaCategory.emoji} ${dilemmaCategory.label}] ${dilemmaText.trim()}` }
@@ -551,11 +551,11 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
 
           {creatorMode === 'dilemma' && (
             <>
-              {(!dilemmaCostStr || dilemmaText.trim().length < 5) && (
+              {((!dilemmaCostStr || dilemmaCostStr === '0') || dilemmaText.trim().length < 5) && (
                 <p className="submit-hint submit-hint--mb">
-                  {!dilemmaCostStr && dilemmaText.trim().length < 5
+                  {(!dilemmaCostStr || dilemmaCostStr === '0') && dilemmaText.trim().length < 5
                     ? '금액과 고민 설명을 입력해 주세요'
-                    : !dilemmaCostStr
+                    : (!dilemmaCostStr || dilemmaCostStr === '0')
                     ? '예상 소비 금액을 입력해 주세요'
                     : '소비 고민 설명을 5자 이상 입력해 주세요'}
                 </p>
@@ -567,7 +567,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 variant="fill"
                 onClick={handleSubmit}
                 loading={submitting}
-                disabled={dilemmaText.trim().length < 5 || !dilemmaCostStr}
+                disabled={dilemmaText.trim().length < 5 || !dilemmaCostStr || dilemmaCostStr === '0'}
               >
                 {submitting ? '저장 중...' : '판정 투표 올리기 ⚖️'}
               </Button>
