@@ -513,7 +513,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           onGrantFeedReward?.();
                           showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
                         } catch {
-                          setBalanceStats({ over: 50, ok: 50 });
+                          setBalanceStats(null);
                           setBalanceVoted(null);
                           setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
                           showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
@@ -540,7 +540,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           onGrantFeedReward?.();
                           showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
                         } catch {
-                          setBalanceStats({ over: 50, ok: 50 });
+                          setBalanceStats(null);
                           setBalanceVoted(null);
                           setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
                           showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
