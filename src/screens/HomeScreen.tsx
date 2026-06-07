@@ -15,17 +15,22 @@ function BannerAdSlot({ adGroupId }: { adGroupId: string }) {
 
     let attached: { destroy: () => void } | undefined;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     function attach() {
       if (!containerRef.current) return;
+      attached?.destroy();
       attached = TossAds.attachBanner(adGroupId, containerRef.current, {
         theme: 'dark',
         tone: 'blackAndWhite',
         variant: 'expanded',
         callbacks: {
           onAdFailedToRender: () => {
-            // 초기화 직후 attach를 시도했다면 500ms 후 재시도
-            retryTimer = setTimeout(attach, 500);
+            if (retryCount < MAX_RETRIES) {
+              retryCount++;
+              retryTimer = setTimeout(attach, 500);
+            }
           },
         },
       });

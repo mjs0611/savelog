@@ -15,16 +15,22 @@ function FeedBannerSlot() {
 
     let attached: { destroy: () => void } | undefined;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let retryCount = 0;
+    const MAX_RETRIES = 3;
 
     function attach() {
       if (!containerRef.current) return;
+      attached?.destroy();
       attached = TossAds.attachBanner(FEED_BANNER_AD_ID, containerRef.current, {
         theme: 'dark',
         tone: 'blackAndWhite',
         variant: 'card',
         callbacks: {
           onAdFailedToRender: () => {
-            retryTimer = setTimeout(attach, 500);
+            if (retryCount < MAX_RETRIES) {
+              retryCount++;
+              retryTimer = setTimeout(attach, 500);
+            }
           },
         },
       });
