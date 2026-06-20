@@ -14,7 +14,7 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 }
 
 import type { Entry, WeekRankRow } from '../lib/supabase';
-import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead, fetchMyStories, deleteStory, type StoryRow } from '../lib/supabase';
+import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, setWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
@@ -90,13 +90,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     }
   }, [showFollows, userId]);
 
-  const [subTab, setSubTab] = useState<'records' | 'gallery' | 'stories' | 'stats' | 'mailbox'>('records');
-  const [myStories, setMyStories] = useState<StoryRow[]>([]);
-
-  // TS6133 compiler guard
-  if (false as boolean) {
-    console.log(myStories, deleteStory);
-  }
+  const [subTab, setSubTab] = useState<'records' | 'gallery' | 'stats' | 'mailbox'>('records');
 
   const [budget, setBudget] = useState(getWeeklyBudget());
   const [showBudgetEdit, setShowBudgetEdit] = useState(false);
@@ -146,11 +140,10 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       setEntriesLoading(true);
       setEntriesError(false);
       try {
-        const [weekData, allData, imageData, storyData] = await Promise.all([
+        const [weekData, allData, imageData] = await Promise.all([
           fetchMyWeekEntries(userId, getWeekKey()),
           fetchMyAllEntries(userId),
           fetchMyImageEntries(userId),
-          fetchMyStories(userId),
         ]);
         if (!cancelled) {
           if (weekData === null) {
@@ -160,7 +153,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           }
           if (allData !== null) setAllEntries(allData);
           if (imageData !== null) setGalleryEntries(imageData);
-          setMyStories(storyData);
         }
       } catch {
         if (!cancelled) setEntriesError(true);
@@ -338,13 +330,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 2. Sub-tab Navigation */}
       <div className="mylog-subtab-bar">
-        {(['records', 'gallery', 'stories', 'stats', 'mailbox'] as const).map(t => (
+        {(['records', 'gallery', 'stats', 'mailbox'] as const).map(t => (
           <button
             key={t}
             className={`mylog-subtab-btn ${subTab === t ? 'mylog-subtab-btn--active' : ''}`}
             onClick={() => setSubTab(t)}
           >
-            {t === 'records' ? <><CustomIcon emoji="📋" /> 기록</> : t === 'gallery' ? <><CustomIcon emoji="🖼️" /> 갤러리</> : t === 'stories' ? <><CustomIcon emoji="📸" /> 스토리</> : t === 'stats' ? <><CustomIcon emoji="📊" /> 통계</> : <><CustomIcon emoji="✉️" /> 쪽지</>}
+            {t === 'records' ? <><CustomIcon emoji="📋" /> 기록</> : t === 'gallery' ? <><CustomIcon emoji="🖼️" /> 갤러리</> : t === 'stats' ? <><CustomIcon emoji="📊" /> 통계</> : <><CustomIcon emoji="✉️" /> 쪽지</>}
           </button>
         ))}
       </div>
@@ -364,10 +356,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <>
             {subTab === 'records' && <RecordsTab entries={allEntries.length > 0 ? allEntries : myEntries} onShareToChat={onShareToChat} />}
             {subTab === 'gallery' && <GalleryTab entries={galleryEntries.length > 0 ? galleryEntries : (allEntries.length > 0 ? allEntries : myEntries)} />}
-            {subTab === 'stories' && <StoriesTab stories={myStories} onDelete={(id) => {
-              setMyStories(prev => prev.filter(s => s.id !== id));
-              deleteStory(id).catch(() => {});
-            }} />}
             {subTab === 'stats' && <StatsTab entries={myEntries} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
             {subTab === 'mailbox' && <MailboxTab messages={messages} handleClearAllMessages={handleClearAllMessages} clearConfirm={clearConfirm} handleReplyClick={handleReplyClick} nickname={nickname} />}
           </>
@@ -715,72 +703,6 @@ function GalleryTab({ entries }: { entries: Entry[] }) {
   );
 }
 
-function StoriesTab({ stories, onDelete }: { stories: StoryRow[]; onDelete: (id: string) => void }) {
-  const [confirmId, setConfirmId] = React.useState<string | null>(null);
-  if (stories.length === 0) {
-    return <div className="mylog-empty">아직 올린 스토리가 없어요 <CustomIcon emoji="📸" /><br/><span className="mylog-empty-sub">피드 상단에서 스토리를 올려보세요</span></div>;
-  }
-  const STORY_TTL_MS = 24 * 60 * 60 * 1000;
-  const now = Date.now();
-  return (
-    <div className="story-archive-grid">
-      {stories.map(s => {
-        const ageMs = now - new Date(s.created_at).getTime();
-        const active = ageMs < STORY_TTL_MS;
-        
-        // Generate a custom retro-style serial number: SV-YYMMDD
-        const dateObj = new Date(s.created_at);
-        const yy = String(dateObj.getFullYear()).substring(2);
-        const mm = String(dateObj.getMonth() + 1).padStart(2, '0');
-        const dd = String(dateObj.getDate()).padStart(2, '0');
-        const serial = `SV-${yy}${mm}${dd}`;
-
-        return (
-          <div key={s.id} className={`story-archive-cell${active ? '' : ' story-archive-cell--expired'}`}>
-            {/* LED Status Lamp */}
-            <div className={`story-archive-led story-archive-led--${active ? 'active' : 'expired'}`} />
-            
-            {/* Delete button */}
-            <button
-              className="story-archive-delete-btn"
-              onClick={() => {
-                if (confirmId === s.id) {
-                  onDelete(s.id);
-                  setConfirmId(null);
-                } else {
-                  setConfirmId(s.id);
-                  setTimeout(() => setConfirmId(prev => prev === s.id ? null : prev), 2500);
-                }
-              }}
-              title="삭제"
-            >
-              {confirmId === s.id ? '?' : '✕'}
-            </button>
-
-            {/* Cartridge Sticker Label */}
-            <div className="story-cartridge-label">
-              {s.image ? (
-                <img src={s.image} alt="" className="story-cartridge-sticker-img" />
-              ) : (
-                <div className="story-archive-text-bg" style={{ background: s.bg_gradient || 'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)' }}>
-                  <span className="story-archive-text">{s.text}</span>
-                </div>
-              )}
-            </div>
-
-            {/* Cartridge Bottom Metadata */}
-            <div className="story-cartridge-info">
-              <span className="story-cartridge-serial">{serial}</span>
-              <span className={`story-archive-status-text story-archive-status-text--${active ? 'active' : 'expired'}`}>
-                {active ? 'LIVE' : '만료'}
-              </span>
-            </div>
-          </div>
-        );
-      })}
-    </div>
-  );
-}
 
 function StatsTab({ entries, streak, personaKey, p, messages, nickname, daily, weekTotal, zeroDays }: any) {
   // 1. Weekly Spending Bar Chart

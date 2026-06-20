@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, searchUsers, fetchActiveStories, createStory, type BalanceEntry, type SearchUser, type StoryRow } from '../lib/supabase';
+import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, searchUsers, type BalanceEntry, type SearchUser } from '../lib/supabase';
 import { formatAmount, timeAgo, getWeekKey, getTodayStr } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, getActiveChallengeId, setActiveChallengeId, type StreakData, type DailyState } from '../lib/storage';
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
@@ -51,18 +51,7 @@ function FeedBannerSlot() {
   return <div ref={containerRef} style={{ width: '100%' }} />;
 }
 
-interface SaltyStory {
-  id: string;
-  userId: string;
-  nickname: string;
-  persona: string | null;
-  text: string;
-  bgGradient: string;
-  image?: string;
-  createdAt: string;
-}
 
-const MOCK_STORIES: SaltyStory[] = [];
 const MOCK_TIPS: any[] = [];
 
 interface SaltyGroup {
@@ -173,40 +162,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     return tips.length > 0 ? tips.slice(0, 3) : MOCK_TIPS;
   }, [entries]);
 
-  // 📸 짠물 스토리 — Supabase 기반 (24시간 만료)
-  const [userStories, setUserStories] = useState<SaltyStory[]>([]);
-  const allStories = React.useMemo(() => {
-    return [...userStories, ...MOCK_STORIES];
-  }, [userStories]);
 
-  // StoryRow → SaltyStory 매핑
-  function mapStoryRow(row: StoryRow): SaltyStory {
-    return {
-      id: row.id,
-      userId: row.user_id,
-      nickname: row.nickname,
-      persona: row.persona,
-      text: row.text || '',
-      bgGradient: row.bg_gradient || 'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
-      image: row.image || undefined,
-      createdAt: row.created_at,
-    };
-  }
-
-  // 마운트/새로고침 시 활성 스토리 로드 (24시간 이내)
-  useEffect(() => {
-    fetchActiveStories().then((rows) => {
-      setUserStories(rows.map(mapStoryRow));
-    }).catch(() => {});
-  }, [userId, refreshToken]);
-  const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
-  const [storyProgress, setStoryProgress] = useState(0);
-  const [showAddStoryModal, setShowAddStoryModal] = useState(false);
-  const [newStoryText, setNewStoryText] = useState('');
-  const [newStoryBg, setNewStoryBg] = useState('linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)');
-  const [storyImage, setStoryImage] = useState<string | null>(null);
-  const [storyImageError, setStoryImageError] = useState<string | null>(null);
-  const [storyDoubleTapped, setStoryDoubleTapped] = useState<Record<string, boolean>>({});
 
   // 👥 절약 그룹 리그 관련 상태
   const [myGroup, setMyGroup] = useState<string | null>(() => {
@@ -374,141 +330,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   const myPersonaKey = getPersona();
 
-  // 스토리 자동 진행 타이머 효과
-  useEffect(() => {
-    if (activeStoryIndex === null) {
-      setStoryProgress(0);
-      return;
-    }
 
-    setStoryProgress(0);
-    const duration = 4000;
-    const intervalTime = 40;
-    const steps = duration / intervalTime;
-    let currentStep = 0;
-
-    const timer = setInterval(() => {
-      currentStep++;
-      const progress = Math.min(100, (currentStep / steps) * 100);
-      setStoryProgress(progress);
-
-      if (currentStep >= steps) {
-        clearInterval(timer);
-        setActiveStoryIndex(prev => {
-          if (prev === null) return null;
-          if (prev < allStories.length - 1) {
-            return prev + 1;
-          } else {
-            return null;
-          }
-        });
-      }
-    }, intervalTime);
-
-    return () => clearInterval(timer);
-  }, [activeStoryIndex, allStories.length]);
-
-  const spawnStoryParticles = (emoji: string, x: number, y: number) => {
-    const newParticles = Array.from({ length: 8 }).map((_, i) => ({
-      id: Date.now() + Math.random() + i,
-      emoji,
-      x: x + (Math.random() * 80 - 40),
-      y: y - 20 + (Math.random() * 40 - 20),
-    }));
-    setParticles((prev) => [...prev, ...newParticles]);
-    setTimeout(() => {
-      setParticles((prev) => prev.filter((p) => !newParticles.some((np) => np.id === p.id)));
-    }, 1000);
-  };
-
-  const compressStoryImage = (file: File, maxDim: number, quality: number): Promise<string> => {
-    return new Promise((resolve, reject) => {
-      const url = URL.createObjectURL(file);
-      const img = new Image();
-      img.onload = () => {
-        try {
-          let { width, height } = img;
-          if (width > maxDim || height > maxDim) {
-            if (width >= height) {
-              height = Math.round((height * maxDim) / width);
-              width = maxDim;
-            } else {
-              width = Math.round((width * maxDim) / height);
-              height = maxDim;
-            }
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = width;
-          canvas.height = height;
-          const ctx = canvas.getContext('2d');
-          if (!ctx) return reject(new Error('canvas context unavailable'));
-          ctx.drawImage(img, 0, 0, width, height);
-          const dataUrl = canvas.toDataURL('image/jpeg', quality);
-          URL.revokeObjectURL(url);
-          resolve(dataUrl);
-        } catch (e) {
-          URL.revokeObjectURL(url);
-          reject(e);
-        }
-      };
-      img.onerror = () => {
-        URL.revokeObjectURL(url);
-        reject(new Error('image load failed'));
-      };
-      img.src = url;
-    });
-  };
-
-  const handleStoryImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    const input = e.target;
-    if (file.size > 20 * 1024 * 1024) {
-      setStoryImageError('이미지가 너무 커요. 20MB 이하 파일을 선택해 주세요.');
-      input.value = '';
-      return;
-    }
-    setStoryImageError(null);
-    try {
-      const compressed = await compressStoryImage(file, 1000, 0.8);
-      setStoryImage(compressed);
-    } catch {
-      setStoryImageError('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
-      input.value = '';
-    }
-  };
-
-  const closeStoryAddModal = () => {
-    setShowAddStoryModal(false);
-    setNewStoryText('');
-    setStoryImage(null);
-    setStoryImageError(null);
-  };
-
-  const handleAddStory = async () => {
-    if (!newStoryText.trim() && !storyImage) return;
-    const nickname = getNickname() || '나';
-    const persona = getPersona();
-    try {
-      const row = await createStory({
-        user_id: userId,
-        nickname,
-        persona,
-        text: newStoryText.trim() || null,
-        image: storyImage,
-        bg_gradient: newStoryBg,
-      });
-      if (!row) {
-        showFeedToast('스토리 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.');
-        return;
-      }
-      setUserStories(prev => [mapStoryRow(row), ...prev]);
-      closeStoryAddModal();
-      showFeedToast('🚀 짠물 스토리 업로드 완료! 24시간 동안 노출돼요');
-    } catch {
-      showFeedToast('스토리 업로드 중 오류가 발생했어요.');
-    }
-  };
 
   const handleCreateGroupSubmit = () => {
     if (!newGroupName.trim() || !newGroupDesc.trim()) return;
@@ -1272,38 +1094,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         </div>
       )}
 
-      {/* 📸 짠물 스토리 가로 목록 */}
-      <div className="story-row-container">
-        {/* 내 스토리 추가 버튼 */}
-        <div className="story-circle-wrapper" onClick={() => setShowAddStoryModal(true)}>
-          <div className="story-circle story-circle--add">
-            <span className="story-add-plus">+</span>
-          </div>
-          <span className="story-username">내 스토리</span>
-        </div>
-
-        {/* 스토리 목록 */}
-        {allStories.map((story, idx) => {
-          const p = story.persona ? PERSONAS[story.persona] : null;
-          return (
-            <div
-              key={story.id}
-              className="story-circle-wrapper"
-              onClick={() => setActiveStoryIndex(idx)}
-            >
-              <div className="story-circle" style={p ? { background: `linear-gradient(135deg, ${p.color}, ${p.color}aa)` } : {}}>
-                {p ? (
-                  <img src={p.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain', zIndex: 2 }} />
-                ) : (
-                  story.nickname.charAt(0).toUpperCase()
-                )}
-              </div>
-              <span className="story-username">{story.nickname}</span>
-            </div>
-          );
-        })}
-      </div>
-
 
 
       {/* 🏆 금주의 짠테크 꿀팁 베스트 */}
@@ -1334,37 +1124,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           </div>
         </div>
       )}
-
-      {/* 👀 어제 친구들이 남긴 한 줄 — 재진입 동기 */}
-      {(() => {
-        const yest = new Date(); yest.setDate(yest.getDate() - 1);
-        const yestStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
-        const yestEntries = entries
-          .filter(e => e.user_id !== userId && e.date === yestStr)
-          .slice(0, 8);
-        if (yestEntries.length === 0) return null;
-        return (
-          <div className="yesterday-strip">
-            <h4 className="yesterday-strip-title">어제 친구들의 한 줄</h4>
-            <div className="yesterday-strip-list">
-              {yestEntries.map(e => {
-                const p = e.persona ? PERSONAS[e.persona] : null;
-                const firstComment = (e.items || []).find(it => (it.comment || '').trim())?.comment || '';
-                const preview = firstComment.length > 24 ? firstComment.slice(0, 24) + '…' : firstComment;
-                return (
-                  <div key={e.id} className="yesterday-strip-card">
-                    <div className="yesterday-strip-avatar" style={p ? { borderColor: p.color } : {}}>
-                      {p ? <img src={p.icon} alt="" /> : (e.nickname ? e.nickname.charAt(0).toUpperCase() : '?')}
-                    </div>
-                    <span className="yesterday-strip-name">{e.nickname}</span>
-                    {preview && <span className="yesterday-strip-preview">{preview}</span>}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        );
-      })()}
 
       {/* 📝 인라인 포스트 컴포저 (Facebook/LinkedIn 스타일 기록 CTA) */}
       <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
@@ -1976,219 +1735,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </div>
               <div>
                 <Button size="large" display="full" color="primary" variant="fill" disabled={!messageText.trim()} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* 📸 짠물 스토리 전체화면 뷰어 */}
-      {activeStoryIndex !== null && (() => {
-        const story = allStories[activeStoryIndex];
-        const p = story.persona ? PERSONAS[story.persona] : null;
-        return (
-          <div className="story-viewer-overlay" onClick={() => setActiveStoryIndex(null)}>
-            <div
-              className="story-viewer-card"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {/* 게임기 하드웨어 상단 디자인 */}
-              <div className="story-console-hardware-header">
-                <div className="story-console-brand">SAVELOG <span>COLOR</span></div>
-                <div className="story-console-power-led">POWER</div>
-              </div>
-
-              {/* CRT 스크린 베젤 */}
-              <div
-                className="story-console-screen-bezel"
-                style={{ background: story.bgGradient }}
-                onDoubleClick={(e) => {
-                  const rect = e.currentTarget.getBoundingClientRect();
-                  const clickX = e.clientX || (rect.left + rect.width / 2);
-                  const clickY = e.clientY || (rect.top + 200);
-                  
-                  setStoryDoubleTapped(prev => ({ ...prev, [story.id]: true }));
-                  setTimeout(() => {
-                    setStoryDoubleTapped(prev => ({ ...prev, [story.id]: false }));
-                  }, 800);
-                  
-                  spawnStoryParticles('💖', clickX, clickY);
-                  showFeedToast(`${story.nickname}님에게 따뜻한 응원을 보냈습니다!`);
-                }}
-              >
-                {/* CRT 스캔라인 오버레이 */}
-                <div className="story-console-crt-overlay" />
-
-                {/* 스토리 배경 이미지 (있을 경우) */}
-                {story.image && <img src={story.image} className="story-viewer-image" />}
-                {story.image && <div className="story-viewer-image-overlay" />}
-
-                {/* 스토리 진행 표시기 (배터리 게이지 모양) */}
-                <div className="story-console-battery-indicator">
-                  <span>BATT</span>
-                  <div className="story-console-battery-icon">
-                    <div className="story-console-battery-fill" style={{ width: `${storyProgress}%` }} />
-                  </div>
-                  <span style={{ marginLeft: '4px' }}>{activeStoryIndex + 1}/{allStories.length}</span>
-                </div>
-
-                {/* 스토리 작성자 정보 */}
-                <div className="story-viewer-header">
-                  <div className="story-viewer-user">
-                    <div className="story-viewer-avatar" style={p ? { borderColor: p.color } : {}}>
-                      {story.nickname.charAt(0).toUpperCase()}
-                    </div>
-                    <div>
-                      <span className="story-viewer-name">{story.nickname}</span>
-                      <span className="story-viewer-time">{timeAgo(story.createdAt)}</span>
-                    </div>
-                  </div>
-                  <button className="story-viewer-close-btn" onClick={() => setActiveStoryIndex(null)}>✕</button>
-                </div>
-
-                {/* 스토리 내용 */}
-                <div className="story-viewer-body">
-                  <p className="story-viewer-text">{story.text}</p>
-                  {storyDoubleTapped[story.id] && (
-                    <div className="heart-double-tap-overlay">❤️</div>
-                  )}
-
-                  {/* 다마고치 동반자 마스코트 오버레이 */}
-                  {p && (
-                    <div className="story-console-companion">
-                      <div className="story-console-avatar-box">
-                        <img src={p.icon} alt={p.name} />
-                      </div>
-                      <div className="story-console-speech-bubble">
-                        {p.name}
-                      </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* 터치 네비게이션 구역 */}
-                <div
-                  className="story-viewer-nav-area story-viewer-nav-area--left"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveStoryIndex(prev => (prev !== null && prev > 0) ? prev - 1 : null);
-                  }}
-                />
-                <div
-                  className="story-viewer-nav-area story-viewer-nav-area--right"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setActiveStoryIndex(prev => (prev !== null && prev < allStories.length - 1) ? prev + 1 : null);
-                  }}
-                />
-              </div>
-
-              {/* 하드웨어 하단 조작기 (글로시 아케이드 버튼 & 스피커 그릴) */}
-              <div className="story-console-hardware-footer">
-                <div className="story-viewer-footer">
-                  {['❤️', '👏', '🔥', '💸', '🌿'].map((emoji) => (
-                    <button
-                      key={emoji}
-                      className="story-reaction-btn"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        const rect = e.currentTarget.getBoundingClientRect();
-                        spawnStoryParticles(emoji, rect.left + rect.width / 2, rect.top);
-                        showFeedToast(`${story.nickname}님에게 ${emoji} 보냈습니다!`);
-                      }}
-                    >
-                      <CustomIcon emoji={emoji} />
-                    </button>
-                  ))}
-                </div>
-
-                <div className="story-console-speaker-grill">
-                  <div className="story-console-dpad-line">◀ SELECT / START ▶</div>
-                  <div className="story-console-grill-stripes">
-                    <div className="story-console-grill-stripe" />
-                    <div className="story-console-grill-stripe" />
-                    <div className="story-console-grill-stripe" />
-                    <div className="story-console-grill-stripe" />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        );
-      })()}
-
-      {/* 📸 내 스토리 올리기 모달 */}
-      {showAddStoryModal && (
-        <div className="story-modal-overlay" onClick={closeStoryAddModal}>
-          <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
-            <div className="story-modal-header">
-              <h3 className="story-modal-name">내 짠물 스토리 올리기 <CustomIcon emoji="📸" /></h3>
-              <p className="story-modal-label">24시간 동안 노출되는 절약 일기를 적어보세요.</p>
-            </div>
-            <div className="story-modal-content">
-              <textarea
-                value={newStoryText}
-                onChange={(e) => setNewStoryText(e.target.value.slice(0, 100))}
-                placeholder="오늘의 소소한 지갑 사정이나 절약 꿀팁을 100자 내로 공유하세요..."
-                className="message-modal-textarea"
-                maxLength={100}
-              />
-
-              {/* 이미지 첨부 영역 */}
-              <div className="story-image-upload-section">
-                {storyImageError && (
-                  <p className="image-error-msg"><CustomIcon emoji="⚠️" /> {storyImageError}</p>
-                )}
-                {storyImage ? (
-                  <div className="story-image-preview-container">
-                    <img src={storyImage} alt="Story Preview" />
-                    <button
-                      className="story-image-remove-btn"
-                      onClick={() => setStoryImage(null)}
-                    >
-                      ✕
-                    </button>
-                  </div>
-                ) : (
-                  <label className="story-image-upload-label">
-                    <span><CustomIcon emoji="📸" /> 사진 첨부 (선택)</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleStoryImageChange}
-                      style={{ display: 'none' }}
-                    />
-                  </label>
-                )}
-              </div>
-
-              <div className="story-bg-selection-row">
-                <span className="story-bg-label">배경 카드 색상</span>
-                <div className="story-bg-options">
-                  {[
-                    'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
-                    'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)',
-                    'linear-gradient(135deg, #5EE7DF 0%, #B490CA 100%)',
-                    'linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%)',
-                    'linear-gradient(135deg, #2CD8D5 0%, #C5C1FF 56%, #FFBAC3 100%)',
-                    'linear-gradient(135deg, #09203F 0%, #537895 100%)'
-                  ].map((grad) => (
-                    <button
-                      key={grad}
-                      className={`story-bg-opt-circle${newStoryBg === grad ? ' story-bg-opt-circle--selected' : ''}`}
-                      style={{ background: grad }}
-                      onClick={() => setNewStoryBg(grad)}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="story-modal-footer">
-              <div>
-                <Button size="large" display="full" color="dark" variant="weak" onClick={closeStoryAddModal}>취소</Button>
-              </div>
-              <div>
-                <Button size="large" display="full" color="primary" variant="fill" disabled={!newStoryText.trim() && !storyImage} onClick={handleAddStory}>스토리 공유</Button>
               </div>
             </div>
           </div>
