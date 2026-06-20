@@ -157,34 +157,34 @@ export const PERSONAS: Record<string, Persona> = {
   cost_ai: {
     key: 'cost_ai',
     emoji: '🤖',
-    name: '가성비 AI',
+    name: '가성비 분석가',
     color: '#00F5A0',
-    desc: '모든 지출의 효율을 극대화하여 1원당 만족도를 계산하는 냉철한 절약 로봇.',
-    icon: '/images/mbti_robot.png',
+    desc: '1원당 만족도를 따져서 나에게 더 잘 맞는 선택을 찾아내는 타입.',
+    icon: '/images/mbti_robot.svg',
   },
   hamster: {
     key: 'hamster',
     emoji: '🐹',
-    name: '자린고비 햄스터',
+    name: '차곡차곡 햄스터',
     color: '#FF9500',
-    desc: '곳간에 도토리를 모으듯 무소유에 가까운 삶을 추구하는 생계형 절약러.',
-    icon: '/images/mbti_hamster.png',
+    desc: '도토리를 모으듯 작은 습관을 차곡차곡 쌓아가며 든든해지는 타입.',
+    icon: '/images/mbti_hamster.svg',
   },
   flexer: {
     key: 'flexer',
     emoji: '🦄',
-    name: '기분파 탕진러',
+    name: '낭만 수집가',
     color: '#FF4D4F',
-    desc: '"오늘만 산다!" 스트레스를 받으면 시발비용과 Flex로 감정을 달래는 낭만 가득 소비가.',
-    icon: '/images/mbti_unicorn.png',
+    desc: '오늘의 작은 만족을 소중히 여기며 마음에 끌리는 순간을 모으는 타입.',
+    icon: '/images/mbti_unicorn.svg',
   },
   keeper: {
     key: 'keeper',
     emoji: '🛒',
-    name: '장바구니 키퍼',
+    name: '신중한 큐레이터',
     color: '#3182F6',
-    desc: '사고 싶은 건 장바구니에 담아두고 3일 고민하다 결국 포기하는 합리적 소비 지키미.',
-    icon: '/images/mbti_cart.png',
+    desc: '사고 싶은 걸 잠깐 두고 곱씹어보며 진짜 좋은 것만 들이는 타입.',
+    icon: '/images/mbti_cart.svg',
   },
 };
 
@@ -451,4 +451,22 @@ export function cleanupStaleKeys(): void {
   } catch {
     // localStorage 접근 실패 시 무시
   }
+}
+
+// ── Weekly Budget (주간 예산) ────────────────────────────────────────────────
+const WEEKLY_BUDGET_KEY = 'savelog_weekly_budget';
+
+export function getWeeklyBudget(): number {
+  try {
+    const v = localStorage.getItem(WEEKLY_BUDGET_KEY);
+    return v ? parseInt(v, 10) : 100000; // 기본값 10만원
+  } catch {
+    return 100000;
+  }
+}
+
+export function setWeeklyBudget(amount: number): void {
+  try {
+    localStorage.setItem(WEEKLY_BUDGET_KEY, amount.toString());
+  } catch {}
 }

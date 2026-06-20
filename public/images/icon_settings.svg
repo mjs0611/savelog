@@ -1,0 +1,39 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Gear Body -->
+  <path d="M 50 18 
+           C 47 18, 47 24, 44 25 
+           C 41 24, 38 19, 35 21 
+           C 32 23, 34 29, 32 30 
+           C 29 29, 24 26, 21 29 
+           C 18 32, 22 37, 21 40 
+           C 18 41, 12 43, 12 47 
+           C 12 51, 18 52, 19 55 
+           C 18 58, 14 62, 16 66 
+           C 18 69, 24 67, 26 69 
+           C 27 72, 25 78, 28 80 
+           C 31 82, 36 78, 38 79 
+           C 41 81, 42 88, 46 88 
+           C 50 88, 51 82, 54 81 
+           C 57 82, 62 86, 65 84 
+           C 68 82, 66 76, 68 75 
+           C 71 76, 76 79, 79 76 
+           C 82 73, 78 68, 79 65 
+           C 82 64, 88 62, 88 58 
+           C 88 54, 82 53, 81 50 
+           C 82 47, 86 43, 84 39 
+           C 82 36, 76 38, 74 36 
+           C 73 33, 75 27, 72 25 
+           C 69 23, 64 27, 62 26 
+           C 59 24, 58 18, 54 18 
+           Z" fill="#E2E8F0" stroke="#4A2C2C" stroke-width="4.5" stroke-linejoin="round" />
+
+  <!-- Center Circle -->
+  <circle cx="50" cy="53" r="18" fill="#FFFFFF" stroke="#4A2C2C" stroke-width="3.5" />
+
+  <!-- Cute Face in center -->
+  <circle cx="44" cy="51" r="2.5" fill="#4A2C2C" />
+  <circle cx="56" cy="51" r="2.5" fill="#4A2C2C" />
+  <circle cx="39" cy="55" r="2.5" fill="#FF85A1" opacity="0.4" />
+  <circle cx="61" cy="55" r="2.5" fill="#FF85A1" opacity="0.4" />
+  <path d="M 47 57 Q 50 59 53 57" fill="none" stroke="#4A2C2C" stroke-width="1.8" stroke-linecap="round" />
+</svg>

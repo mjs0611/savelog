@@ -1,38 +1,19 @@
 import React, { useState } from 'react';
-import { Button, TextField } from '@toss/tds-mobile';
+import { Button } from '@toss/tds-mobile';
 import type { SpendingItem } from '../lib/supabase';
 import { formatAmount } from '../lib/utils';
+import CustomIcon from '../components/CustomIcon';
 
-const CATEGORIES = [
-  { label: '식비',  emoji: '🍚' },
-  { label: '배달',  emoji: '🛵' },
-  { label: '교통',  emoji: '🚇' },
-  { label: '카페',  emoji: '☕' },
-  { label: '쇼핑',  emoji: '🛍️' },
-  { label: '취미',  emoji: '🎮' },
-  { label: '시발비용', emoji: '🔥' },
-  { label: 'Flex',  emoji: '💎' },
-  { label: '술/유흥', emoji: '🍻' },
-  { label: '의료',  emoji: '💊' },
-  { label: '기타',  emoji: '📦' },
-];
-
-const TIP_CATEGORIES = [
-  { label: '식비 아끼기', emoji: '🍚' },
-  { label: '생활비 아끼기', emoji: '🏠' },
-  { label: '무료 혜택', emoji: '🎁' },
-  { label: '중고 거래', emoji: '🤝' },
+const UNIFIED_CATEGORIES = [
+  { label: '식비/식품', emoji: '🍚' },
+  { label: '생활/배달', emoji: '🏠' },
+  { label: '교통/차량', emoji: '🚇' },
+  { label: '카페/간식', emoji: '☕' },
+  { label: '쇼핑/패션', emoji: '🛍️' },
+  { label: '취미/여가', emoji: '🎮' },
+  { label: '혜택/이벤트', emoji: '🎁' },
   { label: '짠테크/적금', emoji: '💰' },
-  { label: '기타 꿀팁', emoji: '💡' },
-];
-
-const DILEMMA_CATEGORIES = [
-  { label: '쇼핑 고민', emoji: '🛍️' },
-  { label: '전자기기', emoji: '💻' },
-  { label: '패션/뷰티', emoji: '🧥' },
-  { label: '음식/맛집', emoji: '🍕' },
-  { label: '문화/여가', emoji: '🎮' },
-  { label: '기타 고민', emoji: '⚖️' },
+  { label: '기타', emoji: '📦' },
 ];
 
 interface Props {
@@ -43,58 +24,16 @@ interface Props {
 }
 
 export default function RecordScreen({ onSubmit, onClose, submitting, isAdditional = false }: Props) {
-  const [creatorMode, setCreatorMode] = useState<'record' | 'tip' | 'dilemma'>('record');
-  
-  // 소비/무지출 모드 상태
-  const [items, setItems] = useState<SpendingItem[]>([]);
-  const [selCat, setSelCat] = useState(CATEGORIES[0]);
+  const [selCat, setSelCat] = useState(UNIFIED_CATEGORIES[0]);
   const [amountStr, setAmountStr] = useState('');
-  const [comment, setComment] = useState('');
   const [dailyNote, setDailyNote] = useState('');
-  const [showZeroNote, setShowZeroNote] = useState(false);
-  const [zeroNote, setZeroNote] = useState('');
-  const [isBalanceGame, setIsBalanceGame] = useState(false);
-
-  // 절약 꿀팁 모드 상태
-  const [tipCategory, setTipCategory] = useState(TIP_CATEGORIES[0]);
-  const [tipText, setTipText] = useState('');
-
-  // 소비 고민 모드 상태
-  const [dilemmaCategory, setDilemmaCategory] = useState(DILEMMA_CATEGORIES[0]);
-  const [dilemmaText, setDilemmaText] = useState('');
-  const [dilemmaCostStr, setDilemmaCostStr] = useState('');
-
-  // 공통 이미지 상태
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
+  const [activeSubmitType, setActiveSubmitType] = useState<'spend' | 'save' | 'dilemma' | 'zero' | 'tip' | null>(null);
 
-  // creatorMode 전환 시 이미지 초기화 (다른 모드의 이미지가 잘못 첨부되는 버그 방지)
-  React.useEffect(() => {
-    setImage(null);
-    setImageError(null);
-  }, [creatorMode]);
-
-  const total = items.reduce((s, i) => s + i.amount, 0);
-
-  function addItem() {
-    const amount = parseInt(amountStr.replace(/,/g, '')) || 0;
-    if (amount < 0) return;
-    if (amount === 0 && !comment.trim()) return;
-    setItems((prev) => [
-      ...prev,
-      { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() },
-    ]);
-    setAmountStr('');
-    setComment('');
-  }
-
-  function removeItem(idx: number) {
-    const next = items.filter((_, i) => i !== idx);
-    setItems(next);
-    if (next.length === 0 || next.reduce((s, i) => s + i.amount, 0) === 0) {
-      setIsBalanceGame(false);
-    }
-  }
+  const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
+  const isFoodCategory = ['식비/식품', '카페/간식'].includes(selCat.label);
+  const isNoteValid = isAdditional || dailyNote.trim().length >= 5;
 
   function handleAmountChange(val: string) {
     const digits = val.replace(/\D/g, '');
@@ -103,68 +42,102 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
     setAmountStr(num.toLocaleString('ko-KR'));
   }
 
-  function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
+  async function handleImageChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) {
-      setImageError('이미지 크기는 2MB 이하여야 합니다.');
-      e.target.value = '';
+    const input = e.target;
+    if (file.size > 20 * 1024 * 1024) {
+      setImageError('이미지가 너무 커요. 20MB 이하 파일을 선택해 주세요.');
+      input.value = '';
       return;
     }
     setImageError(null);
-    const input = e.target;
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      if (reader.error) {
-        setImageError('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
-        input.value = '';
-        return;
-      }
-      setImage(reader.result as string);
-    };
-    reader.readAsDataURL(file);
+    try {
+      const compressed = await compressImage(file, 1600, 0.85);
+      setImage(compressed);
+    } catch {
+      setImageError('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
+      input.value = '';
+    }
   }
 
-  async function handleSubmit() {
-    if (creatorMode === 'tip') {
-      if (tipText.trim().length < 5) return;
-      const withNote: SpendingItem[] = [
-        { category: '꿀팁', emoji: '💡', amount: 0, comment: `[${tipCategory.emoji} ${tipCategory.label}] ${tipText.trim()}` }
-      ];
-      await onSubmit(withNote, image || undefined, false);
-      return;
-    }
+  function compressImage(file: File, maxDim: number, quality: number): Promise<string> {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width >= height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('canvas context unavailable'));
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          URL.revokeObjectURL(url);
+          resolve(dataUrl);
+        } catch (e) {
+          URL.revokeObjectURL(url);
+          reject(e);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('image load failed'));
+      };
+      img.src = url;
+    });
+  }
 
-    if (creatorMode === 'dilemma') {
-      if (dilemmaText.trim().length < 5 || !dilemmaCostStr || dilemmaCostStr === '0') return;
-      const cost = parseInt(dilemmaCostStr.replace(/,/g, ''), 10) || 0;
-      const withNote: SpendingItem[] = [
-        { category: '소비 고민', emoji: '⚖️', amount: cost, comment: `[${dilemmaCategory.emoji} ${dilemmaCategory.label}] ${dilemmaText.trim()}` }
-      ];
-      await onSubmit(withNote, image || undefined, true); // is_balance_game = true
-      return;
-    }
+  async function handleSubmit(type: 'spend' | 'save' | 'dilemma' | 'zero' | 'tip') {
+    if (!isNoteValid) return;
+    if (type !== 'zero' && type !== 'tip' && amount <= 0) return;
 
-    if (items.length === 0) return;
-    if (!isAdditional && dailyNote.trim().length < 5) return;
-    
-    // 금액을 입력했지만 "항목 추가"를 누르지 않은 경우 자동으로 추가
-    let finalItems = items;
-    if (amountStr) {
-      const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
-      if (amount > 0 || (amount === 0 && comment.trim())) {
-        const autoItem = { category: selCat.label, emoji: selCat.emoji, amount, comment: comment.trim() };
-        finalItems = [...items, autoItem];
-        setItems(finalItems);
-        setAmountStr('');
-        setComment('');
+    setActiveSubmitType(type);
+    try {
+      let finalItems: SpendingItem[] = [];
+      let isBalanceGame = false;
+
+      if (type === 'spend') {
+        const item = { category: selCat.label, emoji: selCat.emoji, amount };
+        finalItems = isAdditional
+          ? [item]
+          : [{ category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }, item];
+      } else if (type === 'save') {
+        finalItems = [
+          { category: '절약 방어', emoji: '🛡️', amount: 0, saved_amount: amount, comment: dailyNote.trim() }
+        ];
+      } else if (type === 'dilemma') {
+        finalItems = [
+          { category: '소비 고민', emoji: '⚖️', amount, comment: dailyNote.trim() }
+        ];
+        isBalanceGame = true;
+      } else if (type === 'zero') {
+        finalItems = [
+          { category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }
+        ];
+      } else if (type === 'tip') {
+        finalItems = [
+          { category: '꿀팁', emoji: '💡', amount: 0, comment: dailyNote.trim() }
+        ];
       }
+
+      await onSubmit(finalItems, image || undefined, isBalanceGame);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setActiveSubmitType(null);
     }
-    // 추가 기록은 한마디 없이, 첫 기록은 한마디 포함
-    const withNote: SpendingItem[] = isAdditional
-      ? finalItems
-      : [{ category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }, ...finalItems];
-    await onSubmit(withNote, image || undefined, isBalanceGame);
   }
 
   return (
@@ -174,404 +147,183 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
         <div className="modal-header">
           <button className="modal-close-btn" onClick={onClose} disabled={submitting}>✕</button>
           <h2 className="modal-title">
-            {isAdditional ? '소비 추가 기록' : creatorMode === 'tip' ? '절약 꿀팁 공유' : creatorMode === 'dilemma' ? '소비 고민 투표 올리기' : '오늘 소비 기록'}
+            {isAdditional ? '추가 지출 기록' : '오늘의 기록'}
           </h2>
           <div className="modal-header-spacer" />
         </div>
 
-        <div className="modal-body">
-          {/* 세그먼트 탭 선택자 (추가 기록이 아닐 때만 노출) */}
+        <div className="modal-body" style={{ paddingTop: '12px' }}>
+
+          {/* 1. 한 줄 메모 (가장 먼저, 가볍게) */}
           {!isAdditional && (
-            <div className="record-tabs-header">
-              <button
-                className={`record-tab-btn ${creatorMode === 'record' ? 'active' : ''}`}
-                onClick={() => setCreatorMode('record')}
+            <div className="daily-note-section">
+              <p className="form-label">오늘 어땠어요?</p>
+              <p className="daily-note-desc">한 줄이면 충분해요. 카테고리나 금액은 아래에서 선택해도 좋아요.</p>
+              <textarea
+                className={`daily-note-textarea${isNoteValid ? ' daily-note-textarea--valid' : ''}`}
+                value={dailyNote}
+                onChange={e => setDailyNote(e.target.value)}
+                placeholder="예) 오늘 도시락 싸왔어요 🌿 / 오랜만에 좋아하는 카페 ☕"
+                maxLength={120}
+                rows={3}
                 disabled={submitting}
-              >
-                소비/무지출
-              </button>
-              <button
-                className={`record-tab-btn ${creatorMode === 'tip' ? 'active' : ''}`}
-                onClick={() => setCreatorMode('tip')}
-                disabled={submitting}
-              >
-                절약 꿀팁
-              </button>
-              <button
-                className={`record-tab-btn ${creatorMode === 'dilemma' ? 'active' : ''}`}
-                onClick={() => setCreatorMode('dilemma')}
-                disabled={submitting}
-              >
-                소비 고민
-              </button>
-            </div>
-          )}
-
-          {/* 1. 소비/무지출 모드 폼 */}
-          {creatorMode === 'record' && (
-            <>
-              {/* 오늘 지출 없음 (무지출 인증) — 추가 기록 모드에서는 숨김 */}
-              {items.length === 0 && !showZeroNote && !isAdditional && (
-                <button
-                  className="no-spend-quick-btn"
-                  disabled={submitting}
-                  onClick={() => setShowZeroNote(true)}
-                >
-                  🌿 오늘 돈 한 푼도 안 썼어요 (무지출 인증)
-                </button>
-              )}
-
-              {/* 무지출 한마디 입력 — 추가 기록 모드에서는 숨김 */}
-              {items.length === 0 && showZeroNote && !isAdditional && (
-                <div className="zero-note-section">
-                  <p className="zero-note-title">🌿 무지출 인증</p>
-                  <p className="zero-note-desc">오늘 어떻게 무지출을 달성했나요? 피드에 공유돼요.</p>
-                  <textarea
-                    className="zero-note-textarea"
-                    value={zeroNote}
-                    onChange={e => setZeroNote(e.target.value)}
-                    placeholder="예) 도시락 싸서 점심 해결, 배달 참기 성공 🎉"
-                    maxLength={80}
-                    rows={3}
-                  />
-                  <p className="zero-note-char-count">{zeroNote.length}/80 · 5자 이상 입력</p>
-                  <div className="zero-note-actions">
-                    <button
-                      className="zero-note-cancel-btn"
-                      disabled={submitting}
-                      onClick={() => { setShowZeroNote(false); setZeroNote(''); }}
-                    >
-                      취소
-                    </button>
-                    <button
-                      className="zero-note-submit-btn"
-                      disabled={zeroNote.trim().length < 5 || submitting}
-                      onClick={async () => {
-                        await onSubmit([{ category: '한마디', emoji: '💬', amount: 0, comment: zeroNote.trim() }]);
-                      }}
-                    >
-                      {submitting ? '저장 중...' : '무지출 기록 완료'}
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {/* 기록된 항목 목록 */}
-              {items.length > 0 && (
-                <div className="items-list">
-                  {items.map((item, i) => (
-                    <div key={i} className="item-row">
-                      <span className="item-emoji">{item.emoji}</span>
-                      <div className="item-info">
-                        <span className="item-cat">{item.category}</span>
-                        {item.comment && <span className="item-comment">{item.comment}</span>}
-                      </div>
-                      <span className="item-amount">{formatAmount(item.amount)}</span>
-                      <button className="item-remove" onClick={() => removeItem(i)}>✕</button>
-                    </div>
-                  ))}
-                  <div className="items-total-row">
-                    <span>오늘 총 소비</span>
-                    <span className="items-total-amount">{formatAmount(total)}</span>
-                  </div>
-                </div>
-              )}
-
-              {/* 항목 추가 폼 — zero-note 모드일 때 숨김 */}
-              {!showZeroNote && (
-                <div className="item-form">
-                  <p className="form-label">카테고리</p>
-                  <div className="cat-grid">
-                    {CATEGORIES.map((c) => (
-                      <button
-                        key={c.label}
-                        className={`cat-btn ${selCat.label === c.label ? 'cat-btn--active' : ''}`}
-                        onClick={() => setSelCat(c)}
-                      >
-                        <span>{c.emoji}</span>
-                        <span>{c.label}</span>
-                      </button>
-                    ))}
-                  </div>
-
-                  <TextField
-                    variant="box"
-                    label="지출 금액"
-                    placeholder="0"
-                    value={amountStr}
-                    suffix="원"
-                    inputMode="numeric"
-                    onChange={(e: any) => handleAmountChange(e.target.value)}
-                    onKeyDown={(e: any) => { if (e.key === 'Enter') addItem(); }}
-                  />
-
-                  <TextField
-                    variant="box"
-                    label="한 줄 메모 (선택)"
-                    placeholder="예: 회사 탕비실 커피로 해결"
-                    value={comment}
-                    maxLength={40}
-                    onChange={(e: any) => setComment(e.target.value)}
-                    onKeyDown={(e: any) => { if (e.key === 'Enter') addItem(); }}
-                  />
-
-                  <Button size="medium" display="full" color="primary" variant="fill" onClick={addItem} disabled={!amountStr || (amountStr === '0' && !comment.trim())}>
-                    {items.length > 0 ? '+ 항목 추가' : '항목 추가'}
-                  </Button>
-                </div>
-              )}
-
-              {/* 오늘 한마디 (첫 기록이고 항목이 1개 이상일 때 표시) */}
-              {items.length > 0 && !showZeroNote && !isAdditional && (
-                <div className="daily-note-section">
-                  <p className="form-label">오늘 한마디 <span className="daily-note-required">*</span></p>
-                  <p className="daily-note-desc">오늘 지출에 대한 한 줄 일기를 남겨요. 피드에 공유됩니다.</p>
-                  <textarea
-                    className={`daily-note-textarea${dailyNote.trim().length >= 5 ? ' daily-note-textarea--valid' : ''}`}
-                    value={dailyNote}
-                    onChange={e => setDailyNote(e.target.value)}
-                    placeholder="예) 친구 생일이라 어쩔 수 없었어... 다음엔 아껴야지 😅"
-                    maxLength={80}
-                    rows={2}
-                  />
-                  <p className="daily-note-char-count">{dailyNote.length}/80 · 5자 이상 입력</p>
-                </div>
-              )}
-
-              {/* 밸런스 게임 opt-in — 지출이 있고 첫 기록일 때만 */}
-              {items.length > 0 && total > 0 && !isAdditional && !showZeroNote && (
-                <button
-                  type="button"
-                  className={`balance-game-opt-btn${isBalanceGame ? ' balance-game-opt-btn--on' : ''}`}
-                  onClick={() => setIsBalanceGame(v => !v)}
-                >
-                  <span className="balance-game-opt-icon">⚖️</span>
-                  <div>
-                    <p className="balance-game-opt-title">
-                      {isBalanceGame ? '밸런스 게임 등록됨 ✓' : '내 지출, 합리적일까? 다른 사람들한테 물어보기'}
-                    </p>
-                    <p className="balance-game-opt-desc">
-                      {isBalanceGame ? '피드 밸런스 게임에 올라가요 · 다시 누르면 취소' : '피드에서 다른 사람들이 과소비 / 합리적 판정을 해줘요'}
-                    </p>
-                  </div>
-                </button>
-              )}
-            </>
-          )}
-
-          {/* 2. 절약 꿀팁 모드 폼 */}
-          {creatorMode === 'tip' && (
-            <div className="record-mode-form">
-              <p className="form-label">꿀팁 카테고리</p>
-              <div className="cat-grid">
-                {TIP_CATEGORIES.map((c) => (
-                  <button
-                    key={c.label}
-                    className={`cat-btn ${tipCategory.label === c.label ? 'cat-btn--active' : ''}`}
-                    onClick={() => setTipCategory(c)}
-                  >
-                    <span>{c.emoji}</span>
-                    <span>{c.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <div className="daily-note-section daily-note-section--mt">
-                <p className="form-label">절약 꿀팁 공유 <span className="daily-note-required">*</span></p>
-                <p className="daily-note-desc">나만 아는 생활비 절약법, 할인 혜택 등을 짠친들과 공유해 보세요!</p>
-                <textarea
-                  className={`daily-note-textarea${tipText.trim().length >= 5 ? ' daily-note-textarea--valid' : ''}`}
-                  value={tipText}
-                  onChange={e => setTipText(e.target.value)}
-                  placeholder="예) 카페인 수혈 필요할 때 편의점 구독 쿠폰 쓰면 아메리카노 반값이에요 ☕"
-                  maxLength={120}
-                  rows={3}
-                />
-                <p className="daily-note-char-count">{tipText.length}/120 · 5자 이상 입력</p>
-              </div>
-            </div>
-          )}
-
-          {/* 3. 소비 고민 모드 폼 */}
-          {creatorMode === 'dilemma' && (
-            <div className="record-mode-form">
-              <p className="form-label">카테고리</p>
-              <div className="cat-grid">
-                {DILEMMA_CATEGORIES.map((c) => (
-                  <button
-                    key={c.label}
-                    className={`cat-btn ${dilemmaCategory.label === c.label ? 'cat-btn--active' : ''}`}
-                    onClick={() => setDilemmaCategory(c)}
-                  >
-                    <span>{c.emoji}</span>
-                    <span>{c.label}</span>
-                  </button>
-                ))}
-              </div>
-
-              <TextField
-                variant="box"
-                label="예상 소비 금액"
-                placeholder="0"
-                value={dilemmaCostStr}
-                suffix="원"
-                inputMode="numeric"
-                onChange={(e: any) => {
-                  const digits = e.target.value.replace(/\D/g, '');
-                  if (!digits) { setDilemmaCostStr(''); return; }
-                  const num = Math.min(parseInt(digits, 10), 9999999);
-                  setDilemmaCostStr(num.toLocaleString('ko-KR'));
-                }}
+                autoFocus
               />
+              <p className="daily-note-char-count">{dailyNote.length}/120 · 5자 이상</p>
+            </div>
+          )}
 
-              <div className="daily-note-section daily-note-section--mt">
-                <p className="form-label">소비 고민 설명 <span className="daily-note-required">*</span></p>
-                <p className="daily-note-desc">살까 말까 진짜 필요할까? 짠친들에게 과소비 판정을 요청해 보세요.</p>
-                <textarea
-                  className={`daily-note-textarea${dilemmaText.trim().length >= 5 ? ' daily-note-textarea--valid' : ''}`}
-                  value={dilemmaText}
-                  onChange={e => setDilemmaText(e.target.value)}
-                  placeholder="예) 가죽 재킷 세일하는데, 이번 달 식비 아껴서 살까요? 😭"
-                  maxLength={120}
-                  rows={3}
-                />
-                <p className="daily-note-char-count">{dilemmaText.length}/120 · 5자 이상 입력</p>
+          {/* 2. 금액 (선택) */}
+          <div className="custom-input-wrapper" style={{ marginTop: !isAdditional ? '16px' : '0' }}>
+            <p className="form-label">{isAdditional ? '추가 지출 금액' : '금액 (안 적어도 OK)'}</p>
+            <div className="custom-input-box">
+              <input
+                className="custom-input-field"
+                type="text"
+                inputMode="numeric"
+                placeholder="0"
+                value={amountStr}
+                onChange={(e) => handleAmountChange(e.target.value)}
+                disabled={submitting}
+              />
+              <span className="custom-input-suffix">원</span>
+            </div>
+          </div>
+
+          {/* 3. 카테고리 (선택) */}
+          <div style={{ marginTop: '16px' }}>
+            <p className="form-label" style={{ marginBottom: '8px' }}>카테고리 {amount === 0 && <span className="daily-note-desc" style={{ display: 'inline', marginLeft: 4 }}>(선택)</span>}</p>
+            <div className="cat-grid">
+              {UNIFIED_CATEGORIES.map((c) => (
+                <button
+                  key={c.label}
+                  className={`cat-btn ${selCat.label === c.label ? 'cat-btn--active' : ''}`}
+                  onClick={() => setSelCat(c)}
+                  disabled={submitting}
+                >
+                  <span className="cat-btn-emoji"><CustomIcon emoji={c.emoji} /></span>
+                  <span className="cat-btn-label">{c.label}</span>
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* 4. 인증 사진 첨부 (선택) */}
+          <div className="image-upload-section">
+            <p className="form-label">사진 첨부 (선택)</p>
+            {isFoodCategory && !image && (
+              <div className="food-photo-notice">
+                <span className="food-photo-notice-icon"><CustomIcon emoji="🍔" /></span>
+                <span className="food-photo-notice-text">
+                  맛있는 음식 인증샷이나, 영수증, 혹은 빈 그릇/물잔 사진을 올리면 짠친구들이 더 좋아해요!
+                </span>
               </div>
-            </div>
-          )}
-
-          {/* 사진 업로드 영역 */}
-          {creatorMode !== 'record' && (
-            <div className="image-upload-section">
-              <p className="form-label">사진 첨부 (선택)</p>
-              {imageError && (
-                <p className="image-error-msg">⚠️ {imageError}</p>
-              )}
-              {image ? (
-                <div className="image-preview-container">
-                  <img src={image} alt="Preview" />
-                  <button
-                    className="image-remove-btn"
-                    onClick={() => { setImage(null); setImageError(null); }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <label className="image-upload-label">
-                  <span>📸</span>
-                  <span>인증샷 / 사진 첨부</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              )}
-            </div>
-          )}
-
-          {/* 소비/무지출 모드에서만 노출하는 이미지 업로드 영역 */}
-          {creatorMode === 'record' && !showZeroNote && (
-            <div className="image-upload-section">
-              <p className="form-label">지출 인증샷 / 영수증 (선택)</p>
-              {imageError && (
-                <p className="image-error-msg">⚠️ {imageError}</p>
-              )}
-              {image ? (
-                <div className="image-preview-container">
-                  <img src={image} alt="Preview" />
-                  <button
-                    className="image-remove-btn"
-                    onClick={() => { setImage(null); setImageError(null); }}
-                  >
-                    ✕
-                  </button>
-                </div>
-              ) : (
-                <label className="image-upload-label">
-                  <span>📸</span>
-                  <span>인증샷 / 영수증 첨부</span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageChange}
-                    style={{ display: 'none' }}
-                  />
-                </label>
-              )}
-            </div>
-          )}
+            )}
+            {imageError && (
+              <p className="image-error-msg"><CustomIcon emoji="⚠️" /> {imageError}</p>
+            )}
+            {image ? (
+              <div className="image-preview-container">
+                <img src={image} alt="Preview" />
+                <button
+                  className="image-remove-btn"
+                  onClick={() => { setImage(null); setImageError(null); }}
+                  disabled={submitting}
+                >
+                  ✕
+                </button>
+              </div>
+            ) : (
+              <label className={`image-upload-label${isFoodCategory ? ' image-upload-label--highlighted' : ''}`}>
+                <CustomIcon emoji="📸" />
+                <span>기록 인증샷 / 영수증 첨부</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageChange}
+                  style={{ display: 'none' }}
+                  disabled={submitting}
+                />
+              </label>
+            )}
+          </div>
         </div>
 
-        {/* 제출 */}
-        <div className="modal-footer">
-          {creatorMode === 'record' && (
-            items.length === 0 && !showZeroNote ? (
-              <p className="submit-hint">항목을 1개 이상 추가해 주세요</p>
-            ) : items.length > 0 ? (
-              <>
-                {!isAdditional && dailyNote.trim().length < 5 && (
-                  <p className="submit-hint submit-hint--mb">오늘 한마디를 5자 이상 입력해 주세요</p>
-                )}
-                <Button
-                  size="xlarge"
-                  display="full"
-                  color="primary"
-                  variant="fill"
-                  onClick={handleSubmit}
-                  loading={submitting}
-                  disabled={!isAdditional && dailyNote.trim().length < 5}
-                >
-                  {submitting ? '저장 중...' : isAdditional ? '추가 기록 완료 🌿' : '오늘 기록 완료 🌿'}
-                </Button>
-              </>
-            ) : null
+        {/* 5. 동적 제출 버튼 그룹 */}
+        <div className="modal-footer" style={{ flexDirection: 'column', gap: '8px' }}>
+          {!isNoteValid && !isAdditional && (
+            <p className="submit-hint submit-hint--mb">기록 내용을 5자 이상 입력해 주세요</p>
           )}
 
-          {creatorMode === 'tip' && (
-            <>
-              {tipText.trim().length < 5 && (
-                <p className="submit-hint submit-hint--mb">꿀팁 내용을 5자 이상 입력해 주세요</p>
-              )}
+          {isAdditional ? (
+            <Button
+              size="xlarge"
+              display="full"
+              color="primary"
+              variant="fill"
+              onClick={() => handleSubmit('spend')}
+              loading={submitting}
+              disabled={amount <= 0}
+              style={{ background: 'linear-gradient(135deg, #FF4A6B 0%, #E22D50 100%)', border: 'none' }}
+            >
+              <CustomIcon emoji="💸" /> 추가 소비 기록하기
+            </Button>
+          ) : amount > 0 ? (
+            <div className="submit-btn-group-vertical" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
               <Button
                 size="xlarge"
                 display="full"
                 color="primary"
                 variant="fill"
-                onClick={handleSubmit}
-                loading={submitting}
-                disabled={tipText.trim().length < 5}
+                onClick={() => handleSubmit('spend')}
+                loading={submitting && activeSubmitType === 'spend'}
+                disabled={!isNoteValid || submitting}
+                style={{ background: 'linear-gradient(135deg, #FF4A6B 0%, #E22D50 100%)', border: 'none' }}
               >
-                {submitting ? '저장 중...' : '꿀팁 공유하기 💡'}
+                <CustomIcon emoji="💸" /> 나의 가치 소비 기록 ({formatAmount(amount)})
               </Button>
-            </>
-          )}
 
-          {creatorMode === 'dilemma' && (
-            <>
-              {((!dilemmaCostStr || dilemmaCostStr === '0') || dilemmaText.trim().length < 5) && (
-                <p className="submit-hint submit-hint--mb">
-                  {(!dilemmaCostStr || dilemmaCostStr === '0') && dilemmaText.trim().length < 5
-                    ? '금액과 고민 설명을 입력해 주세요'
-                    : (!dilemmaCostStr || dilemmaCostStr === '0')
-                    ? '예상 소비 금액을 입력해 주세요'
-                    : '소비 고민 설명을 5자 이상 입력해 주세요'}
-                </p>
-              )}
               <Button
                 size="xlarge"
                 display="full"
                 color="primary"
                 variant="fill"
-                onClick={handleSubmit}
-                loading={submitting}
-                disabled={dilemmaText.trim().length < 5 || !dilemmaCostStr || dilemmaCostStr === '0'}
+                onClick={() => handleSubmit('dilemma')}
+                loading={submitting && activeSubmitType === 'dilemma'}
+                disabled={!isNoteValid || submitting}
+                style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none' }}
               >
-                {submitting ? '저장 중...' : '판정 투표 올리기 ⚖️'}
+                <CustomIcon emoji="⚖️" /> 플러스 소비 밸런스 게임 올리기
               </Button>
-            </>
+            </div>
+          ) : (
+            <div className="submit-btn-group-vertical" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              <Button
+                size="xlarge"
+                display="full"
+                color="primary"
+                variant="fill"
+                onClick={() => handleSubmit('zero')}
+                loading={submitting && activeSubmitType === 'zero'}
+                disabled={!isNoteValid || submitting}
+                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', border: 'none' }}
+              >
+                <CustomIcon emoji="🌿" /> 오늘 지갑 충전 힐링 데이 인증
+              </Button>
+
+              <Button
+                size="xlarge"
+                display="full"
+                color="primary"
+                variant="fill"
+                onClick={() => handleSubmit('tip')}
+                loading={submitting && activeSubmitType === 'tip'}
+                disabled={!isNoteValid || submitting}
+                style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none' }}
+              >
+                <CustomIcon emoji="💡" /> 나만의 힙한 플러스 꿀팁 공유
+              </Button>
+            </div>
           )}
         </div>
       </div>

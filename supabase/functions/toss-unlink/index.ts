@@ -8,7 +8,7 @@ const supabase = createClient(
 const CORS_HEADERS = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Authorization, Content-Type',
+  'Access-Control-Allow-Headers': 'Authorization, Content-Type, apikey, x-client-info',
 };
 
 Deno.serve(async (req) => {
@@ -37,7 +37,7 @@ Deno.serve(async (req) => {
   // referrer: UNLINK | WITHDRAWAL_TERMS | WITHDRAWAL_TOSS
   if (referrer === 'WITHDRAWAL_TOSS') {
     // 토스 탈퇴 시 개인정보 삭제
-    await supabase.from('entries').delete().eq('user_key', userKey);
+    await supabase.from('entries').delete().eq('user_id', String(userKey));
     await supabase.from('users').delete().eq('user_key', userKey);
   } else {
     // 연결 끊기 / 약관 철회 시 user_key 익명 처리 (기록은 보존)

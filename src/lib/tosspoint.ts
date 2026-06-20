@@ -1,8 +1,6 @@
 import { grantPromotionReward, generateHapticFeedback } from '@apps-in-toss/web-framework';
 
 const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? '01KT1WCAF6DRYGEKQFXVA48DPZ';
-const RANK_PROMO  = import.meta.env.VITE_RANK_PROMO_CODE  ?? '01KSJNKQYZKXM8M7FTB3B601J2';
-const FEED_PROMO  = import.meta.env.VITE_FEED_PROMO_CODE  ?? '01KSJNZP5GB4PZAQ6HZ5BK65VS';
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
 
@@ -51,17 +49,7 @@ async function grant(promoCode: string, amount: number): Promise<boolean> {
   }
 }
 
-// 주간 순위 리워드
-export async function grantRankReward(amount: number): Promise<boolean> {
-  return grant(RANK_PROMO, amount);
-}
-
-// 게시글 반응 리워드 (직접 지급)
-export async function grantFeedReward(amount: number): Promise<boolean> {
-  return grant(FEED_PROMO, amount);
-}
-
-// 펜딩 포인트 일괄 지급 (소비기록/밸런스 투표/연속완주 → 광고 시청 후)
+// 펜딩 포인트 일괄 지급 (소비기록/연속완주 → 광고 시청 후)
 export async function grantPendingReward(amount: number): Promise<boolean> {
   return grant(DAILY_PROMO, amount);
 }

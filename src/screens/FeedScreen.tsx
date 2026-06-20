@@ -1,11 +1,14 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { Badge, Button } from '@toss/tds-mobile';
+import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, type BalanceEntry } from '../lib/supabase';
-import { formatAmount, formatDate, timeAgo, getWeekKey } from '../lib/utils';
-import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, toggleFollow, getActiveChallengeId, setActiveChallengeId } from '../lib/storage';
+import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, searchUsers, fetchActiveStories, createStory, type BalanceEntry, type SearchUser, type StoryRow } from '../lib/supabase';
+import { formatAmount, timeAgo, getWeekKey, getTodayStr } from '../lib/utils';
+import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, getActiveChallengeId, setActiveChallengeId, type StreakData, type DailyState } from '../lib/storage';
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
+import CustomIcon, { hasMappedIcon } from '../components/CustomIcon';
+
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
 
 function FeedBannerSlot() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -55,38 +58,12 @@ interface SaltyStory {
   persona: string | null;
   text: string;
   bgGradient: string;
+  image?: string;
   createdAt: string;
 }
 
-const MOCK_STORIES: SaltyStory[] = [
-  {
-    id: 'story-1',
-    userId: 'user-toss',
-    nickname: '김토스',
-    persona: 'hamster',
-    text: '오늘 점심은 회사 탕비실 컵라면+삼김으로 0원 방어 성공! 🍜',
-    bgGradient: 'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
-    createdAt: new Date(Date.now() - 3600000 * 2).toISOString(),
-  },
-  {
-    id: 'story-2',
-    userId: 'user-ipad',
-    nickname: '이패드',
-    persona: 'flexer',
-    text: '신상 운동화 장바구니에서 삭제함... 내 통장을 지켰다 👟✨',
-    bgGradient: 'linear-gradient(135deg, #F093FB 0%, #F5576C 100%)',
-    createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-  },
-  {
-    id: 'story-3',
-    userId: 'user-save',
-    nickname: '박절약',
-    persona: 'keeper',
-    text: '커피머신 캡슐 직구로 아메리카노 한 잔 400원 개이득! ☕',
-    bgGradient: 'linear-gradient(135deg, #5EE7DF 0%, #B490CA 100%)',
-    createdAt: new Date(Date.now() - 3600000 * 6).toISOString(),
-  }
-];
+const MOCK_STORIES: SaltyStory[] = [];
+const MOCK_TIPS: any[] = [];
 
 interface SaltyGroup {
   id: string;
@@ -98,53 +75,51 @@ interface SaltyGroup {
   averageSpent: number;
 }
 
-const PRESET_GROUPS: SaltyGroup[] = [
-  {
-    id: 'group-delivery',
-    name: '🍳 배달금지 무지출단',
-    creator: '김토스',
-    desc: '이번 주 배달 앱 삭제하고 집밥만 든든하게 먹는 모임',
-    dailyBudget: 10000,
-    members: ['김토스', '박절약', '이패드'],
-    averageSpent: 28000,
-  },
-  {
-    id: 'group-coffee',
-    name: '☕ 스타벅스 탈출기',
-    creator: '박절약',
-    desc: '하루 5천 원짜리 카페 음료 끊고 탕비실/카누로 버티기',
-    dailyBudget: 5000,
-    members: ['박절약', '이패드'],
-    averageSpent: 12000,
-  },
-  {
-    id: 'group-shopping',
-    name: '🛍️ 아이쇼핑 금지 위원회',
-    creator: '이패드',
-    desc: '의류, 화장품 충동구매 금지! 생존 소비만 인정',
-    dailyBudget: 15000,
-    members: ['이패드', '김토스'],
-    averageSpent: 94000,
-  }
-];
+const PRESET_GROUPS: SaltyGroup[] = [];
 
 interface Props {
   userId: string;
-  onGrantFeedReward?: () => void;
   refreshToken?: number;
   weekRank?: WeekRankRow[];
+  // HomeScreen에서 이관된 props
+  daily: DailyState;
+  streak: StreakData;
+  pendingPoints: number;
+  submitting?: boolean;
+  pendingClaiming?: boolean;
+  streakShields?: number;
+  onRecord: () => void;
+  onQuickZeroSpend: () => void;
+  onClaimPending: () => void;
+  onNavigateToMyLog?: () => void;
+  onShareToChat?: (entry: any) => void;
 }
 
-const COMMENT_CHIPS = ['지갑 지켜! 🛡️', '절약 요정 인정 🧚‍♀️', '시발비용 화이팅 😭', '이건 어쩔 수 없지 ☕'];
 
 const WEEKLY_CHALLENGES = [
-  { id: 'no-delivery', title: '배달 금지 챌린지', desc: '배달 앱 없이 한 주 버티기', emoji: '🍱' },
-  { id: 'no-cafe', title: '카페 금지 챌린지', desc: '카페 지출 0원 7일 도전', emoji: '☕' },
-  { id: 'home-cooking', title: '집밥 챌린지', desc: '식비를 집밥으로만 해결', emoji: '🍳' },
-  { id: 'no-shopping', title: '쇼핑 금지 챌린지', desc: '온라인 쇼핑 0원 7일', emoji: '🛒' },
+  { id: 'signature-tumbler', title: '시그니처 텀블러 데이 ☕', desc: '일회용 컵 대신 내 최애 텀블러로 힙하게 음료 채우기', emoji: '🥤' },
+  { id: 'home-chef', title: '냉장고 털기 홈셰프 🍳', desc: '냉장고 속 잠자던 재료로 나만의 5성급 집밥 만들기', emoji: '🍳' },
+  { id: 'local-healing', title: '동네 무료 핫플 탐험 🌿', desc: '돈 안 들이고 친구와 즐기는 숲길 산책 및 미술관 탐방', emoji: '🌳' },
+  { id: 'health-charging', title: '물 마시기 & 만보 걷기 루틴 💧', desc: '지갑도 내 몸도 함께 활력 플러스 충전하기', emoji: '💧' },
 ];
 
-export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0, weekRank = [] }: Props) {
+function renderTextWithEmoji(text: string) {
+  if (!text) return <></>;
+  const result: React.ReactNode[] = [];
+  let buffer = '';
+  for (const { segment } of graphemeSegmenter.segment(text)) {
+    if (hasMappedIcon(segment)) {
+      if (buffer) { result.push(buffer); buffer = ''; }
+      result.push(<CustomIcon key={result.length} emoji={segment} />);
+    } else {
+      buffer += segment;
+    }
+  }
+  if (buffer) result.push(buffer);
+  return <>{result}</>;
+}
+
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, pendingClaiming, onRecord, onQuickZeroSpend, onClaimPending, onShareToChat }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
   const initialLoaded = React.useRef(false);
@@ -164,30 +139,73 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     toastTimerRef.current = setTimeout(() => { setToastText(null); toastTimerRef.current = null; }, 2200);
   }
   const [doubleTappedHearts, setDoubleTappedHearts] = useState<Record<string, boolean>>({});
-  // 세션 내 리액션 리워드 지급된 엔트리 추적 — 언리액션 후 재반응 시 중복 지급 방지
-  const [reactionRewardedEntries, setReactionRewardedEntries] = useState<Set<string>>(() => new Set());
 
   // 팔로우 / 탭 필터
   const [feedTab, setFeedTab] = useState<'all' | 'follow' | 'group'>('all');
   const [followedUsers, setFollowedUsers] = useState<Record<string, string>>(() => getFollowedUsers());
+  const followInFlight = React.useRef<Set<string>>(new Set());
 
-  // 📸 짠물 스토리 관련 상태
-  const [userStories, setUserStories] = useState<SaltyStory[]>(() => {
-    try {
-      const saved = localStorage.getItem('savelog_stories');
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  // 검색
+  const [searchQuery, setSearchQuery] = useState('');
+  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
+  const [searching, setSearching] = useState(false);
+  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Pull-to-refresh
+  const [pullState, setPullState] = useState<{ y: number; refreshing: boolean }>({ y: 0, refreshing: false });
+  const pullStartRef = React.useRef<number | null>(null);
+  const screenRef = React.useRef<HTMLDivElement>(null);
+
+  // 🏆 금주의 베스트 꿀팁
+  const topTips = React.useMemo(() => {
+    const tips = entries.flatMap(entry => 
+      entry.items
+        .filter(item => item.category === '꿀팁')
+        .map(item => ({
+          entryId: entry.id,
+          nickname: entry.nickname,
+          persona: entry.persona,
+          item,
+          likes: (entry.trust_count || 0) + (entry.doubt_count || 0)
+        }))
+    );
+    // 실제 데이터가 없으면 Mock 데이터 노출
+    return tips.length > 0 ? tips.slice(0, 3) : MOCK_TIPS;
+  }, [entries]);
+
+  // 📸 짠물 스토리 — Supabase 기반 (24시간 만료)
+  const [userStories, setUserStories] = useState<SaltyStory[]>([]);
   const allStories = React.useMemo(() => {
     return [...userStories, ...MOCK_STORIES];
   }, [userStories]);
+
+  // StoryRow → SaltyStory 매핑
+  function mapStoryRow(row: StoryRow): SaltyStory {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      nickname: row.nickname,
+      persona: row.persona,
+      text: row.text || '',
+      bgGradient: row.bg_gradient || 'linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)',
+      image: row.image || undefined,
+      createdAt: row.created_at,
+    };
+  }
+
+  // 마운트/새로고침 시 활성 스토리 로드 (24시간 이내)
+  useEffect(() => {
+    fetchActiveStories().then((rows) => {
+      setUserStories(rows.map(mapStoryRow));
+    }).catch(() => {});
+  }, [userId, refreshToken]);
   const [activeStoryIndex, setActiveStoryIndex] = useState<number | null>(null);
   const [storyProgress, setStoryProgress] = useState(0);
   const [showAddStoryModal, setShowAddStoryModal] = useState(false);
   const [newStoryText, setNewStoryText] = useState('');
   const [newStoryBg, setNewStoryBg] = useState('linear-gradient(135deg, #A18CD1 0%, #FBC2EB 100%)');
+  const [storyImage, setStoryImage] = useState<string | null>(null);
+  const [storyImageError, setStoryImageError] = useState<string | null>(null);
   const [storyDoubleTapped, setStoryDoubleTapped] = useState<Record<string, boolean>>({});
 
   // 👥 절약 그룹 리그 관련 상태
@@ -225,19 +243,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
       const saved = localStorage.getItem('savelog_group_messages');
       if (saved) return JSON.parse(saved);
     } catch {}
-    return {
-      'group-delivery': [
-        { sender: '김토스', text: '오늘 저녁은 집밥 김치볶음밥 갑니다 🍳', time: '1시간 전' },
-        { sender: '이패드', text: '엽떡 유혹 겨우 참아냈네요... 휴 💦', time: '30분 전' }
-      ],
-      'group-coffee': [
-        { sender: '박절약', text: '맥심 모카골드로 아침 커피 해결 완료! ☕', time: '3시간 전' },
-        { sender: '이패드', text: '커피머신 사고 캡슐 직구하니까 든든합니다', time: '1시간 전' }
-      ],
-      'group-shopping': [
-        { sender: '이패드', text: '이번 주 옷 사면 손목을 자르겠습니다.. 🛍️', time: '2시간 전' }
-      ]
-    };
+    return {};
   });
   const [newGroupMessageText, setNewGroupMessageText] = useState('');
 
@@ -281,8 +287,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     if (isCurrentBalanceEntry) setBalanceVoted(vote);
     try {
       const stats = await submitBalanceVote(entryId, userId, vote);
-      onGrantFeedReward?.();
-      showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+      showFeedToast('⚖️ 투표 완료!');
       if (isCurrentBalanceEntry) setBalanceStats(stats);
     } catch {
       // 실패한 엔트리만 롤백 — 동시 진행 중인 다른 투표에 영향 없도록 functional update 사용
@@ -304,13 +309,47 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
   // 이번 주 챌린지 (주차별 결정론적 선택)
   const currentWeekKey = getWeekKey();
-  const weekChallenge = (() => {
+  const [customChallenge, setCustomChallenge] = useState<{ id: string; title: string; desc: string; emoji: string } | null>(() => {
+    try {
+      const saved = localStorage.getItem(`savelog_custom_challenge_${currentWeekKey}`);
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  const weekChallenge = customChallenge || (() => {
     const hash = currentWeekKey.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
     return WEEKLY_CHALLENGES[Math.abs(hash) % WEEKLY_CHALLENGES.length];
   })();
 
   // 그룹 챌린지 참여 상태 (주차별 스코프)
   const [activeChallenge, setActiveChallenge] = useState<string | null>(() => getActiveChallengeId(currentWeekKey));
+
+  // 커스텀 챌린지 생성 모달 상태
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [customTitle, setCustomTitle] = useState('');
+  const [customDesc, setCustomDesc] = useState('');
+  const [customEmoji, setCustomEmoji] = useState('🏆');
+
+  function handleCreateCustomChallenge() {
+    if (!customTitle.trim() || !customDesc.trim()) return;
+    const nextCh = {
+      id: `custom-${Date.now()}`,
+      title: customTitle.trim(),
+      desc: customDesc.trim(),
+      emoji: customEmoji.trim(),
+    };
+    localStorage.setItem(`savelog_custom_challenge_${currentWeekKey}`, JSON.stringify(nextCh));
+    setCustomChallenge(nextCh);
+    setActiveChallengeId(nextCh.id, currentWeekKey);
+    setActiveChallenge(nextCh.id);
+    setShowCustomModal(false);
+    setCustomTitle('');
+    setCustomDesc('');
+    setCustomEmoji('🏆');
+    showFeedToast(`🎮 우리만의 새로운 절약 놀이가 개설되었어요!`);
+  }
 
   // 로컬 댓글 상태 저장 (실제 서비스처럼 동작)
   const [localComments, setLocalComments] = useState<Record<string, { sender: string; text: string }[]>>(() => {
@@ -382,26 +421,93 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     }, 1000);
   };
 
-  const handleAddStory = () => {
-    if (!newStoryText.trim()) return;
-    const nickname = getNickname() || '나';
-    const persona = getPersona();
-    const newStory: SaltyStory = {
-      id: `story-user-${Date.now()}`,
-      userId,
-      nickname,
-      persona,
-      text: newStoryText.trim(),
-      bgGradient: newStoryBg,
-      createdAt: new Date().toISOString()
-    };
-    
-    const updated = [newStory, ...userStories];
-    localStorage.setItem('savelog_stories', JSON.stringify(updated));
-    setUserStories(updated);
+  const compressStoryImage = (file: File, maxDim: number, quality: number): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const url = URL.createObjectURL(file);
+      const img = new Image();
+      img.onload = () => {
+        try {
+          let { width, height } = img;
+          if (width > maxDim || height > maxDim) {
+            if (width >= height) {
+              height = Math.round((height * maxDim) / width);
+              width = maxDim;
+            } else {
+              width = Math.round((width * maxDim) / height);
+              height = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) return reject(new Error('canvas context unavailable'));
+          ctx.drawImage(img, 0, 0, width, height);
+          const dataUrl = canvas.toDataURL('image/jpeg', quality);
+          URL.revokeObjectURL(url);
+          resolve(dataUrl);
+        } catch (e) {
+          URL.revokeObjectURL(url);
+          reject(e);
+        }
+      };
+      img.onerror = () => {
+        URL.revokeObjectURL(url);
+        reject(new Error('image load failed'));
+      };
+      img.src = url;
+    });
+  };
+
+  const handleStoryImageChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const input = e.target;
+    if (file.size > 20 * 1024 * 1024) {
+      setStoryImageError('이미지가 너무 커요. 20MB 이하 파일을 선택해 주세요.');
+      input.value = '';
+      return;
+    }
+    setStoryImageError(null);
+    try {
+      const compressed = await compressStoryImage(file, 1000, 0.8);
+      setStoryImage(compressed);
+    } catch {
+      setStoryImageError('이미지를 불러오지 못했습니다. 다른 파일을 시도해 주세요.');
+      input.value = '';
+    }
+  };
+
+  const closeStoryAddModal = () => {
     setShowAddStoryModal(false);
     setNewStoryText('');
-    showFeedToast('🚀 내 짠물 스토리를 업로드했습니다!');
+    setStoryImage(null);
+    setStoryImageError(null);
+  };
+
+  const handleAddStory = async () => {
+    if (!newStoryText.trim() && !storyImage) return;
+    const nickname = getNickname() || '나';
+    const persona = getPersona();
+    try {
+      const row = await createStory({
+        user_id: userId,
+        nickname,
+        persona,
+        text: newStoryText.trim() || null,
+        image: storyImage,
+        bg_gradient: newStoryBg,
+      });
+      if (!row) {
+        showFeedToast('스토리 업로드에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      setUserStories(prev => [mapStoryRow(row), ...prev]);
+      closeStoryAddModal();
+      showFeedToast('🚀 짠물 스토리 업로드 완료! 24시간 동안 노출돼요');
+    } catch {
+      showFeedToast('스토리 업로드 중 오류가 발생했어요.');
+    }
   };
 
   const handleCreateGroupSubmit = () => {
@@ -506,12 +612,18 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   useEffect(() => {
     // 밸런스 게임은 userId 변경 시에만 리셋 (피드 새로고침마다 리셋되지 않도록)
     loadBalanceEntry();
-    // Supabase에서 팔로우 목록 동기화 (로컬캐시 덮어쓰기)
-    fetchFollows(userId).then((remote) => {
-      saveFollowedUsers(remote);
-      setFollowedUsers(remote);
-    }).catch(() => {/* 오류 시 로컬캐시 유지 */});
   }, [userId]);
+
+  // 팔로우 목록 동기화 — 피드 진입 / 새로고침 시마다 원격 truth 가져오기
+  // (다른 탭에서 unfollow 한 결과 반영)
+  useEffect(() => {
+    fetchFollows(userId).then((remote) => {
+      if (remote) {
+        saveFollowedUsers(remote);
+        setFollowedUsers(remote);
+      }
+    }).catch(() => {});
+  }, [userId, refreshToken]);
 
   // 주차가 바뀌면 챌린지 참여 상태 재동기화 (앱을 주 경계 넘어 열어둔 경우 stale 방지)
   useEffect(() => {
@@ -593,17 +705,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     togglingRef.current.add(entry.id);
     setToggling(prev => new Set(prev).add(entry.id));
 
-    // 반응이 없는 상태에서 처음 추가할 때만 포인트 지급
-    // reactionRewardedEntries로 세션 내 중복 지급 방지 (un-react 후 재반응 케이스)
-    const isAdding = entry.my_reaction === null && !reactionRewardedEntries.has(entry.id);
-    if (isAdding) {
-      setReactionRewardedEntries(prev => new Set(prev).add(entry.id));
-      onGrantFeedReward?.();
-      showFeedToast('❤️ +1원 즉시 지급!');
-    }
-
     // 파티클 생성
-    spawnParticles(type === 'trust' ? '❤️' : '🤔', e);
+    spawnParticles(type === 'trust' ? '💖' : '🤔', e);
 
     // optimistic update
     setEntries((prev) =>
@@ -698,13 +801,90 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     setCommentInputs(prev => ({ ...prev, [entryId]: '' }));
   }
 
-  function handleToggleFollow(entry: EntryWithReactions) {
-    // 낙관적 로컬 업데이트
-    const nowFollowing = toggleFollow(entry.user_id, entry.nickname || '');
-    setFollowedUsers(getFollowedUsers());
-    showFeedToast(nowFollowing ? `${entry.nickname}님을 팔로우했어요 👥` : `${entry.nickname}님 팔로우 해제`);
-    // Supabase 동기화 (best-effort, 실패해도 로컬 상태 유지)
-    toggleFollowSupabase(userId, entry.user_id, entry.nickname || '').catch(() => {});
+  async function handleToggleFollow(targetUserId: string, targetNickname: string) {
+    if (followInFlight.current.has(targetUserId)) return;
+    followInFlight.current.add(targetUserId);
+
+    // 낙관적 업데이트
+    const prevState = getFollowedUsers();
+    const wasFollowing = !!prevState[targetUserId];
+    const optimistic = wasFollowing ? false : true;
+    const nextLocal = { ...prevState };
+    if (optimistic) nextLocal[targetUserId] = targetNickname;
+    else delete nextLocal[targetUserId];
+    saveFollowedUsers(nextLocal);
+    setFollowedUsers(nextLocal);
+
+    try {
+      const myNickname = getNickname() ?? '익명';
+      const { following, error } = await toggleFollowSupabase(userId, targetUserId, targetNickname, myNickname);
+      if (error) {
+        // 롤백
+        saveFollowedUsers(prevState);
+        setFollowedUsers(prevState);
+        showFeedToast('팔로우 처리에 실패했어요. 잠시 후 다시 시도해 주세요.');
+        return;
+      }
+      // 서버 결과가 낙관과 다르면 보정
+      const corrected = { ...nextLocal };
+      if (following) corrected[targetUserId] = targetNickname;
+      else delete corrected[targetUserId];
+      saveFollowedUsers(corrected);
+      setFollowedUsers(corrected);
+      showFeedToast(following ? `${targetNickname}님을 팔로우했어요 👥` : `${targetNickname}님 팔로우 해제`);
+    } finally {
+      followInFlight.current.delete(targetUserId);
+    }
+  }
+
+  // 검색 (디바운스 300ms)
+  useEffect(() => {
+    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    const q = searchQuery.trim();
+    if (q.length === 0) {
+      setSearchResults([]);
+      setSearching(false);
+      return;
+    }
+    setSearching(true);
+    searchTimerRef.current = setTimeout(() => {
+      searchUsers(q, userId).then(results => {
+        setSearchResults(results);
+        setSearching(false);
+      }).catch(() => setSearching(false));
+    }, 300);
+    return () => {
+      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
+    };
+  }, [searchQuery, userId]);
+
+  // Pull-to-refresh
+  function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
+    const el = screenRef.current;
+    if (!el || el.scrollTop > 0 || pullState.refreshing) return;
+    pullStartRef.current = e.touches[0].clientY;
+  }
+
+  function handleTouchMove(e: React.TouchEvent<HTMLDivElement>) {
+    if (pullStartRef.current === null) return;
+    const dy = e.touches[0].clientY - pullStartRef.current;
+    if (dy > 0) {
+      const damped = Math.min(dy * 0.5, 100);
+      setPullState({ y: damped, refreshing: false });
+    }
+  }
+
+  function handleTouchEnd() {
+    if (pullStartRef.current === null) return;
+    pullStartRef.current = null;
+    if (pullState.y >= 60) {
+      setPullState({ y: 50, refreshing: true });
+      load(true).finally(() => {
+        setPullState({ y: 0, refreshing: false });
+      });
+    } else {
+      setPullState({ y: 0, refreshing: false });
+    }
   }
 
   function handleToggleChallenge(id: string) {
@@ -719,99 +899,107 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
     }
   }
 
-  // 팔로우 탭일 때 필터링
-  const displayedEntries = feedTab === 'follow'
-    ? entries.filter(e => e.user_id === userId || !!followedUsers[e.user_id])
-    : entries;
+  // 피드 정렬: 항상 최신순 (created_at desc). 팔로우 탭만 친구로 필터.
+  const displayedEntries = React.useMemo(() => {
+    const sorted = entries.slice().sort((a, b) =>
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
+    if (feedTab === 'follow') {
+      return sorted.filter(e => e.user_id === userId || !!followedUsers[e.user_id]);
+    }
+    return sorted;
+  }, [entries, userId, followedUsers, feedTab]);
 
   const renderFeedCard = (entry: EntryWithReactions) => {
     const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
     const p = personaKey ? PERSONAS[personaKey] : null;
-    
-    // 지출 레벨 파악 (0원 무지출 / 5만원 이상 FLEX)
+
     const isMilestone = entry.items.some(it => it.category === '마일스톤');
     const isTipPost = entry.items.some(it => it.category === '꿀팁');
     const isDilemmaPost = entry.items.some(it => it.category === '소비 고민') || entry.is_balance_game;
-    const isZeroSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount === 0;
-    const isFlexSpend = !isMilestone && !isTipPost && !isDilemmaPost && entry.total_amount > 50000;
-    const cardClass = isMilestone
-      ? 'feed-card--milestone'
-      : isTipPost
-      ? 'feed-card--tip'
-      : isDilemmaPost
-      ? 'feed-card--dilemma'
-      : isZeroSpend
-      ? 'feed-card--zero'
-      : isFlexSpend
-      ? 'feed-card--flex'
-      : '';
 
     const comments = localComments[entry.id] || [];
     const isExpanded = !!commentExpanded[entry.id];
     const visibleComments = isExpanded ? comments : comments.slice(0, 2);
 
+    const likeCount = entry.trust_count + entry.doubt_count;
+    const liked = entry.my_reaction !== null;
+
+    const isZeroSpend = entry.items.some(it => it.amount === 0 && (it.category === '무지출' || it.category === '절약 방어'));
+
+    let cardModifier = '';
+    if (entry.user_id === userId) {
+      cardModifier = 'feed-card-ig--mine';
+    } else if (isMilestone) {
+      cardModifier = 'feed-card-ig--milestone';
+    } else if (isTipPost) {
+      cardModifier = 'feed-card-ig--tip';
+    } else if (isDilemmaPost) {
+      cardModifier = 'feed-card-ig--dilemma';
+    } else if (isZeroSpend) {
+      cardModifier = 'feed-card-ig--zero';
+    }
+
     return (
       <div
         key={entry.id}
-        className={`feed-card glass-card ${cardClass} ${entry.user_id === userId ? 'feed-card--mine' : ''}`}
+        className={`feed-card-ig ${cardModifier}`}
       >
-        {/* 카드 헤더 */}
-        <div className="feed-card-header">
-          <div className="feed-avatar-wrap">
-            <div
-              className={`feed-avatar ${entry.user_id === userId ? 'feed-avatar--mine' : ''}`}
-              style={p ? { borderColor: p.color } : {}}
-            >
-              {entry.nickname ? entry.nickname.charAt(0).toUpperCase() : '?'}
-            </div>
-            <div className="feed-card-meta">
-              <span className="feed-nickname">
-                {entry.nickname}
-                {entry.user_id !== userId && (
-                  <button
-                    onClick={() => handleToggleFollow(entry)}
-                    className={`header-follow-btn ${followedUsers[entry.user_id] ? 'following' : ''}`}
-                  >
-                    {followedUsers[entry.user_id] ? '팔로잉 ✓' : '+ 팔로우'}
-                  </button>
-                )}
-                {entry.user_id === userId && (
-                  <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
-                )}
-                {p && (
-                  <span
-                    className="feed-persona-tag"
-                    style={{
-                      background: `${p.color}15`,
-                      color: p.color,
-                      border: `1px solid ${p.color}25`,
-                    }}
-                  >
-                    <img src={p.icon} alt="" />
-                    <span>{p.name}</span>
-                  </span>
-                )}
-                {isTipPost && (
-                  <span className="feed-tier-tag tip-tag">💡 절약 꿀팁</span>
-                )}
-                {isDilemmaPost && (
-                  <span className="feed-tier-tag dilemma-tag">⚖️ 소비 고민</span>
-                )}
-                {isMilestone && (
-                  <span className="feed-tier-tag feed-tier-tag--milestone">🏆 마일스톤</span>
-                )}
-                {isZeroSpend && (
-                  <span className="feed-tier-tag zero-tag">👑 무지출</span>
-                )}
-                {isFlexSpend && (
-                  <span className="feed-tier-tag flex-tag">🚨 FLEX</span>
-                )}
-              </span>
-              <span className="feed-date">{formatDate(entry.date)} · {timeAgo(entry.created_at)}</span>
-            </div>
+        {/* 카드 헤더 — 아바타 + 닉네임 + 팔로우 */}
+        <div className="feed-card-ig-header">
+          <div
+            className="feed-card-ig-avatar"
+            style={p ? { borderColor: p.color } : {}}
+          >
+            {p ? <img src={p.icon} alt="" /> : (entry.nickname ? entry.nickname.charAt(0).toUpperCase() : '?')}
           </div>
-          <div className={`feed-total ${!isMilestone && !isTipPost && entry.total_amount === 0 ? 'feed-total--zero' : ''} ${isMilestone ? 'feed-total--milestone' : isTipPost ? 'feed-total--tip' : isDilemmaPost ? 'feed-total--dilemma' : ''}`}>
-            {isMilestone ? '🏆 달성' : isTipPost ? '💡 꿀팁' : isDilemmaPost ? '⚖️ 배틀 중' : entry.total_amount === 0 ? '0원 🎉' : formatAmount(entry.total_amount)}
+          <div className="feed-card-ig-meta">
+            <div className="feed-card-ig-nickname-row" style={{ display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: '6px' }}>
+              <span className="feed-card-ig-nickname">{entry.nickname}</span>
+              {p && (
+                <span className="feed-card-persona-badge" style={{
+                  borderColor: `${p.color}35`,
+                  color: p.color,
+                  background: `${p.color}10`,
+                  fontSize: '10px',
+                  fontWeight: 800,
+                  padding: '1px 6px',
+                  borderRadius: '20px',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '3px'
+                }}>
+                  {p.emoji} {p.name}
+                </span>
+              )}
+            </div>
+            <span className="feed-card-ig-time">{timeAgo(entry.created_at)}</span>
+          </div>
+
+          <div style={{ display: 'flex', gap: '4px', alignItems: 'center' }}>
+            {isTipPost && (
+              <span className="feed-badge feed-badge--green"><CustomIcon emoji="💡" /> 꿀팁</span>
+            )}
+            {isDilemmaPost && (
+              <span className="feed-badge feed-badge--red"><CustomIcon emoji="⚖️" /> 투표</span>
+            )}
+            {isMilestone && (
+              <span className="feed-badge feed-badge--yellow"><CustomIcon emoji="🏆" /> 달성</span>
+            )}
+            {isZeroSpend && !isMilestone && !isTipPost && !isDilemmaPost && (
+              <span className="feed-badge feed-badge--blue"><CustomIcon emoji="🌿" /> 지갑 힐링</span>
+            )}
+            {entry.user_id !== userId ? (
+              <button
+                onClick={() => handleToggleFollow(entry.user_id, entry.nickname || '')}
+                className={`feed-card-ig-follow ${followedUsers[entry.user_id] ? 'following' : ''}`}
+                style={{ marginLeft: '4px' }}
+              >
+                {followedUsers[entry.user_id] ? '팔로잉' : '팔로우'}
+              </button>
+            ) : (
+              <span className="feed-badge feed-badge--blue" style={{ marginLeft: '4px' }}>나</span>
+            )}
           </div>
         </div>
 
@@ -824,7 +1012,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         {isTipPost && (
           <div className="tip-post-body">
             {entry.items.filter(it => it.category === '꿀팁').map((it, i) => (
-              <p key={i}>{it.comment}</p>
+              <p key={i}>{(it.comment || '').replace(/^\[.*?\]\s*/, '')}</p>
             ))}
           </div>
         )}
@@ -832,7 +1020,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         {/* 소비 고민 및 inline 투표 */}
         {isDilemmaPost && (() => {
           const dilemmaItem = entry.items.find(it => it.category === '소비 고민');
-          const text = dilemmaItem?.comment || '';
+          const text = (dilemmaItem?.comment || '').replace(/^\[.*?\]\s*/, '');
           const amount = dilemmaItem?.amount || entry.total_amount || 0;
           
           const myVote = feedVotes[entry.id];
@@ -866,13 +1054,13 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 <div className="dilemma-result-section">
                   <div className="dilemma-result-labels">
                     <span className="dilemma-result-over">
-                      과소비 {overPct}%
-                      {myVote === 'over' && <span className="dilemma-my-badge dilemma-my-badge--over">내 판정 💸</span>}
+                      행복 충전 {overPct}%
+                      {myVote === 'over' && <span className="dilemma-my-badge dilemma-my-badge--over">내 선택 <CustomIcon emoji="🔥" /></span>}
                     </span>
                     <span className="dilemma-result-total">총 {totalFeedVotes}명 참여</span>
                     <span className="dilemma-result-ok">
-                      {myVote === 'ok' && <span className="dilemma-my-badge dilemma-my-badge--ok">내 판정 🌿</span>}
-                      합리적 {okPct}%
+                      {myVote === 'ok' && <span className="dilemma-my-badge dilemma-my-badge--ok">내 선택 <CustomIcon emoji="🌱" /></span>}
+                      스마트 세이브 {okPct}%
                     </span>
                   </div>
 
@@ -887,15 +1075,15 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                     onClick={() => handleFeedVote(entry.id, 'over')}
                     className="balance-vote-card balance-vote-card--over"
                   >
-                    <span className="vote-emoji">💸</span>
-                    <span className="vote-title">과소비</span>
+                    <span className="vote-emoji"><CustomIcon emoji="🔥" /></span>
+                    <span className="vote-title">행복 충전</span>
                   </button>
                   <button
                     onClick={() => handleFeedVote(entry.id, 'ok')}
                     className="balance-vote-card balance-vote-card--ok"
                   >
-                    <span className="vote-emoji">🌿</span>
-                    <span className="vote-title">합리적</span>
+                    <span className="vote-emoji"><CustomIcon emoji="🌱" /></span>
+                    <span className="vote-title">스마트 세이브</span>
                   </button>
                 </div>
               )}
@@ -905,8 +1093,18 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
         {/* 오늘 한마디 (💬 한마디 특수 항목) */}
         {entry.items.filter(it => it.category === '한마디').map((it, i) => (
-          <p key={i} className="feed-note">💬 {it.comment}</p>
+          <p key={i} className="feed-note"><CustomIcon emoji="💬" /> {it.comment}</p>
         ))}
+
+        {/* 인증샷 / 영수증 이미지 */}
+        {entry.image && (
+          <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
+            <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
+            {doubleTappedHearts[entry.id] && (
+              <div className="heart-double-tap-overlay"><CustomIcon emoji="❤️" /></div>
+            )}
+          </div>
+        )}
 
         {/* 지출 항목 */}
         {(() => {
@@ -916,10 +1114,18 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             <div className="feed-items">
               {spendItems.map((item, i) => (
                 <div key={i} className="feed-item">
-                  <span className="feed-item-emoji">{item.emoji}</span>
+                  <span className="feed-item-emoji"><CustomIcon emoji={item.emoji} /></span>
                   <div className="feed-item-info">
-                    <span className="feed-item-cat">{item.category}</span>
-                    {item.comment && <span className="feed-item-comment">{item.comment}</span>}
+                    <span className="feed-item-cat">
+                      {item.category === '절약 방어' ? (
+                        <span><CustomIcon emoji="🌱" /> 플러스 저축</span>
+                      ) : item.category === '무지출' ? (
+                        <span><CustomIcon emoji="🌿" /> 지갑 힐링</span>
+                      ) : (
+                        item.category
+                      )}
+                    </span>
+                    {item.comment && <span className="feed-item-comment">{(item.comment || '').replace(/^\[.*?\]\s*/, '')}</span>}
                   </div>
                   <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
                     {item.amount === 0 ? '0원' : formatAmount(item.amount)}
@@ -930,65 +1136,59 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           );
         })()}
 
-        {/* 인증샷 / 영수증 이미지 */}
-        {entry.image && (
-          <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)}>
-            <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
-            {doubleTappedHearts[entry.id] && (
-              <div className="heart-double-tap-overlay">❤️</div>
-            )}
-          </div>
-        )}
-
-        {/* 리액션 카운트 — 정보 표시 라인 (인스타 스타일) */}
-        {(entry.trust_count > 0 || entry.doubt_count > 0) && (
-          <div className="feed-reaction-counts">
-            {entry.trust_count > 0 && <span>❤️ {entry.trust_count}명</span>}
-            {entry.doubt_count > 0 && <span>🤔 {entry.doubt_count}명</span>}
-          </div>
-        )}
-
-        {/* 액션 버튼 행 */}
-        {entry.user_id !== userId && (
-          <div className="feed-actions-row">
-            {/* 왼쪽: 감정 리액션 버튼 (카운트 없음) */}
-            <div className="feed-reactions-group">
-              <button
-                className={`reaction-btn ${entry.my_reaction === 'trust' ? 'reaction-btn--active reaction-btn--trust' : ''}`}
-                onClick={(e) => handleReact(entry, 'trust', e)}
-                disabled={toggling.has(entry.id)}
-              >
-                ❤️ 짠내난다
-              </button>
-              <button
-                className={`reaction-btn ${entry.my_reaction === 'doubt' ? 'reaction-btn--active reaction-btn--doubt' : ''}`}
-                onClick={(e) => handleReact(entry, 'doubt', e)}
-                disabled={toggling.has(entry.id)}
-              >
-                🤔 진짜야?
-              </button>
+        {/* 액션 바 (인스타그램 스타일: 아이콘 + 카운트) */}
+        <div className="feed-ig-actions">
+          {entry.user_id !== userId ? (
+            <button
+              className={`ig-action-btn ${liked ? 'ig-action-btn--liked' : ''}`}
+              onClick={(e) => handleReact(entry, 'trust', e)}
+              disabled={toggling.has(entry.id)}
+              aria-label="응원하기"
+            >
+              <span className="ig-action-icon"><CustomIcon emoji={liked ? '💖' : '🤍'} /></span>
+              <span className="ig-action-count" style={{ fontSize: '11px', fontWeight: 800 }}>
+                {likeCount > 0 ? `${likeCount}명의 응원` : '응원하기'}
+              </span>
+            </button>
+          ) : (
+            <div className="ig-action-btn ig-action-btn--readonly" aria-label="응원받음">
+              <span className="ig-action-icon"><CustomIcon emoji="💖" /></span>
+              <span className="ig-action-count" style={{ fontSize: '11px', fontWeight: 800 }}>
+                {likeCount > 0 ? `${likeCount}명의 응원` : '응원 0'}
+              </span>
             </div>
+          )}
+          <button
+            className="ig-action-btn"
+            onClick={() => {
+              const el = document.getElementById(`comment-input-${entry.id}`);
+              if (el) (el as HTMLInputElement).focus();
+            }}
+            aria-label="댓글"
+          >
+            <span className="ig-action-icon"><CustomIcon emoji="💬" /></span>
+            {comments.length > 0 && <span className="ig-action-count">{comments.length}</span>}
+          </button>
+          {entry.user_id !== userId && (
+            <button
+              className="ig-action-btn"
+              onClick={() => { setMessageRecipientEntry(entry); setMessageText(''); }}
+              aria-label="메시지"
+            >
+              <span className="ig-action-icon"><CustomIcon emoji="✈️" /></span>
+            </button>
+          )}
+          {onShareToChat && (
+            <button
+              className="ig-action-btn"
+              onClick={() => onShareToChat(entry)}
+              aria-label="짠톡 공유"
+            >
+              <span className="ig-action-icon"><CustomIcon emoji="👥" /></span>
+            </button>
+          )}
+        </div>
 
-            {/* 오른쪽: 아이콘 액션 */}
-            <div className="feed-actions-group">
-              {/* 응원 쪽지 */}
-              <button
-                className="action-icon-btn"
-                title="응원 쪽지 보내기"
-                onClick={() => { setMessageRecipientEntry(entry); setMessageText(''); }}
-              >
-                ✉️
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* 신뢰도 경고 */}
-        {entry.doubt_count >= 3 && entry.doubt_count / (entry.trust_count + entry.doubt_count) > 0.3 && (
-          <div className="doubt-warning">
-            🚨 일부 사용자가 의심하고 있어요 ({Math.round(entry.doubt_count / (entry.trust_count + entry.doubt_count) * 100)}%)
-          </div>
-        )}
 
         {/* 댓글 스레드 — SNS 스타일 */}
         {entry.user_id !== userId && !isMilestone && (() => {
@@ -1017,26 +1217,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 </div>
               )}
 
-              {/* 퀵 칩 */}
-              <div className="feed-thread-chips">
-                {COMMENT_CHIPS.map((cmt) => {
-                  const used = comments.some(c => c.sender === '나' && c.text === cmt);
-                  return (
-                    <button
-                      key={cmt}
-                      className={`comment-chip-btn${used ? ' comment-chip-btn--used' : ''}`}
-                      onClick={() => addComment(entry.id, cmt)}
-                      disabled={used}
-                    >
-                      {cmt}
-                    </button>
-                  );
-                })}
-              </div>
-
               {/* 댓글 직접 입력 */}
               <div className="feed-thread-input-row">
                 <input
+                  id={`comment-input-${entry.id}`}
                   type="text"
                   value={commentInputs[entry.id] || ''}
                   onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
@@ -1071,15 +1255,22 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
   }
 
   return (
-    <div className="screen screen-feed">
-      {/* 헤더 */}
-      <div className="feed-header">
-        <h2 className="feed-title">
-          짠내 피드
-          <img src="/images/savelog_main_character.png" className="custom-icon" />
-        </h2>
-        <button className="refresh-btn" onClick={() => load(entries.length > 0)}>↻</button>
-      </div>
+    <div
+      className="screen screen-feed"
+      ref={screenRef}
+      onTouchStart={handleTouchStart}
+      onTouchMove={handleTouchMove}
+      onTouchEnd={handleTouchEnd}
+      style={{ transform: pullState.y > 0 ? `translateY(${pullState.y}px)` : undefined, transition: pullState.y === 0 ? 'transform 240ms ease' : undefined }}
+    >
+      {/* Pull-to-refresh 인디케이터 */}
+      {(pullState.y > 0 || pullState.refreshing) && (
+        <div className="ptr-indicator" style={{ top: -50, height: 50 }}>
+          <span className={pullState.refreshing ? 'ptr-spin' : ''}>
+            {pullState.refreshing ? '🔄' : (pullState.y >= 60 ? '↑ 놓으면 새로고침' : '↓ 당겨서 새로고침')}
+          </span>
+        </div>
+      )}
 
       {/* 📸 짠물 스토리 가로 목록 */}
       <div className="story-row-container">
@@ -1100,14 +1291,125 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               className="story-circle-wrapper"
               onClick={() => setActiveStoryIndex(idx)}
             >
-              <div className="story-circle" style={p ? { borderColor: p.color } : {}}>
-                {story.nickname.charAt(0).toUpperCase()}
+              <div className="story-circle" style={p ? { background: `linear-gradient(135deg, ${p.color}, ${p.color}aa)` } : {}}>
+                {p ? (
+                  <img src={p.icon} alt="" style={{ width: '80%', height: '80%', objectFit: 'contain', zIndex: 2 }} />
+                ) : (
+                  story.nickname.charAt(0).toUpperCase()
+                )}
               </div>
               <span className="story-username">{story.nickname}</span>
             </div>
           );
         })}
       </div>
+
+
+
+      {/* 🏆 금주의 짠테크 꿀팁 베스트 */}
+      {feedTab === 'all' && topTips.length > 0 && (
+        <div className="top-tips-container">
+          <h3 className="top-tips-title"><CustomIcon emoji="🏆" /> 금주의 짠테크 꿀팁 베스트</h3>
+          <div className="top-tips-scroll">
+            {topTips.map((tip, idx) => {
+              const p = tip.persona ? PERSONAS[tip.persona] : null;
+              return (
+                <div key={`${tip.entryId}-${idx}`} className="top-tip-card">
+                  <div className="top-tip-header">
+                    <span className="top-tip-avatar" style={p ? { background: `${p.color}20`, color: p.color } : {}}>
+                      {p ? <img src={p.icon} alt="" className="custom-icon--sm" /> : <CustomIcon emoji="🐷" className="custom-icon--sm" />}
+                    </span>
+                    <span className="top-tip-nickname">{tip.nickname}</span>
+                  </div>
+                  <p className="top-tip-text">
+                    <span className="top-tip-emoji"><CustomIcon emoji={tip.item.emoji} /></span>
+                    {(tip.item.comment || '').replace(/^\[.*?\]\s*/, '') /* Remove category prefix if any */}
+                  </p>
+                  <div className="top-tip-footer">
+                    <span className="top-tip-likes"><CustomIcon emoji="❤️" /> {tip.likes}</span>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* 👀 어제 친구들이 남긴 한 줄 — 재진입 동기 */}
+      {(() => {
+        const yest = new Date(); yest.setDate(yest.getDate() - 1);
+        const yestStr = `${yest.getFullYear()}-${String(yest.getMonth()+1).padStart(2,'0')}-${String(yest.getDate()).padStart(2,'0')}`;
+        const yestEntries = entries
+          .filter(e => e.user_id !== userId && e.date === yestStr)
+          .slice(0, 8);
+        if (yestEntries.length === 0) return null;
+        return (
+          <div className="yesterday-strip">
+            <h4 className="yesterday-strip-title">어제 친구들의 한 줄</h4>
+            <div className="yesterday-strip-list">
+              {yestEntries.map(e => {
+                const p = e.persona ? PERSONAS[e.persona] : null;
+                const firstComment = (e.items || []).find(it => (it.comment || '').trim())?.comment || '';
+                const preview = firstComment.length > 24 ? firstComment.slice(0, 24) + '…' : firstComment;
+                return (
+                  <div key={e.id} className="yesterday-strip-card">
+                    <div className="yesterday-strip-avatar" style={p ? { borderColor: p.color } : {}}>
+                      {p ? <img src={p.icon} alt="" /> : (e.nickname ? e.nickname.charAt(0).toUpperCase() : '?')}
+                    </div>
+                    <span className="yesterday-strip-name">{e.nickname}</span>
+                    {preview && <span className="yesterday-strip-preview">{preview}</span>}
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 📝 인라인 포스트 컴포저 (Facebook/LinkedIn 스타일 기록 CTA) */}
+      <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+        {daily.recorded && daily.date === getTodayStr() ? (
+          <div className="feed-composer-done">
+            <span className="feed-composer-done-icon"><CustomIcon emoji="✅" /></span>
+            <div className="feed-composer-done-info">
+              <span className="feed-composer-done-text">오늘 기록 완료!</span>
+              <span className="feed-composer-done-amount">{formatAmount(daily.spentAmount ?? 0)} 지출</span>
+            </div>
+            <button className="feed-composer-add-btn" onClick={onRecord}>추가 기록</button>
+          </div>
+        ) : (
+          <>
+            <div className="feed-composer-prompt" onClick={onRecord}>
+              <span className="feed-composer-avatar">
+                {(() => { const p = getPersona(); return p ? <img src={PERSONAS[p].icon} alt="" className="custom-icon" /> : <CustomIcon emoji="🐷" className="custom-icon" />; })()}
+              </span>
+              <span className="feed-composer-placeholder">오늘 어떤 하루였어요?</span>
+            </div>
+            <div className="feed-composer-actions">
+              <button className="feed-composer-action-btn" onClick={onRecord}>
+                <CustomIcon emoji="📝" /> <span>오늘 기록</span>
+              </button>
+              <button className="feed-composer-action-btn" onClick={onQuickZeroSpend}>
+                <CustomIcon emoji="🌿" /> <span>지갑 쉬는 날</span>
+              </button>
+            </div>
+            {!daily.recorded && streak.totalDays === 0 && (
+              <p className="feed-composer-onboarding-hint"><CustomIcon emoji="✨" /> 첫 지출을 기록해보세요!</p>
+            )}
+          </>
+        )}
+
+
+      </div>
+
+      {/* 💰 보류 포인트 배너 */}
+      {pendingPoints > 0 && (
+        <div className="feed-pending-banner" onClick={onClaimPending}>
+          <span className="feed-pending-icon"><CustomIcon emoji="💰" /></span>
+          <span className="feed-pending-text">미수령 포인트 <strong>{pendingPoints}원</strong>이 있어요!</span>
+          <span className="feed-pending-cta">{pendingClaiming ? '처리 중...' : '받기 →'}</span>
+        </div>
+      )}
 
       {/* 탭 필터: 전체 / 팔로우 / 절약 그룹 */}
       <div className="feed-tab-bar">
@@ -1127,7 +1429,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           /* 그룹 미가입 상태 - 그룹 디렉토리 */
           <div className="group-directory">
             <div className="group-directory-header">
-              <h3 className="group-sec-title">🔥 추천 절약 그룹</h3>
+              <h3 className="group-sec-title"><CustomIcon emoji="🔥" /> 추천 절약 그룹</h3>
               <button className="create-group-btn" onClick={() => setShowCreateGroupModal(true)}>
                 + 내 그룹 만들기
               </button>
@@ -1137,10 +1439,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               {allGroups.map((group) => (
                 <div key={group.id} className="group-item-card glass-card">
                   <div className="group-item-header">
-                    <span className="group-item-name">{group.name}</span>
-                    <span className="group-item-members">👤 {group.members.length}명</span>
+                    <span className="group-item-name">{renderTextWithEmoji(group.name)}</span>
+                    <span className="group-item-members"><CustomIcon emoji="👥" /> {group.members.length}명</span>
                   </div>
-                  <p className="group-item-desc">{group.desc}</p>
+                  <p className="group-item-desc">{renderTextWithEmoji(group.desc)}</p>
                   <div className="group-item-footer">
                     <div className="group-item-meta">
                       <span>하루: <strong>{group.dailyBudget.toLocaleString('ko-KR')}원</strong></span>
@@ -1161,8 +1463,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             <div className="group-info-card glass-card">
               <div className="group-info-header">
                 <div>
-                  <h3 className="group-title">{activeGroup.name}</h3>
-                  <p className="group-desc">{activeGroup.desc}</p>
+                  <h3 className="group-title">{renderTextWithEmoji(activeGroup.name)}</h3>
+                  <p className="group-desc">{renderTextWithEmoji(activeGroup.desc)}</p>
                 </div>
                 <button className="group-leave-btn" onClick={handleLeaveGroup}>그룹 탈퇴</button>
               </div>
@@ -1203,13 +1505,19 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 
                 const isSafe = usePercent < 70;
                 const isWarning = usePercent >= 70 && usePercent <= 100;
-                const stateColor = isSafe ? '#00F5A0' : isWarning ? '#FFC800' : '#FF4D4F';
-                const stateText = isSafe ? '🌿 안전 (예산 준수 중)' : isWarning ? '⚠️ 경고 (예산 간당간당)' : '🚨 초과! (절약 요망)';
+                const stateColor = isSafe ? 'var(--success)' : isWarning ? 'var(--warning)' : 'var(--error)';
+                const stateText = isSafe ? (
+                  <span><CustomIcon emoji="🌿" /> 여유 있게 페이스 유지 중</span>
+                ) : isWarning ? (
+                  <span><CustomIcon emoji="✨" /> 절반쯤 왔어요</span>
+                ) : (
+                  <span><CustomIcon emoji="🌈" /> 이번 주는 좀 더 썼네요</span>
+                );
                 
                 return (
                   <>
                     <div className="gauge-header">
-                      <span className="gauge-label">📊 주간 공동 예산 소진율</span>
+                      <span className="gauge-label"><CustomIcon emoji="📊" /> 주간 공동 예산 소진율</span>
                       <span className="gauge-percent" style={{ color: stateColor }}>{usePercent}%</span>
                     </div>
                     <div className="gauge-bar-bg">
@@ -1226,7 +1534,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
             {/* 리그 순위 판 (Leagues Leaderboard) */}
             <div className="group-league-board glass-card">
-              <h4 className="league-title">🏆 실시간 절약 리그</h4>
+              <h4 className="league-title"><CustomIcon emoji="🏆" /> 실시간 절약 리그</h4>
               <p className="league-sub">평균 지출이 적을수록 높은 순위를 차지합니다.</p>
               <div className="league-rows">
                 {(() => {
@@ -1305,11 +1613,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
             {/* 그룹 전용 피드 */}
             <div className="group-feed">
-              <h4 className="group-feed-title">💬 우리 그룹 소식통</h4>
+              <h4 className="group-feed-title"><CustomIcon emoji="💬" /> 우리 그룹 소식통</h4>
               {groupFilteredEntries.length === 0 ? (
                 <div className="empty-state">
                   <p>우리 그룹 멤버의 이번 주 지출 기록이 없어요.</p>
-                  <p className="empty-sub">첫 지출을 올려서 공유해 보세요!</p>
+                  <p className="empty-sub">짧은 한 줄, 사진 한 장이면 충분해요</p>
                 </div>
               ) : (
                 <div className="feed-list">
@@ -1331,7 +1639,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           {balanceEntry !== 'empty' && (
             <div className="glass-card balance-game-card-glow">
               <div className="balance-card-header">
-                <span className="balance-card-title">⚖️ 실시간 짠물 배틀</span>
+                <span className="balance-card-title"><CustomIcon emoji="⚖️" /> 실시간 짠물 배틀</span>
                 {balanceEntry !== 'loading' && typeof balanceEntry === 'object' && (
                   <span className="balance-card-status">판정 진행 중</span>
                 )}
@@ -1353,7 +1661,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                       <div className="balance-receipt-items">
                         {spendItems.map((item, i) => (
                           <div key={i} className="balance-receipt-item">
-                            <span className="balance-receipt-item-label">{item.emoji} {item.comment || item.category}</span>
+                            <span className="balance-receipt-item-label"><CustomIcon emoji={item.emoji} /> {item.comment || item.category}</span>
                             <span className="balance-receipt-item-amount">{item.amount.toLocaleString('ko-KR')}원</span>
                           </div>
                         ))}
@@ -1366,7 +1674,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
                     {/* 한마디 */}
                     {noteItem && (
-                      <p className="balance-note">💬 {noteItem.comment}</p>
+                      <p className="balance-note"><CustomIcon emoji="💬" /> {noteItem.comment}</p>
                     )}
 
                     {balanceVoted ? (
@@ -1376,11 +1684,11 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           <div className="balance-result-row">
                             <span className="balance-result-over">
                               과소비 {balanceStats.over}%
-                              {balanceVoted === 'over' && <span className="balance-result-badge balance-result-badge--over">내 판정 💸</span>}
+                              {balanceVoted === 'over' && <span className="balance-result-badge balance-result-badge--over">내 판정 <CustomIcon emoji="💸" /></span>}
                             </span>
                             <span className="balance-result-total">총 {totalVotes}명 참여</span>
                             <span className="balance-result-ok">
-                              {balanceVoted === 'ok' && <span className="balance-result-badge balance-result-badge--ok">내 판정 🌿</span>}
+                              {balanceVoted === 'ok' && <span className="balance-result-badge balance-result-badge--ok">내 판정 <CustomIcon emoji="🌿" /></span>}
                               합리적 {balanceStats.ok}%
                             </span>
                           </div>
@@ -1420,8 +1728,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                             try {
                               const stats = await submitBalanceVote(entry.id, userId, 'over');
                               setBalanceStats(stats);
-                              onGrantFeedReward?.();
-                              showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+                              showFeedToast('⚖️ 투표 완료!');
                             } catch {
                               setBalanceStats(null);
                               setBalanceVoted(null);
@@ -1433,7 +1740,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           }}
                           className="balance-vote-card balance-vote-card--over"
                         >
-                          <span className="vote-emoji">💸</span>
+                          <span className="vote-emoji"><CustomIcon emoji="💸" /></span>
                           <span className="vote-title">과소비</span>
                           <span className="vote-desc">참을 수 없던 사치</span>
                         </button>
@@ -1447,8 +1754,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                             try {
                               const stats = await submitBalanceVote(entry.id, userId, 'ok');
                               setBalanceStats(stats);
-                              onGrantFeedReward?.();
-                              showFeedToast('⚖️ 투표 완료! +1원 즉시 지급!');
+                              showFeedToast('⚖️ 투표 완료!');
                             } catch {
                               setBalanceStats(null);
                               setBalanceVoted(null);
@@ -1460,7 +1766,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                           }}
                           className="balance-vote-card balance-vote-card--ok"
                         >
-                          <span className="vote-emoji">🌿</span>
+                          <span className="vote-emoji"><CustomIcon emoji="🌿" /></span>
                           <span className="vote-title">합리적</span>
                           <span className="vote-desc">생존형 필수 소비</span>
                         </button>
@@ -1474,14 +1780,31 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
           {/* 💪 이번 주 그룹 챌린지 */}
           <div className="glass-card challenge-card">
-            <div className="challenge-card-header">
+            <div className="challenge-card-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <span className="challenge-card-title">💪 이번 주 그룹 챌린지</span>
+              <button 
+                className="challenge-create-custom-btn" 
+                onClick={() => setShowCustomModal(true)}
+                style={{
+                  background: 'linear-gradient(135deg, #FF7893 0%, #FF5E7E 100%)',
+                  border: 'none',
+                  borderRadius: '20px',
+                  padding: '3px 10px',
+                  color: '#fff',
+                  fontSize: '10px',
+                  fontWeight: 900,
+                  cursor: 'pointer',
+                  boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                }}
+              >
+                <CustomIcon emoji="➕" /> 놀이 만들기
+              </button>
             </div>
             <div className="challenge-card-body">
-              <span className="challenge-emoji">{weekChallenge.emoji}</span>
+              <span className="challenge-emoji"><CustomIcon emoji={weekChallenge.emoji} /></span>
               <div className="challenge-info">
-                <p className="challenge-name">{weekChallenge.title}</p>
-                <p className="challenge-desc">{weekChallenge.desc}</p>
+                <p className="challenge-name">{renderTextWithEmoji(weekChallenge.title)}</p>
+                <p className="challenge-desc">{renderTextWithEmoji(weekChallenge.desc)}</p>
               </div>
               <button
                 onClick={() => handleToggleChallenge(weekChallenge.id)}
@@ -1502,8 +1825,8 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 </>
               ) : (
                 <>
-                  <p>아직 기록이 없어요</p>
-                  <p className="empty-sub">첫 번째로 오늘 소비를 기록해 보세요!</p>
+                  <p>오늘 뭐든 편하게 남겨봐요</p>
+                  <p className="empty-sub">짧은 한 줄, 사진 한 장이면 충분해요</p>
                 </>
               )}
             </div>
@@ -1517,51 +1840,73 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               )}
               {displayedEntries.length === 0 && feedTab === 'follow' && (
                 <div className="follow-empty-state">
-                  <p className="follow-empty-icon">👥</p>
+                  <p className="follow-empty-icon"><CustomIcon emoji="👥" /></p>
                   <p className="follow-empty-title">
-                    {Object.keys(followedUsers).length > 0 ? '팔로우한 짠친의 기록이 없어요' : '팔로우한 짠친이 없어요'}
+                    {Object.keys(followedUsers).length > 0 ? '오늘은 아직 친구들의 새 소식이 없어요' : '마음에 드는 사람 한 명만 골라봐요'}
                   </p>
                   <p className="follow-empty-desc">
                     {Object.keys(followedUsers).length > 0
-                      ? '팔로우한 짠친들이 아직 기록을 남기지 않았어요'
-                      : recommendedFriends.length > 0 ? '아래 추천하는 짠친들을 팔로우해 보세요!' : '전체 탭에서 다른 짠친들을 팔로우해 보세요'}
+                      ? '내일은 어떤 이야기가 올라올까요?'
+                      : recommendedFriends.length > 0 ? '아래 친구 후보들 중 마음에 드는 사람을 골라보세요' : '피드에서 마음에 드는 사람을 발견해보세요'}
                   </p>
                 </div>
               )}
-              {feedTab === 'follow' && recommendedFriends.length > 0 && (
-                <div className="glass-card recommended-friends-box">
-                  <h4 className="recommended-friends-header">✨ 추천 짠친</h4>
-                  <div className="recommended-friends-list">
+              {feedTab === 'follow' && (
+                <div className="follow-search-box">
+                  <input
+                    type="text"
+                    className="follow-search-input"
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    placeholder="🔍 닉네임으로 짠친 검색"
+                    maxLength={20}
+                  />
+                  {searchQuery.trim().length > 0 && (
+                    <div className="follow-search-results">
+                      {searching && <p className="follow-search-status">검색 중...</p>}
+                      {!searching && searchResults.length === 0 && (
+                        <p className="follow-search-status">검색 결과가 없어요</p>
+                      )}
+                      {!searching && searchResults.map((u) => {
+                        const p = u.persona ? PERSONAS[u.persona] : null;
+                        const isFollowing = !!followedUsers[u.user_id];
+                        return (
+                          <div key={u.user_id} className="follow-search-row">
+                            <div className="follow-search-avatar" style={p ? { borderColor: p.color } : {}}>
+                              {p ? <img src={p.icon} alt="" /> : u.nickname.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="follow-search-name">{u.nickname}</span>
+                            <button
+                              className={`follow-search-btn ${isFollowing ? 'following' : ''}`}
+                              onClick={() => handleToggleFollow(u.user_id, u.nickname)}
+                            >
+                              {isFollowing ? '팔로잉' : '팔로우'}
+                            </button>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              )}
+              {feedTab === 'follow' && recommendedFriends.length > 0 && searchQuery.trim().length === 0 && (
+                <div className="recommended-friends-strip">
+                  <h4 className="recommended-friends-strip-title">추천 짠친</h4>
+                  <div className="recommended-friends-strip-list">
                     {recommendedFriends.map((friend) => {
                       const p = friend.persona ? PERSONAS[friend.persona] : null;
+                      const isFollowing = !!followedUsers[friend.user_id];
                       return (
-                        <div key={friend.user_id} className="recommended-friend-row">
-                          <div className="recommended-friend-info">
-                            <div className="feed-avatar feed-avatar--sm" style={p ? { borderColor: p.color } : {}}>
-                              {friend.nickname.charAt(0).toUpperCase()}
-                            </div>
-                            <div className="recommended-friend-meta">
-                              <div className="recommended-friend-name-row">
-                                <span className="recommended-friend-name">{friend.nickname}</span>
-                                {p && (
-                                  <span className="rec-persona-tag" style={{ background: `${p.color}15`, color: p.color, border: `1px solid ${p.color}25` }}>
-                                    <img src={p.icon} alt="" />
-                                    <span>{p.name}</span>
-                                  </span>
-                                )}
-                              </div>
-                            </div>
+                        <div key={friend.user_id} className="rec-strip-card">
+                          <div className="rec-strip-avatar" style={p ? { borderColor: p.color } : {}}>
+                            {p ? <img src={p.icon} alt="" /> : friend.nickname.charAt(0).toUpperCase()}
                           </div>
+                          <span className="rec-strip-name">{friend.nickname}</span>
                           <button
-                            onClick={() => {
-                              const nowFollowing = toggleFollow(friend.user_id, friend.nickname);
-                              setFollowedUsers(getFollowedUsers());
-                              showFeedToast(nowFollowing ? `${friend.nickname}님을 팔로우했어요 👥` : `${friend.nickname}님 팔로우 해제`);
-                              toggleFollowSupabase(userId, friend.user_id, friend.nickname).catch(() => {});
-                            }}
-                            className="recommended-follow-btn"
+                            onClick={() => handleToggleFollow(friend.user_id, friend.nickname)}
+                            className={`rec-strip-btn ${isFollowing ? 'following' : ''}`}
                           >
-                            + 팔로우
+                            {isFollowing ? '✓' : '+'}
                           </button>
                         </div>
                       );
@@ -1591,7 +1936,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                   {messageRecipientEntry.nickname}님에게 응원 보내기
                 </h3>
                 <p className="story-modal-label">
-                  익명으로 전달되는 짠내 응원 쪽지입니다.
+                  익명으로 따뜻한 한마디를 전해보세요.
                 </p>
               </div>
             </div>
@@ -1600,10 +1945,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               {/* 퀵 템플릿 칩 */}
               <div className="message-template-chips">
                 {[
-                  '오늘 하루도 잘 버텼어요! 👏',
-                  '무지출 성공 축하드려요! 🎉',
-                  '절약 고수의 품격이네요 👑',
-                  '저도 자극받아 허리띠 졸라맵니다 🔥'
+                  '오늘도 수고했어요 👏',
+                  '나도 자극 받고 가요 ✨',
+                  '같이 해볼래요? 🤝',
+                  '한 발씩 같이 가요 🌱'
                 ].map((tpl) => (
                   <button
                     key={tpl}
@@ -1645,100 +1990,127 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
           <div className="story-viewer-overlay" onClick={() => setActiveStoryIndex(null)}>
             <div
               className="story-viewer-card"
-              style={{ background: story.bgGradient }}
               onClick={(e) => e.stopPropagation()}
-              onDoubleClick={(e) => {
-                const rect = e.currentTarget.getBoundingClientRect();
-                const clickX = e.clientX || (rect.left + rect.width / 2);
-                const clickY = e.clientY || (rect.top + 200);
-                
-                setStoryDoubleTapped(prev => ({ ...prev, [story.id]: true }));
-                setTimeout(() => {
-                  setStoryDoubleTapped(prev => ({ ...prev, [story.id]: false }));
-                }, 800);
-                
-                spawnStoryParticles('❤️', clickX, clickY);
-                showFeedToast(`${story.nickname}님에게 ❤️ 반응을 보냈습니다!`);
-              }}
             >
-              {/* 스토리 진행 표시기 */}
-              <div className="story-progress-indicator-bar">
-                {allStories.map((s, idx) => {
-                  let width = '0%';
-                  if (idx < activeStoryIndex) width = '100%';
-                  else if (idx === activeStoryIndex) width = `${storyProgress}%`;
-                  return (
-                    <div key={s.id} className="story-progress-segment-bg">
-                      <div className="story-progress-segment-fill" style={{ width }} />
+              {/* 게임기 하드웨어 상단 디자인 */}
+              <div className="story-console-hardware-header">
+                <div className="story-console-brand">SAVELOG <span>COLOR</span></div>
+                <div className="story-console-power-led">POWER</div>
+              </div>
+
+              {/* CRT 스크린 베젤 */}
+              <div
+                className="story-console-screen-bezel"
+                style={{ background: story.bgGradient }}
+                onDoubleClick={(e) => {
+                  const rect = e.currentTarget.getBoundingClientRect();
+                  const clickX = e.clientX || (rect.left + rect.width / 2);
+                  const clickY = e.clientY || (rect.top + 200);
+                  
+                  setStoryDoubleTapped(prev => ({ ...prev, [story.id]: true }));
+                  setTimeout(() => {
+                    setStoryDoubleTapped(prev => ({ ...prev, [story.id]: false }));
+                  }, 800);
+                  
+                  spawnStoryParticles('💖', clickX, clickY);
+                  showFeedToast(`${story.nickname}님에게 따뜻한 응원을 보냈습니다!`);
+                }}
+              >
+                {/* CRT 스캔라인 오버레이 */}
+                <div className="story-console-crt-overlay" />
+
+                {/* 스토리 배경 이미지 (있을 경우) */}
+                {story.image && <img src={story.image} className="story-viewer-image" />}
+                {story.image && <div className="story-viewer-image-overlay" />}
+
+                {/* 스토리 진행 표시기 (배터리 게이지 모양) */}
+                <div className="story-console-battery-indicator">
+                  <span>BATT</span>
+                  <div className="story-console-battery-icon">
+                    <div className="story-console-battery-fill" style={{ width: `${storyProgress}%` }} />
+                  </div>
+                  <span style={{ marginLeft: '4px' }}>{activeStoryIndex + 1}/{allStories.length}</span>
+                </div>
+
+                {/* 스토리 작성자 정보 */}
+                <div className="story-viewer-header">
+                  <div className="story-viewer-user">
+                    <div className="story-viewer-avatar" style={p ? { borderColor: p.color } : {}}>
+                      {story.nickname.charAt(0).toUpperCase()}
                     </div>
-                  );
-                })}
+                    <div>
+                      <span className="story-viewer-name">{story.nickname}</span>
+                      <span className="story-viewer-time">{timeAgo(story.createdAt)}</span>
+                    </div>
+                  </div>
+                  <button className="story-viewer-close-btn" onClick={() => setActiveStoryIndex(null)}>✕</button>
+                </div>
+
+                {/* 스토리 내용 */}
+                <div className="story-viewer-body">
+                  <p className="story-viewer-text">{story.text}</p>
+                  {storyDoubleTapped[story.id] && (
+                    <div className="heart-double-tap-overlay">❤️</div>
+                  )}
+
+                  {/* 다마고치 동반자 마스코트 오버레이 */}
+                  {p && (
+                    <div className="story-console-companion">
+                      <div className="story-console-avatar-box">
+                        <img src={p.icon} alt={p.name} />
+                      </div>
+                      <div className="story-console-speech-bubble">
+                        {p.name}
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* 터치 네비게이션 구역 */}
+                <div
+                  className="story-viewer-nav-area story-viewer-nav-area--left"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveStoryIndex(prev => (prev !== null && prev > 0) ? prev - 1 : null);
+                  }}
+                />
+                <div
+                  className="story-viewer-nav-area story-viewer-nav-area--right"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setActiveStoryIndex(prev => (prev !== null && prev < allStories.length - 1) ? prev + 1 : null);
+                  }}
+                />
               </div>
 
-              {/* 스토리 작성자 정보 */}
-              <div className="story-viewer-header">
-                <div className="story-viewer-user">
-                  <div className="story-viewer-avatar" style={p ? { borderColor: p.color } : {}}>
-                    {story.nickname.charAt(0).toUpperCase()}
-                  </div>
-                  <div>
-                    <span className="story-viewer-name">{story.nickname}</span>
-                    <span className="story-viewer-time">{timeAgo(story.createdAt)}</span>
+              {/* 하드웨어 하단 조작기 (글로시 아케이드 버튼 & 스피커 그릴) */}
+              <div className="story-console-hardware-footer">
+                <div className="story-viewer-footer">
+                  {['❤️', '👏', '🔥', '💸', '🌿'].map((emoji) => (
+                    <button
+                      key={emoji}
+                      className="story-reaction-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        const rect = e.currentTarget.getBoundingClientRect();
+                        spawnStoryParticles(emoji, rect.left + rect.width / 2, rect.top);
+                        showFeedToast(`${story.nickname}님에게 ${emoji} 보냈습니다!`);
+                      }}
+                    >
+                      <CustomIcon emoji={emoji} />
+                    </button>
+                  ))}
+                </div>
+
+                <div className="story-console-speaker-grill">
+                  <div className="story-console-dpad-line">◀ SELECT / START ▶</div>
+                  <div className="story-console-grill-stripes">
+                    <div className="story-console-grill-stripe" />
+                    <div className="story-console-grill-stripe" />
+                    <div className="story-console-grill-stripe" />
+                    <div className="story-console-grill-stripe" />
                   </div>
                 </div>
-                {/* 🎵 음악 재생기 시뮬레이션 */}
-                <div className="story-music-badge">
-                  <span className="music-icon">🎵</span>
-                  <span className="music-title">짠내 로파이 (Savings Lofi)</span>
-                  <div className="equalizer-bars">
-                    <span className="eq-bar eq-bar-1"></span>
-                    <span className="eq-bar eq-bar-2"></span>
-                    <span className="eq-bar eq-bar-3"></span>
-                  </div>
-                </div>
-                <button className="story-viewer-close-btn" onClick={() => setActiveStoryIndex(null)}>✕</button>
-              </div>
-
-              {/* 스토리 내용 */}
-              <div className="story-viewer-body">
-                <p className="story-viewer-text">{story.text}</p>
-                {storyDoubleTapped[story.id] && (
-                  <div className="heart-double-tap-overlay">❤️</div>
-                )}
-              </div>
-
-              {/* 터치 네비게이션 구역 */}
-              <div
-                className="story-viewer-nav-area story-viewer-nav-area--left"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveStoryIndex(prev => (prev !== null && prev > 0) ? prev - 1 : null);
-                }}
-              />
-              <div
-                className="story-viewer-nav-area story-viewer-nav-area--right"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setActiveStoryIndex(prev => (prev !== null && prev < allStories.length - 1) ? prev + 1 : null);
-                }}
-              />
-
-              {/* 하단 리액션 및 이모지 응원 단축키 */}
-              <div className="story-viewer-footer">
-                {['❤️', '👏', '🔥', '💸', '🌿'].map((emoji) => (
-                  <button
-                    key={emoji}
-                    className="story-reaction-btn"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      const rect = e.currentTarget.getBoundingClientRect();
-                      spawnStoryParticles(emoji, rect.left + rect.width / 2, rect.top);
-                      showFeedToast(`${story.nickname}님에게 ${emoji} 보냈습니다!`);
-                    }}
-                  >
-                    {emoji}
-                  </button>
-                ))}
               </div>
             </div>
           </div>
@@ -1747,10 +2119,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
 
       {/* 📸 내 스토리 올리기 모달 */}
       {showAddStoryModal && (
-        <div className="story-modal-overlay" onClick={() => setShowAddStoryModal(false)}>
+        <div className="story-modal-overlay" onClick={closeStoryAddModal}>
           <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
             <div className="story-modal-header">
-              <h3 className="story-modal-name">내 짠물 스토리 올리기 📸</h3>
+              <h3 className="story-modal-name">내 짠물 스토리 올리기 <CustomIcon emoji="📸" /></h3>
               <p className="story-modal-label">24시간 동안 노출되는 절약 일기를 적어보세요.</p>
             </div>
             <div className="story-modal-content">
@@ -1761,6 +2133,35 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
                 className="message-modal-textarea"
                 maxLength={100}
               />
+
+              {/* 이미지 첨부 영역 */}
+              <div className="story-image-upload-section">
+                {storyImageError && (
+                  <p className="image-error-msg"><CustomIcon emoji="⚠️" /> {storyImageError}</p>
+                )}
+                {storyImage ? (
+                  <div className="story-image-preview-container">
+                    <img src={storyImage} alt="Story Preview" />
+                    <button
+                      className="story-image-remove-btn"
+                      onClick={() => setStoryImage(null)}
+                    >
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <label className="story-image-upload-label">
+                    <span><CustomIcon emoji="📸" /> 사진 첨부 (선택)</span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handleStoryImageChange}
+                      style={{ display: 'none' }}
+                    />
+                  </label>
+                )}
+              </div>
+
               <div className="story-bg-selection-row">
                 <span className="story-bg-label">배경 카드 색상</span>
                 <div className="story-bg-options">
@@ -1784,10 +2185,10 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
             </div>
             <div className="story-modal-footer">
               <div>
-                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setShowAddStoryModal(false)}>취소</Button>
+                <Button size="large" display="full" color="dark" variant="weak" onClick={closeStoryAddModal}>취소</Button>
               </div>
               <div>
-                <Button size="large" display="full" color="primary" variant="fill" disabled={!newStoryText.trim()} onClick={handleAddStory}>스토리 공유</Button>
+                <Button size="large" display="full" color="primary" variant="fill" disabled={!newStoryText.trim() && !storyImage} onClick={handleAddStory}>스토리 공유</Button>
               </div>
             </div>
           </div>
@@ -1799,7 +2200,7 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
         <div className="story-modal-overlay" onClick={() => setShowCreateGroupModal(false)}>
           <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
             <div className="story-modal-header">
-              <h3 className="story-modal-name">새로운 절약 그룹 개설 👥</h3>
+              <h3 className="story-modal-name">새로운 절약 그룹 개설 <CustomIcon emoji="👥" /></h3>
               <p className="story-modal-label">목표와 하루 지출 예산을 설정하고 짠친들을 모집하세요.</p>
             </div>
             <div className="story-modal-content">
@@ -1846,6 +2247,79 @@ export default function FeedScreen({ userId, onGrantFeedReward, refreshToken = 0
               </div>
               <div>
                 <Button size="large" display="full" color="primary" variant="fill" disabled={!newGroupName.trim() || !newGroupDesc.trim()} onClick={handleCreateGroupSubmit}>그룹 개설</Button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ➕ 우리만의 절약 놀이 만들기 모달 */}
+      {showCustomModal && (
+        <div className="story-modal-overlay" onClick={() => setShowCustomModal(false)}>
+          <div className="story-modal-sheet glass-card" onClick={(e) => e.stopPropagation()}>
+            <div className="story-modal-header">
+              <span style={{ fontSize: '24px' }}><CustomIcon emoji="🎮" /></span>
+              <div>
+                <h3 className="story-modal-name">우리만의 절약 놀이 만들기 <CustomIcon emoji="➕" /></h3>
+                <p className="story-modal-label">친구들과 함께하고 싶은 새로운 규칙을 정의해 보세요!</p>
+              </div>
+            </div>
+
+            <div className="story-modal-content">
+              <div className="group-form-field" style={{ marginBottom: 12 }}>
+                <label className="group-form-label">놀이 이름 (예: 물 마시기 챌린지)</label>
+                <input
+                  type="text"
+                  placeholder="예) 물 마시기 챌린지, 만보 걷기 등..."
+                  value={customTitle}
+                  onChange={(e) => setCustomTitle(e.target.value.slice(0, 24))}
+                  className="group-name-input"
+                  style={{ width: '100%', marginTop: 6 }}
+                  maxLength={24}
+                />
+              </div>
+
+              <div className="group-form-field" style={{ marginBottom: 12 }}>
+                <label className="group-form-label">놀이 규칙 설명</label>
+                <textarea
+                  placeholder="구체적인 규칙을 적어주세요. 예) 하루 물 2L 마시기 인증 샷을 올리면 플러스!"
+                  value={customDesc}
+                  onChange={(e) => setCustomDesc(e.target.value.slice(0, 100))}
+                  className="message-modal-textarea"
+                  style={{ minHeight: 60, marginBottom: 12 }}
+                  maxLength={100}
+                />
+              </div>
+
+              <div className="group-form-field">
+                <label className="group-form-label">대표 이모지</label>
+                <div style={{ display: 'flex', gap: '8px', marginTop: 6, flexWrap: 'wrap' }}>
+                  {['🏆', '💧', '🏃', '☕', '🍱', '🍳', '🎨', '📚'].map((emoji) => (
+                    <button
+                      key={emoji}
+                      onClick={() => setCustomEmoji(emoji)}
+                      style={{
+                        fontSize: '20px',
+                        padding: '6px 12px',
+                        borderRadius: '8px',
+                        border: customEmoji === emoji ? '2px solid var(--primary)' : '1px solid var(--border)',
+                        background: customEmoji === emoji ? 'var(--primary-light)' : 'rgba(255,255,255,0.05)',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      <CustomIcon emoji={emoji} />
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="story-modal-footer" style={{ marginTop: 16 }}>
+              <div>
+                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setShowCustomModal(false)}>취소</Button>
+              </div>
+              <div>
+                <Button size="large" display="full" color="primary" variant="fill" disabled={!customTitle.trim() || !customDesc.trim()} onClick={handleCreateCustomChallenge}>놀이 개설</Button>
               </div>
             </div>
           </div>

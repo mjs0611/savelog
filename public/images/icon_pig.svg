@@ -1,0 +1,36 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Ears -->
+  <!-- Left Ear -->
+  <path d="M 30 35 C 20 15, 12 25, 22 42 Z" fill="#FFAEC9" stroke="#4A2C2C" stroke-width="3.5" stroke-linejoin="round" />
+  <path d="M 28 36 C 22 22, 16 28, 23 39 Z" fill="#FF85A1" />
+  <!-- Right Ear -->
+  <path d="M 70 35 C 80 15, 88 25, 78 42 Z" fill="#FFAEC9" stroke="#4A2C2C" stroke-width="3.5" stroke-linejoin="round" />
+  <path d="M 72 36 C 78 22, 84 28, 77 39 Z" fill="#FF85A1" />
+
+  <!-- Face Round -->
+  <circle cx="50" cy="54" r="34" fill="#FFAEC9" stroke="#4A2C2C" stroke-width="3.5" />
+
+  <!-- Snout -->
+  <ellipse cx="50" cy="59" rx="12" ry="8" fill="#FF85A1" stroke="#4A2C2C" stroke-width="3" />
+  <circle cx="46" cy="59" r="2.2" fill="#4A2C2C" />
+  <circle cx="54" cy="59" r="2.2" fill="#4A2C2C" />
+
+  <!-- Hip Retro Oval Sunglasses -->
+  <!-- Left Lens -->
+  <ellipse cx="36" cy="45" rx="9" ry="6.5" fill="#2D2D2D" stroke="#4A2C2C" stroke-width="3" />
+  <circle cx="34" cy="43" r="2" fill="#FFF" />
+  
+  <!-- Right Lens -->
+  <ellipse cx="64" cy="45" rx="9" ry="6.5" fill="#2D2D2D" stroke="#4A2C2C" stroke-width="3" />
+  <circle cx="62" cy="43" r="2" fill="#FFF" />
+  
+  <!-- Sunglass Bridge -->
+  <path d="M 45 44 C 50 42, 50 42, 55 44" fill="none" stroke="#4A2C2C" stroke-width="3.5" stroke-linecap="round" />
+
+  <!-- Blush Cheeks -->
+  <circle cx="26" cy="56" r="5" fill="#FF527B" opacity="0.35" />
+  <circle cx="74" cy="56" r="5" fill="#FF527B" opacity="0.35" />
+
+  <!-- Cool Smile (Slightly smirked to one side for hipness) -->
+  <path d="M 47 70 Q 52 72 55 69" fill="none" stroke="#4A2C2C" stroke-width="2.5" stroke-linecap="round" />
+</svg>

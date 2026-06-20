@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { Button, TextField } from '@toss/tds-mobile';
-import { getAnonymousKey } from '@apps-in-toss/web-framework';
+import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
 import {
   getUserId,
   getUserKey,
@@ -18,8 +18,6 @@ import {
   getPendingPoints,
   addPendingPoints,
   consumePendingPoints,
-  getClaimedRankReward,
-  setClaimedRankReward,
   cleanupStaleKeys,
   getStreakShields,
   addStreakShield,
@@ -28,24 +26,26 @@ import {
   type StreakData,
   type DailyState,
 } from './lib/storage';
-import { initAit, grantPendingReward, grantRankReward, grantFeedReward } from './lib/tosspoint';
+import { initAit, grantPendingReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
-import { submitEntry, fetchWeekRank, isSupabaseConfigured, type SpendingItem, type WeekRankRow } from './lib/supabase';
+import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey } from './lib/utils';
-import HomeScreen from './screens/HomeScreen';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import RecordScreen from './screens/RecordScreen';
 import PersonaTest from './screens/PersonaTest';
+import ChatScreen from './screens/ChatScreen';
+import CommunityScreen from './screens/CommunityScreen';
+import CustomIcon from './components/CustomIcon';
 
-type Tab = 'home' | 'feed' | 'rank' | 'profile';
+type Tab = 'feed' | 'chat' | 'community' | 'mylog';
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
-  { key: 'home',    icon: '/images/icon_home.png', label: '홈'  },
-  { key: 'feed',    icon: '/images/icon_feed.png', label: '피드' },
-  { key: 'rank',    icon: '/images/icon_rank.png', label: '순위' },
-  { key: 'profile', icon: '/images/icon_profile.png', label: '내 정보'  },
+  { key: 'feed',      icon: '/images/icon_feed.png', label: '피드' },
+  { key: 'chat',      icon: '/images/icon_mail.png', label: '짠톡방' },
+  { key: 'community', icon: '/images/icon_rank.png', label: '커뮤니티' },
+  { key: 'mylog',     icon: '/images/icon_profile.png', label: '마이로그'  },
 ];
 
 
@@ -53,9 +53,7 @@ export default function App() {
   const fallbackId = useRef(getUserId()).current;
 
   const [anonymousKey, setAnonymousKey] = useState<string | null>(() => getUserKey());
-  const [termsAgreed, setTermsAgreed] = useState<boolean>(() => {
-    try { return localStorage.getItem('savelog_terms_agreed') === 'true'; } catch { return false; }
-  });
+  const [tossLinked, setTossLinked] = useState(() => localStorage.getItem('savelog_toss_linked') === 'true');
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginError, setLoginError] = useState<string | null>(null);
 
@@ -65,8 +63,10 @@ export default function App() {
   const [nicknameInput, setNicknameInput] = useState('');
   const [tab, setTab]           = useState<Tab>(() => {
     const path = window.location.pathname.replace(/^\//, '').split('/')[0];
-    if (path === 'feed' || path === 'rank' || path === 'profile') return path;
-    return 'home';
+    if (path === 'chat') return 'chat';
+    if (path === 'community') return 'community';
+    if (path === 'mylog' || path === 'profile') return 'mylog';
+    return 'feed';
   });
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
   const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
@@ -78,30 +78,54 @@ export default function App() {
   const [showZeroNote, setShowZeroNote] = useState(false);
   const [zeroNoteText, setZeroNoteText] = useState('');
   const [submitting, setSubmitting] = useState(false);
-  const [rankClaiming, setRankClaiming] = useState(false);
   const [pendingClaiming, setPendingClaiming] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
+  const [showRankingModal, setShowRankingModal] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
+  const [sharedEntryToPost, setSharedEntryToPost] = useState<any>(null);
   const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
-  const rankClaimingRef = useRef(false);
   const pendingClaimingRef = useRef(false);
   const rankLoadIdRef = useRef(0);
+
+  function handleShareToChat(entry: any) {
+    setSharedEntryToPost(entry);
+    setTab('chat');
+  }
 
   useEffect(() => {
     initAit();
     initBannerAds();
-    if (getPendingPoints() > 0) preloadReward();
+    preloadReward(); // 항상 리워드 광고 미리 로드
     loadRank();
     // 지난 주 순위 로드 (리워드 수령 판단용)
     fetchWeekRank(getPrevWeekKey()).then(data => { if (data) setPrevWeekRank(data); }).catch(() => {});
     cleanupStaleKeys();
-    if (termsAgreed && !anonymousKey && import.meta.env.PROD) {
-      fetchAnonymousKey();
+
+    // 연결 끊기 후 재진입 방지 + non-numeric key 재로그인 강제
+    const currentKey = getUserKey();
+    const isLinked = localStorage.getItem('savelog_toss_linked') === 'true';
+    if (currentKey && isLinked) {
+      const numericKey = Number(currentKey);
+      if (isNaN(numericKey) || numericKey === 0) {
+        // non-numeric = proper Toss login 미완료 → 재로그인 강제
+        localStorage.removeItem('savelog_toss_linked');
+        setTossLinked(false);
+      } else {
+        // numeric = users 테이블 검증
+        verifyUserLinked(currentKey).then(valid => {
+          if (!valid) {
+            localStorage.removeItem('savelog_user_key');
+            localStorage.removeItem('savelog_toss_linked');
+            setAnonymousKey(null);
+            setTossLinked(false);
+          }
+        }).catch(() => {});
+      }
     }
   }, []);
 
@@ -119,6 +143,7 @@ export default function App() {
         // 백그라운드 복귀 시 피드·프로필 갱신 (stale 데이터 방지)
         setFeedRefreshToken(t => t + 1);
         setProfileRefreshToken(t => t + 1);
+        preloadReward(); // 백그라운드 복귀 시 광고 재로드
       }
     }
     document.addEventListener('visibilitychange', handleVisibilityChange);
@@ -128,9 +153,8 @@ export default function App() {
   function navigateTo(next: Tab) {
     setTab(next);
     if (next === 'feed') setFeedRefreshToken(t => t + 1);
-    if (next === 'profile') setProfileRefreshToken(t => t + 1);
-    if (next === 'rank') loadRank();
-    const path = next === 'home' ? '/' : '/' + next;
+    if (next === 'mylog') setProfileRefreshToken(t => t + 1);
+    const path = '/' + next;
     window.history.replaceState(null, '', path);
   }
 
@@ -154,21 +178,68 @@ export default function App() {
     }
   }
 
-  // ── 유저 식별키 발급 ────────────────────────────────────────────────────────
-  async function fetchAnonymousKey() {
+  // ── 토스 로그인 ─────────────────────────────────────────────────────────────
+  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
+  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
+
+  async function handleTossLogin() {
     if (loginLoading) return;
     setLoginLoading(true);
     setLoginError(null);
+    // Step 1: 토스 로그인 SDK (약관 동의 + 인가코드 발급)
+    let authorizationCode: string;
+    let referrer: string | undefined;
     try {
-      const result = await getAnonymousKey();
-      if (result && typeof result === 'object' && result.type === 'HASH') {
-        setUserKeyStorage(result.hash);
-        setAnonymousKey(result.hash);
+      const result = await appLogin();
+      authorizationCode = result.authorizationCode;
+      referrer = result.referrer ?? undefined;
+    } catch (e) {
+      console.error('[TossLogin] appLogin failed', e);
+      setLoginError('토스 로그인을 완료할 수 없어요. 잠시 후 다시 시도해 주세요.');
+      setLoginLoading(false);
+      return;
+    }
+
+    try {
+      // Step 2: Supabase Edge Function으로 토큰 교환 → userKey 획득
+      const res = await fetch(`${SUPABASE_URL}/functions/v1/toss-login`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'apikey': SUPABASE_ANON_KEY,
+          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ authorizationCode, referrer, oldUserId: userId }),
+      });
+      const data = await res.json();
+
+      if (res.ok && data.userKey) {
+        // userKey를 문자열로 변환하여 기존 userId 체계와 호환
+        const userKeyStr = String(data.userKey);
+        setUserKeyStorage(userKeyStr);
+        setAnonymousKey(userKeyStr);
+        localStorage.setItem('savelog_terms_agreed', 'true');
+        localStorage.setItem('savelog_toss_linked', 'true');
+        setTossLinked(true);
       } else {
-        setLoginError(`식별키 발급 실패: ${result}`);
+        // Edge Function 실패 (mTLS 등) — 사용자 차단하지 않고 anonymous fallback
+        console.warn('[TossLogin] Edge Function failed, fallback to anonymous', res.status, data);
+        const anonResult = await getAnonymousKey();
+        if (anonResult && typeof anonResult === 'object' && anonResult.type === 'HASH') {
+          if (!anonymousKey) {
+            setUserKeyStorage(anonResult.hash);
+            setAnonymousKey(anonResult.hash);
+          }
+          localStorage.setItem('savelog_terms_agreed', 'true');
+          localStorage.setItem('savelog_toss_linked', 'true');
+          setTossLinked(true);
+        } else {
+          setLoginError('로그인 처리 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
+        }
       }
     } catch (e) {
-      setLoginError(e instanceof Error ? e.message : String(e));
+      console.error('[TossLogin] error', e);
+      setLoginError(`네트워크 오류: ${e instanceof Error ? e.message : String(e)}`);
     } finally {
       setLoginLoading(false);
     }
@@ -182,49 +253,21 @@ export default function App() {
     setNicknameState(name);
   }
 
-  if (!termsAgreed) {
+  if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) {
+    const isMigration = !!nickname;
     return (
       <div className="screen setup-screen">
         <div className="setup-hero">
           <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
           <h1 className="setup-title">savelog</h1>
-          <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
+          {isMigration ? (
+            <p className="setup-desc">더 안전한 서비스 이용을 위해<br />토스 계정 연동이 필요해요</p>
+          ) : (
+            <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
+          )}
         </div>
-        <div className="terms-agree-box">
-          <p className="terms-agree-subtitle">서비스 이용을 위해 아래 약관에 동의해 주세요</p>
-          <p className="terms-agree-text">
-            · <span>서비스 이용약관</span> (필수)<br />
-            · <span>개인정보 수집 및 이용 동의</span> (필수)<br />
-            · 마케팅 정보 수신 동의 (선택)
-          </p>
-        </div>
-        <Button
-          size="xlarge"
-          display="full"
-          color="primary"
-          variant="fill"
-          onClick={() => {
-            localStorage.setItem('savelog_terms_agreed', 'true');
-            setTermsAgreed(true);
-            if (import.meta.env.PROD) fetchAnonymousKey();
-          }}
-        >
-          모두 동의하고 시작하기
-        </Button>
-      </div>
-    );
-  }
-
-  if (!anonymousKey && import.meta.env.PROD) {
-    return (
-      <div className="screen setup-screen">
-        <div className="setup-hero">
-          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
-          <h1 className="setup-title">savelog</h1>
-          <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
-        </div>
-        <Button size="xlarge" display="full" color="primary" variant="fill" onClick={fetchAnonymousKey} disabled={loginLoading}>
-          {loginLoading ? '불러오는 중...' : '다시 시도하기'}
+        <Button size="xlarge" display="full" color="primary" variant="fill" onClick={handleTossLogin} disabled={loginLoading}>
+          {loginLoading ? '연동 중...' : isMigration ? '토스 계정 연동하기' : '토스로 시작하기'}
         </Button>
         {loginError && <p className="login-error-msg">{loginError}</p>}
       </div>
@@ -342,7 +385,7 @@ export default function App() {
               nickname: nickname!,
               date: today,
               week_key: 'milestone-' + weekKey,
-              items: [{ category: '마일스톤', emoji: '🏆', amount: 0, comment: `${newStreak.streak}일 연속 절약 챌린지 달성! 짠내 만렙 등극 🎉` }],
+              items: [{ category: '마일스톤', emoji: '🏆', amount: 0, comment: `${newStreak.streak}일 연속 기록 중! 작은 습관이 단단해지고 있어요 🌿` }],
               total_amount: 0,
               persona: currentPersona,
             }).catch(() => {});
@@ -410,31 +453,6 @@ export default function App() {
     });
   }
 
-  function handleClaimRankReward(amount: number) {
-    const weekKey = getPrevWeekKey(); // 리워드는 지난 주 기준
-    if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
-    rankClaimingRef.current = true;
-    setRankClaiming(true);
-    showReward(async () => {
-      try {
-        const ok = await grantRankReward(amount);
-        if (!ok) {
-          showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
-          return;
-        }
-        setClaimedRankReward(weekKey);
-        showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
-      } finally {
-        rankClaimingRef.current = false;
-        setRankClaiming(false);
-      }
-    }, () => {
-      rankClaimingRef.current = false;
-      setRankClaiming(false);
-      showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
-    });
-  }
-
   function showToast(msg: string) {
     if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
     setShowPointToast(msg);
@@ -460,50 +478,42 @@ export default function App() {
 
       {/* 탭 콘텐츠 — display:none으로 마운트 유지 (재요청/플리커 방지) */}
       <div className="tab-content">
-        <div className={tab !== 'home' ? 'tab-panel--hidden' : ''}>
-          <HomeScreen
-            daily={daily}
-            streak={streak}
-            weekRank={weekRank}
-            userId={userId}
-            pendingPoints={pendingPoints}
-            submitting={submitting}
-            streakShields={streakShields}
-            onRecord={() => setShowRecord(true)}
-            onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
-            onClaimPending={handleClaimPending}
-            pendingClaiming={pendingClaiming}
-          />
-        </div>
         <div className={tab !== 'feed' ? 'tab-panel--hidden' : ''}>
           <FeedScreen
             userId={userId}
             refreshToken={feedRefreshToken}
             weekRank={weekRank}
-            onGrantFeedReward={() => {
-              grantFeedReward(1).catch(() => {});
-            }}
+            daily={daily}
+            streak={streak}
+            pendingPoints={pendingPoints}
+            submitting={submitting}
+            pendingClaiming={pendingClaiming}
+            streakShields={streakShields}
+            onRecord={() => setShowRecord(true)}
+            onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
+            onClaimPending={handleClaimPending}
+            onNavigateToMyLog={() => navigateTo('mylog')}
+            onShareToChat={handleShareToChat}
           />
         </div>
-        <div className={tab !== 'rank' ? 'tab-panel--hidden' : ''}>
-          <RankScreen
+        <div className={tab !== 'chat' ? 'tab-panel--hidden' : ''}>
+          <ChatScreen
             userId={userId}
-            weekRank={weekRank}
-            prevWeekRank={prevWeekRank}
-            loading={rankLoading}
-            loadFailed={rankLoadFailed}
-            onClaimRankReward={handleClaimRankReward}
-            claimedThisWeek={getClaimedRankReward(getPrevWeekKey())}
-            rankClaiming={rankClaiming}
-            dailyRecorded={daily.recorded && daily.date === getTodayStr()}
-            onRetry={loadRank}
+            nickname={nickname || '절약가'}
+            sharedEntryToPost={sharedEntryToPost}
+            clearSharedEntry={() => setSharedEntryToPost(null)}
           />
         </div>
-        <div className={tab !== 'profile' ? 'tab-panel--hidden' : ''}>
+        <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
+          <CommunityScreen userId={userId} />
+        </div>
+        <div className={tab !== 'mylog' ? 'tab-panel--hidden' : ''}>
           <ProfileScreen
             userId={userId}
             nickname={nickname}
             streak={streak}
+            weekRank={weekRank}
+            daily={daily}
             refreshToken={profileRefreshToken}
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
@@ -512,9 +522,31 @@ export default function App() {
               setStreakShields(getStreakShields());
               showToast('🛡️ 공유 완료! 스트릭 보호권 +1 적립');
             }}
+            onShareToChat={handleShareToChat}
+            onOpenRanking={() => { loadRank(); setShowRankingModal(true); }}
           />
         </div>
       </div>
+
+      {/* 주간 랭킹 모달 */}
+      {showRankingModal && (
+        <div className="modal-overlay" onClick={() => setShowRankingModal(false)}>
+          <div className="modal-sheet ranking-modal-sheet" onClick={e => e.stopPropagation()}>
+            <div className="ranking-modal-header">
+              <h3 className="ranking-modal-title"><CustomIcon emoji="🏆" /> 이번 주 절약 랭킹</h3>
+              <button className="ranking-modal-close" onClick={() => setShowRankingModal(false)}>✕</button>
+            </div>
+            <RankScreen
+              userId={userId}
+              weekRank={weekRank}
+              prevWeekRank={prevWeekRank}
+              loading={rankLoading}
+              loadFailed={rankLoadFailed}
+              onRetry={loadRank}
+            />
+          </div>
+        </div>
+      )}
 
       {/* 하단 탭바 */}
       <nav className="bottom-nav">
@@ -544,7 +576,7 @@ export default function App() {
       {showZeroNote && (
         <div className="modal-overlay zero-note-modal-overlay" onClick={() => { if (!submitting) setShowZeroNote(false); }}>
           <div className="modal-sheet zero-note-modal-sheet" onClick={e => e.stopPropagation()}>
-            <p className="zero-note-modal-title">🌿 무지출 기록하기</p>
+            <p className="zero-note-modal-title"><CustomIcon emoji="🌿" /> 무지출 기록하기</p>
             <p className="zero-note-modal-desc">
               오늘 어떻게 무지출을 달성했나요? 한 줄로 남겨보세요.<br />피드에 공유되어 다른 사람들과 나눌 수 있어요.
             </p>
@@ -583,7 +615,7 @@ export default function App() {
             setShowPersonaTest(false);
             if (newPersona) {
               loadRank();
-              navigateTo('feed');
+              setFeedRefreshToken(t => t + 1);
             }
           }}
         />
@@ -597,3 +629,5 @@ export default function App() {
     </div>
   );
 }
+
+// Deploy timestamp 1780836526

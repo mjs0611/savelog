@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Headphones Band -->
+  <path d="M 28 36 A 22 22 0 0 1 72 36" fill="none" stroke="#4A2C2C" stroke-width="4.5" />
+
+  <!-- Bear Ears -->
+  <circle cx="32" cy="30" r="8" fill="#E5C29F" stroke="#4A2C2C" stroke-width="3" />
+  <circle cx="32" cy="30" r="4.5" fill="#C69B6E" />
+  <circle cx="68" cy="30" r="8" fill="#E5C29F" stroke="#4A2C2C" stroke-width="3" />
+  <circle cx="68" cy="30" r="4.5" fill="#C69B6E" />
+
+  <!-- Hip Street Cap (Yellow Forward Cap, slightly tilted) -->
+  <path d="M 32 30 C 32 18, 68 18, 68 30 Z" fill="#FFEAA7" stroke="#4A2C2C" stroke-width="3" />
+  <!-- Cap brim -->
+  <path d="M 24 30 C 36 24, 64 24, 76 30 C 80 30, 80 34, 76 34 L 24 34 Z" fill="#FFA800" stroke="#4A2C2C" stroke-width="3" stroke-linejoin="round" />
+
+  <!-- Bear Head -->
+  <circle cx="50" cy="48" r="24" fill="#E5C29F" stroke="#4A2C2C" stroke-width="3" />
+
+  <!-- Bear Muzzle -->
+  <ellipse cx="50" cy="53" rx="8" ry="6" fill="#FFF2E6" stroke="#4A2C2C" stroke-width="2.5" />
+  <polygon points="50,51 47,48 53,48" fill="#4A2C2C" />
+  <path d="M 47 55 Q 50 57 53 55" fill="none" stroke="#4A2C2C" stroke-width="2" stroke-linecap="round" />
+
+  <!-- Bear Eyes -->
+  <circle cx="39" cy="43" r="3.2" fill="#4A2C2C" />
+  <circle cx="61" cy="43" r="3.2" fill="#4A2C2C" />
+
+  <!-- Bear Blush -->
+  <circle cx="30" cy="49" r="3.5" fill="#FF85A1" opacity="0.4" />
+  <circle cx="70" cy="49" r="3.5" fill="#FF85A1" opacity="0.4" />
+
+  <!-- Big Street Headphones Cups -->
+  <rect x="21" y="38" width="6" height="15" rx="3" fill="#FF527B" stroke="#4A2C2C" stroke-width="3" />
+  <rect x="73" y="38" width="6" height="15" rx="3" fill="#FF527B" stroke="#4A2C2C" stroke-width="3" />
+
+  <!-- Bear Hands (peeking over the cart) -->
+  <circle cx="32" cy="65" r="5" fill="#E5C29F" stroke="#4A2C2C" stroke-width="3" />
+  <circle cx="68" cy="65" r="5" fill="#E5C29F" stroke="#4A2C2C" stroke-width="3" />
+
+  <!-- Shopping Cart (drawn over the bear body) -->
+  <path d="M 18 64 L 82 64 L 74 86 L 26 86 Z" fill="#EBF4FF" fill-opacity="0.9" stroke="#4A2C2C" stroke-width="3" stroke-linejoin="round" />
+  <!-- Wire grid on the cart -->
+  <line x1="34" y1="64" x2="38" y2="86" stroke="#4A2C2C" stroke-width="2" />
+  <line x1="50" y1="64" x2="50" y2="86" stroke="#4A2C2C" stroke-width="2" />
+  <line x1="66" y1="64" x2="62" y2="86" stroke="#4A2C2C" stroke-width="2" />
+  <line x1="22" y1="71" x2="78" y2="71" stroke="#4A2C2C" stroke-width="2" />
+  <line x1="24" y1="79" x2="76" y2="79" stroke="#4A2C2C" stroke-width="2" />
+
+  <!-- Cart Wheels -->
+  <circle cx="34" cy="91" r="5" fill="#757575" stroke="#4A2C2C" stroke-width="2.5" />
+  <circle cx="34" cy="91" r="1.5" fill="#FFF" />
+  <circle cx="66" cy="91" r="5" fill="#757575" stroke="#4A2C2C" stroke-width="2.5" />
+  <circle cx="66" cy="91" r="1.5" fill="#FFF" />
+</svg>

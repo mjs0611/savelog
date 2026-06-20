@@ -80,8 +80,9 @@ export function preloadReward() {
 
 export function showReward(onEarned: () => void, onSkipped?: () => void) {
   if (!IS_AIT || !showFullScreenAd.isSupported() || !rewardLoaded) {
-    // 개발 환경 또는 미지원 환경: 바로 보상 지급
-    onEarned();
+    // 광고가 준비되지 않음 → 스킵 처리 + 재로드 시도
+    preloadReward();
+    onSkipped?.();
     return;
   }
   rewardLoaded = false;

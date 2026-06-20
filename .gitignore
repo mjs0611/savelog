@@ -10,3 +10,14 @@ tsconfig.tsbuildinfo
 venv/
 .venv/
 __pycache__/
+
+# 민감/임시 파일 — 커밋 금지
+mTLS_인증서_*/
+*.key
+*.crt
+*.bak
+*.tgz
+node_modules_old/
+recovered_diff.txt
+scratch/
+supabase/.temp/

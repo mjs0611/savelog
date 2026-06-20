@@ -6,6 +6,25 @@ import { getDailyMission, getPersona, PERSONAS, getNickname } from '../lib/stora
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
 import { BANNER_AD_ID, initBannerAds } from '../lib/ads';
+import CustomIcon, { hasMappedIcon } from '../components/CustomIcon';
+
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+function renderTextWithEmoji(text: string) {
+  if (!text) return <></>;
+  const result: React.ReactNode[] = [];
+  let buffer = '';
+  for (const { segment } of graphemeSegmenter.segment(text)) {
+    if (hasMappedIcon(segment)) {
+      if (buffer) { result.push(buffer); buffer = ''; }
+      result.push(<CustomIcon key={result.length} emoji={segment} />);
+    } else {
+      buffer += segment;
+    }
+  }
+  if (buffer) result.push(buffer);
+  return <>{result}</>;
+}
 
 function BannerAdSlot({ adGroupId }: { adGroupId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -93,24 +112,24 @@ const WEEK_DAYS = 7;
 
 const PERSONA_QUOTES: Record<string, string[]> = {
   cost_ai: [
-    "나의 가성비 알고리즘에 따르면 오늘의 무지출은 완벽한 선택입니다. 🤖",
-    "소비의 효용가치가 감가상각을 넘어서지 않는지 늘 검토하세요.",
-    "커피 한 잔(4,500원)을 30년간 저축하면 복리 5% 기준 약 1.1억 원이 됩니다. 계산 완료."
+    "오늘 가장 만족한 한 가지를 한 줄로 남겨봐요 🤖",
+    "데이터로 보면, 한 줄 기록은 일주일 후의 내가 가장 좋아하는 선물이에요",
+    "커피 한 잔의 행복도 계산해두면 다음에 더 만족스러워요"
   ],
   hamster: [
-    "볼따구에 도토리를 모으듯이 통장에 포인트를 꽉꽉 채워보자구! 🐹",
-    "배달음식은 우리의 소중한 재산을 한 입에 먹어치우는 무서운 식습관이쥐!",
-    "지갑을 닫으면 마음이 풍요로워진다쥐. 오늘 지출 0원에 도전해봐!"
+    "도토리 한 알씩 모으듯, 작은 기록도 쌓이면 든든해요 🐹",
+    "오늘은 어떤 작은 만족을 골랐나요? 한 줄로 남겨봐요",
+    "지갑이 쉬는 날도 멋진 하루예요"
   ],
   flexer: [
-    "스트레스로 시발비용을 쓰기 전에, 나랑 3초만 눈 감고 심호흡하자! 🦄",
-    "플렉스는 달콤하지만 카드값 청구서는 맵고 짜다구. 오늘은 꾹 참아볼까?",
-    "진짜 필요한 건가요? 아니면 그냥 낭만을 사고 싶은 건가요? 잘 생각해보자!"
+    "오늘 나에게 작은 선물 하나, 어떤 게 좋았나요? 🦄",
+    "쓴 만큼의 이야기도 남겨두면 다음에 도움이 돼요",
+    "마음이 끌리는 순간을 가볍게 기록해봐요"
   ],
   keeper: [
-    "장바구니에 넣고 3일 동안 고민해 봐! 90%는 결국 안 사도 되더라고. 🛒",
-    "장바구니는 너의 현명한 소비를 도와주는 든든한 방패야. 바로 결제는 금지!",
-    "오늘도 지갑 수비 완료! 짠친들과 함께하는 절약은 생각보다 즐겁단다."
+    "장바구니에 며칠 두었다가 다시 꺼내봐요, 답이 보여요 🛒",
+    "오늘의 작은 결정, 한 줄로 남겨두면 미래의 내가 고마워해요",
+    "친구들과 같이 기록하면 더 즐거워져요"
   ]
 };
 
@@ -210,7 +229,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       nudgeHistory: updatedHistory
     };
     setGroup(updatedGroup);
-    showPotToast(`💬 ${memberName}님에게 "지갑 지켜! 🛡️" 콕 찌르기를 보냈어요.`);
+    showPotToast(`💬 ${memberName}님에게 "오늘도 같이 가요 🌿" 한마디 보냈어요.`);
   };
 
   // 실시간 짠물 계모임 타인 활동 시뮬레이션 효과
@@ -316,9 +335,9 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         {daily.recorded ? (
           <div className="record-done-row">
             <div className="record-done-main">
-              <span className="record-done-emoji">🌿</span>
+              <span className="record-done-emoji"><CustomIcon emoji="🌿" /></span>
               <div>
-                <p className="record-done-heading">오늘의 짠내 기록 완료! 🎉</p>
+                <p className="record-done-heading">오늘 하루 잘 남기셨네요 🎉</p>
                 <p className="record-done-detail">
                   {(daily.spentAmount ?? 0) === 0 ? '무지출 달성!' : `오늘 ${formatAmount(daily.spentAmount ?? 0)} 기록됨`}
                 </p>
@@ -331,19 +350,19 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         ) : (
           <div>
             <div className="record-cta-row">
-              <img src="/images/savelog_main_character.png" className="custom-icon--lg" />
+              <img src="/images/savelog_main_character.svg" className="custom-icon--lg" />
               <div>
-                <h4 className="record-cta-heading">오늘 짠내 나는 저축 일기 쓰기 ✍️</h4>
+                <h4 className="record-cta-heading">오늘 하루를 한 줄로 남겨봐요 <CustomIcon emoji="✍️" /></h4>
                 <p className="record-cta-detail">매일 기록하면 짠물 온도 상승 & 토스포인트 적립!</p>
               </div>
             </div>
 
             <div className="record-btn-row">
               <button className="record-btn-primary" onClick={onQuickZeroSpend} disabled={submitting}>
-                {submitting ? '저장 중...' : '🌿 오늘 무지출 완료'}
+                {submitting ? '저장 중...' : <span><CustomIcon emoji="🌿" /> 오늘 무지출 완료</span>}
               </button>
               <button className="record-btn-secondary" onClick={onRecord} disabled={submitting}>
-                소비 내역 쓰기 💸
+                소비 내역 쓰기 <CustomIcon emoji="💸" />
               </button>
             </div>
           </div>
@@ -359,7 +378,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div className="savings-temp-header">
               <span className="savings-temp-title">
                 오늘의 절약 온도
-                <span>🔥</span>
+                <span><CustomIcon emoji="🔥" /></span>
               </span>
               <span className="savings-temp-value">
                 {daily.recorded ? (spent === 0 ? '100% (무지출)' : `${temp}%`) : '측정 대기 중'}
@@ -370,7 +389,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             </div>
             <p className="savings-temp-desc">
               {daily.recorded ? (
-                spent === 0 ? '완벽한 하루! 무지출 달성으로 절약 온도가 뜨겁습니다 👑'
+                spent === 0 ? <>완벽한 하루! 무지출 달성으로 절약 온도가 뜨겁습니다 <CustomIcon emoji="👑" /></>
                 : `오늘 ${formatAmount(spent)} 지출 완료. 현명하고 통제된 소비 온도입니다.`
               ) : '오늘 소비 기록을 남기면 실시간 절약 온도가 시각화됩니다.'}
             </p>
@@ -421,7 +440,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {!group ? (
         <div className="glass-card pot-card-cta">
           <div className="pot-cta-header">
-            <span className="pot-cta-emoji">👥</span>
+            <span className="pot-cta-emoji"><CustomIcon emoji="👥" /></span>
             <div>
               <p className="pot-cta-title">우리끼리 예산 수비, 짠물 계모임</p>
               <p className="pot-cta-desc">친구들과 함께 주간 예산을 정하고, 공동 목표를 함께 수비해 보세요!</p>
@@ -448,7 +467,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           ) : (
             <div className="pot-btn-row">
               <button className="pot-btn pot-btn-create" onClick={handleCreateGroup}>
-                방 개설하기 🍳
+                방 개설하기 <CustomIcon emoji="🍳" />
               </button>
               <button className="pot-btn pot-btn-invite-cta" onClick={() => setShowInviteInput(true)}>
                 초대코드 입력
@@ -475,7 +494,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div className="glass-card pot-card-active" onClick={() => setShowGroupModal(true)}>
               <div className="pot-active-header">
                 <div className="pot-active-title-wrap">
-                  <span className="pot-active-emoji">👥</span>
+                  <span className="pot-active-emoji"><CustomIcon emoji="👥" /></span>
                   <div>
                     <p className="pot-active-title">{group.name}</p>
                     <p className="pot-active-subtitle">초대코드: <span className="pot-code-highlight">{group.id}</span></p>
@@ -519,7 +538,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div className="pot-modal-content" style={{ width: '100%' }}>
               <div className="pot-modal-header-row">
                 <div>
-                  <h3 className="simple-modal-title">👥 {group.name}</h3>
+                  <h3 className="simple-modal-title"><CustomIcon emoji="👥" /> {group.name}</h3>
                   <p className="simple-modal-desc">주간 예산: {formatAmount(group.budget)} (코드: {group.id})</p>
                 </div>
                 <button className="pot-leave-btn" onClick={handleLeaveGroup}>모임 탈퇴</button>
@@ -567,7 +586,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                       <div className="pot-member-right">
                         <span className="pot-member-amount">{formatAmount(member.spent)}</span>
                         <button className="pot-nudge-btn" onClick={() => handleNudgeMember(member.name)}>
-                          콕 찌르기 👈
+                          한마디 보내기 🤝
                         </button>
                       </div>
                     </div>
@@ -636,7 +655,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           <span className="streak-title">연속 기록</span>
           <div className="streak-badges-row">
             {streakShields > 0 && (
-              <Badge size="small" color="blue" variant="weak">🛡️ 보호권 {streakShields}개</Badge>
+              <Badge size="small" color="blue" variant="weak"><CustomIcon emoji="🛡️" /> 보호권 {streakShields}개</Badge>
             )}
             {streak.streak > 0 && (
               <Badge size="small" color="red" variant="weak">
@@ -677,7 +696,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
           })}
         </div>
         {streak.streak > 0 && streak.streak % 7 === 0 && pendingPoints > 0 && (
-          <p className="streak-reward-hint">🔥 7일 연속 완주 보너스 포함 · 위에서 광고 보고 받기</p>
+          <p className="streak-reward-hint"><CustomIcon emoji="🔥" /> 7일 연속 완주 보너스 포함 · 위에서 광고 보고 받기</p>
         )}
       </div>
 
@@ -745,7 +764,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
       {/* 순위 미리보기 — 유지출 그룹 상위 3명 */}
       {spendGroup.length > 0 && (
         <div className="glass-card rank-preview-card">
-          <p className="rank-preview-title">이번 주 절약왕 🏆</p>
+          <p className="rank-preview-title">이번 주 절약왕 <CustomIcon emoji="🏆" /></p>
           <div className="rank-preview-list">
             {spendGroup.slice(0, 3).map((row, i) => (
               <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`}>
@@ -812,8 +831,8 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               >
                 건너뛰기
               </button>
-              <span className="tutorial-icon">{current.icon}</span>
-              <h3 className="tutorial-title">{current.title}</h3>
+              <span className="tutorial-icon"><CustomIcon emoji={current.icon} /></span>
+              <h3 className="tutorial-title">{renderTextWithEmoji(current.title)}</h3>
               <p className="tutorial-desc">{current.desc}</p>
               <button
                 onClick={() => {

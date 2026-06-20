@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="100%" height="100%">
+  <!-- Thunderbolt Shape -->
+  <polygon points="56,12 28,52 48,52 38,88 72,44 52,44" fill="#FFEAA7" stroke="#4A2C2C" stroke-width="4.5" stroke-linejoin="round" />
+
+  <!-- Cute Face on thunderbolt -->
+  <circle cx="45" cy="42" r="2.5" fill="#4A2C2C" />
+  <circle cx="57" cy="42" r="2.5" fill="#4A2C2C" />
+  <circle cx="41" cy="45" r="2.2" fill="#FF85A1" opacity="0.4" />
+  <circle cx="61" cy="45" r="2.2" fill="#FF85A1" opacity="0.4" />
+  <path d="M 48 46 Q 51 48 54 46" fill="none" stroke="#4A2C2C" stroke-width="1.8" stroke-linecap="round" />
+</svg>
