@@ -1,6 +1,6 @@
 import { grantPromotionReward, generateHapticFeedback } from '@apps-in-toss/web-framework';
 
-const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? 'TEST_01KVG2560GB4ESC0RDDX1FR5QG';
+const DAILY_PROMO = import.meta.env.VITE_DAILY_PROMO_CODE ?? '01KVG2560GB4ESC0RDDX1FR5QG';
 
 const IS_AIT = (import.meta.env.VITE_PLATFORM ?? 'ait') === 'ait';
 

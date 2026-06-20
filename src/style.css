@@ -226,17 +226,19 @@ input { font: inherit; outline: none; border: none; }
   top: calc(24px + env(safe-area-inset-top, 0px));
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(255, 255, 255, 0.95);
-  color: #000;
-  padding: 14px 28px;
-  border-radius: 100px;
-  font-size: 14px;
-  font-weight: 800;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+  background: rgba(25, 31, 40, 0.92);
+  color: #ffffff;
+  padding: 12px 20px;
+  border-radius: 14px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.4;
+  box-shadow: 0 8px 24px rgba(25, 31, 40, 0.15);
   z-index: 9999;
-  animation: toastIn 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
   white-space: normal;
-  max-width: calc(100vw - 32px);
+  max-width: calc(100vw - 40px);
+  width: max-content;
   text-align: center;
   word-break: keep-all;
 }
@@ -581,6 +583,20 @@ input { font: inherit; outline: none; border: none; }
 .pending-points-title  { margin: 0; font-size: 12px; font-weight: 900; color: #855300; }
 .pending-points-sub    { margin: 1px 0 0 0; font-size: 10px; color: var(--text-sub); line-height: 1.35; word-break: keep-all; }
 .pending-points-amount { font-size: 16px; font-weight: 900; color: #855300; flex-shrink: 0; }
+.pending-points-cap-warning {
+  margin: 0;
+  padding: 6px 8px;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #92400E;
+  background: rgba(234, 179, 8, 0.16);
+  border-radius: 8px;
+  line-height: 1.35;
+  word-break: keep-all;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
 
 /* 이번 주 내 요약 */
 .week-summary-card {

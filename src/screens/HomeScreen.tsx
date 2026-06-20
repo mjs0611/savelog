@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { DailyState, StreakData } from '../lib/storage';
-import { getDailyMission, getPersona, PERSONAS, getNickname } from '../lib/storage';
+import { getDailyMission, getPersona, PERSONAS, getNickname, MAX_PENDING_POINTS } from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
 import { BANNER_AD_ID, initBannerAds } from '../lib/ads';
@@ -643,6 +643,11 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             </div>
             <span className="pending-points-amount">{pendingPoints}원</span>
           </div>
+          {pendingPoints >= MAX_PENDING_POINTS && (
+            <p className="pending-points-cap-warning">
+              <CustomIcon emoji="⚠️" /> 적립 한도에 도달했어요. 미리 받으세요 · 최대 50원까지만 받을 수 있어요
+            </p>
+          )}
           <button className="pending-claim-btn" onClick={onClaimPending} disabled={pendingClaiming}>
             {pendingClaiming ? '광고 시청 중...' : '광고 보고 받기'}
           </button>
