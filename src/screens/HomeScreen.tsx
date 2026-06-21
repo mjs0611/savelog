@@ -2,29 +2,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { DailyState, StreakData } from '../lib/storage';
-import { getDailyMission, getPersona, PERSONAS, getNickname, MAX_PENDING_POINTS } from '../lib/storage';
+import { getDailyMission, getPersona, PERSONAS, getNickname, MAX_PENDING_POINTS, RAID_BOSSES, type GroupRaid } from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
 import { BANNER_AD_ID, initBannerAds } from '../lib/ads';
-import CustomIcon, { hasMappedIcon } from '../components/CustomIcon';
-
-const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
-
-function renderTextWithEmoji(text: string) {
-  if (!text) return <></>;
-  const result: React.ReactNode[] = [];
-  let buffer = '';
-  for (const { segment } of graphemeSegmenter.segment(text)) {
-    if (hasMappedIcon(segment)) {
-      if (buffer) { result.push(buffer); buffer = ''; }
-      result.push(<CustomIcon key={result.length} emoji={segment} />);
-    } else {
-      buffer += segment;
-    }
-  }
-  if (buffer) result.push(buffer);
-  return <>{result}</>;
-}
+import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 
 function BannerAdSlot({ adGroupId }: { adGroupId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,6 +74,7 @@ interface PotGroup {
   budget: number;
   members: PotMember[];
   nudgeHistory: string[];
+  raid?: GroupRaid;
 }
 
 interface Props {
@@ -152,7 +135,21 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const [group, setGroup] = useState<PotGroup | null>(() => {
     try {
       const saved = localStorage.getItem('savelog_pot_group');
-      return saved ? JSON.parse(saved) : null;
+      if (!saved) return null;
+      const parsed = JSON.parse(saved);
+      if (parsed && !parsed.raid) {
+        const randomBoss = RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
+        parsed.raid = {
+          bossName: randomBoss.name,
+          bossMaxHp: randomBoss.maxHp,
+          bossHp: randomBoss.maxHp,
+          bossWeaknessCategory: randomBoss.weaknessCategory,
+          bossWeaknessEmoji: randomBoss.weaknessEmoji,
+          raidCompleted: false
+        };
+        localStorage.setItem('savelog_pot_group', JSON.stringify(parsed));
+      }
+      return parsed;
     } catch {
       return null;
     }
@@ -175,6 +172,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const handleCreateGroup = () => {
     const names = ['🍳 삼시세끼 집밥단', '☕ 스타벅스 탈출기', '🛒 쇼핑앱 삭제 위원회', '🏪 편의점 1+1 정복단'];
     const randomName = names[Math.floor(Math.random() * names.length)];
+    const randomBoss = RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
     const newGroup: PotGroup = {
       id: Math.random().toString(36).substring(2, 9).toUpperCase(),
       name: randomName,
@@ -184,9 +182,18 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         { name: '이패드', spent: 115000, persona: 'flexer' },
         { name: '박절약', spent: 12000, persona: 'keeper' }
       ],
-      nudgeHistory: ['이패드님이 가입했습니다.', '김토스님이 박절약님을 콕 찔렀습니다.']
+      nudgeHistory: ['이패드님이 가입했습니다.', '김토스님이 박절약님을 콕 찔렀습니다.'],
+      raid: {
+        bossName: randomBoss.name,
+        bossMaxHp: randomBoss.maxHp,
+        bossHp: randomBoss.maxHp,
+        bossWeaknessCategory: randomBoss.weaknessCategory,
+        bossWeaknessEmoji: randomBoss.weaknessEmoji,
+        raidCompleted: false
+      }
     };
     setGroup(newGroup);
+    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
     showPotToast(`👥 ${randomName} 방을 개설했습니다!`);
   };
 
@@ -195,6 +202,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
     if (!code) return;
     const names = ['🍳 삼시세끼 집밥단', '☕ 스타벅스 탈출기', '🛒 쇼핑앱 삭제 위원회', '🏪 편의점 1+1 정복단'];
     const randomName = names[Math.floor(Math.random() * names.length)];
+    const randomBoss = RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
     const newGroup: PotGroup = {
       id: code,
       name: randomName,
@@ -204,9 +212,18 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         { name: '이패드', spent: 98000, persona: 'flexer' },
         { name: '박절약', spent: 18000, persona: 'keeper' }
       ],
-      nudgeHistory: [`초대 코드 ${code}로 입장했습니다.`, '김토스님이 박절약님을 콕 찔렀습니다.']
+      nudgeHistory: [`초대 코드 ${code}로 입장했습니다.`, '김토스님이 박절약님을 콕 찔렀습니다.'],
+      raid: {
+        bossName: randomBoss.name,
+        bossMaxHp: randomBoss.maxHp,
+        bossHp: randomBoss.maxHp,
+        bossWeaknessCategory: randomBoss.weaknessCategory,
+        bossWeaknessEmoji: randomBoss.weaknessEmoji,
+        raidCompleted: false
+      }
     };
     setGroup(newGroup);
+    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
     setInviteCode('');
     setShowInviteInput(false);
     showPotToast(`👥 ${randomName} 방에 참여했습니다!`);
@@ -496,17 +513,50 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                 <div className="pot-active-title-wrap">
                   <span className="pot-active-emoji"><CustomIcon emoji="👥" /></span>
                   <div>
-                    <p className="pot-active-title">{group.name}</p>
+                    <p className="pot-active-title">{renderTextWithEmoji(group.name)}</p>
                     <p className="pot-active-subtitle">초대코드: <span className="pot-code-highlight">{group.id}</span></p>
                   </div>
                 </div>
-                <span className="pot-active-badge">모임 중</span>
+                <span className="pot-active-badge">레이드 진행 중</span>
               </div>
+
+              {/* 👾 주간 보스 레이드 */}
+              {group.raid && (() => {
+                const r = group.raid;
+                const hpPct = Math.round((r.bossHp / r.bossMaxHp) * 100);
+                return (
+                  <div className="pot-raid-board" onClick={(e) => { e.stopPropagation(); setShowGroupModal(true); }}>
+                    <div className="pot-raid-boss-info">
+                      <div className="pot-raid-boss-avatar-wrap">
+                        <span>👾</span>
+                      </div>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                          <span className="pot-raid-boss-name">{r.bossName}</span>
+                          <span className="pot-raid-boss-hp-text">{r.bossHp} / {r.bossMaxHp} HP</span>
+                        </div>
+                        <p className="pot-raid-boss-weakness">
+                          <span className="pot-weakness-badge">약점</span> <CustomIcon emoji={r.bossWeaknessEmoji} /> {r.bossWeaknessCategory.split('/')[0]} 지출 시 치유됨!
+                        </p>
+                      </div>
+                    </div>
+                    <div className="pot-raid-hp-bar-track">
+                      <div 
+                        className={`pot-raid-hp-bar-fill ${r.raidCompleted ? 'pot-raid-hp--defeated' : ''}`}
+                        style={{ width: `${hpPct}%` }}
+                      />
+                    </div>
+                    {r.raidCompleted && (
+                      <p className="pot-raid-victory-banner">🎉 보스 퇴치 완료! 이번 주 럭키 박스를 획득했습니다.</p>
+                    )}
+                  </div>
+                );
+              })()}
 
               <div className="pot-progress-section">
                 <div className="pot-progress-labels">
                   <span className="pot-progress-amount">
-                    {formatAmount(combinedSpend)} <span className="pot-progress-max">/ {formatAmount(group.budget)}</span>
+                    공동 소비: {formatAmount(combinedSpend)} <span className="pot-progress-max">/ {formatAmount(group.budget)}</span>
                   </span>
                   <span className="pot-progress-percent">{ratio}%</span>
                 </div>
@@ -517,7 +567,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
               <div className="pot-active-footer">
                 <span className="pot-footer-desc">
-                  현재 {group.members.length + 1}명 참여 중 · 탭해서 상세 가계부 확인
+                  현재 {group.members.length + 1}명 참여 중 · 탭해서 공격/치유 상세 기록 확인
                 </span>
                 <span className="pot-footer-arrow">›</span>
               </div>
@@ -538,11 +588,42 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             <div className="pot-modal-content" style={{ width: '100%' }}>
               <div className="pot-modal-header-row">
                 <div>
-                  <h3 className="simple-modal-title"><CustomIcon emoji="👥" /> {group.name}</h3>
+                  <h3 className="simple-modal-title"><CustomIcon emoji="👥" /> {renderTextWithEmoji(group.name)}</h3>
                   <p className="simple-modal-desc">주간 예산: {formatAmount(group.budget)} (코드: {group.id})</p>
                 </div>
                 <button className="pot-leave-btn" onClick={handleLeaveGroup}>모임 탈퇴</button>
               </div>
+
+              {/* 👾 몬스터 레이드 현황판 (모달 내부) */}
+              {group.raid && (() => {
+                const r = group.raid;
+                const hpPct = Math.round((r.bossHp / r.bossMaxHp) * 100);
+                return (
+                  <div className="pot-modal-raid-status glass-card" style={{ padding: '16px', background: 'var(--bg)', borderRadius: '16px', border: '1px solid var(--border)', marginBottom: '16px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                      <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}>👾 주간 보스 레이드</span>
+                      <span style={{ fontSize: '12px', fontWeight: 700, color: r.raidCompleted ? 'var(--success)' : 'var(--text-main)' }}>
+                        {r.raidCompleted ? '퇴치 완료! ✓' : '전투 진행 중'}
+                      </span>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px', margin: '8px 0' }}>
+                      <span style={{ fontSize: '24px' }}>👾</span>
+                      <div style={{ flex: 1 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '13px', fontWeight: 700, marginBottom: '4px' }}>
+                          <span>{r.bossName}</span>
+                          <span>{r.bossHp} / {r.bossMaxHp} HP ({hpPct}%)</span>
+                        </div>
+                        <div style={{ height: '8px', background: 'rgba(0,0,0,0.1)', borderRadius: '4px', overflow: 'hidden' }}>
+                          <div style={{ height: '100%', width: `${hpPct}%`, background: r.raidCompleted ? 'var(--success)' : 'linear-gradient(90deg, #ff4d4f, #ff7875)', transition: 'width 0.3s ease' }} />
+                        </div>
+                      </div>
+                    </div>
+                    <p style={{ fontSize: '11px', color: 'var(--text-sub)', margin: '4px 0 0 0', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                      ⚡ <span style={{ fontWeight: 800, color: 'var(--warning)' }}>약점:</span> <CustomIcon emoji={r.bossWeaknessEmoji} /> {r.bossWeaknessCategory.split('/')[0]} 지출 시 보스가 회복합니다! (무지출 인증 시 ⚔️ 300 데미지)
+                    </p>
+                  </div>
+                );
+              })()}
 
               {/* 멤버 현황 리스트 */}
               <div className="pot-members-list">
@@ -623,7 +704,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
 
       {/* 짠물 계모임 내부용 간이 토스트 알림 */}
       {potToast && (
-        <div className="point-toast pot-toast-overlay">{potToast}</div>
+        <div className="point-toast pot-toast-overlay">{renderTextWithEmoji(potToast)}</div>
       )}
 
       {/* 펜딩 포인트 (광고 보고 받기) */}
@@ -759,7 +840,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             )}
             {inZeroGroup && (
               <Badge size="small" color="green" variant="weak">
-                👑 무지출 {myZeroIdx + 1}번째
+                {renderTextWithEmoji(`👑 무지출 ${myZeroIdx + 1}번째`)}
               </Badge>
             )}
           </div>
@@ -774,7 +855,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             {spendGroup.slice(0, 3).map((row, i) => (
               <div key={row.user_id} className={`rank-preview-row ${row.user_id === userId ? 'rank-mine' : ''}`}>
                 <div className="rank-preview-row-info">
-                  <span className="rank-medal">{i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'}</span>
+                  <span className="rank-medal"><CustomIcon emoji={i === 0 ? '🥇' : i === 1 ? '🥈' : '🥉'} /></span>
                   <span className="rank-nickname">{row.nickname}</span>
                 </div>
                 <span className="rank-amount">{formatAmount(row.total)}</span>
@@ -782,7 +863,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             ))}
           </div>
           {zeroGroup.length > 0 && (
-            <p className="rank-preview-zero-note">👑 무지출 인증단 {zeroGroup.length}명 참여 중</p>
+            <p className="rank-preview-zero-note">{renderTextWithEmoji(`👑 무지출 인증단 ${zeroGroup.length}명 참여 중`)}</p>
           )}
         </div>
       )}

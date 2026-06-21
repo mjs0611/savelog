@@ -3,7 +3,7 @@ import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
 import { formatAmount, formatWeekRange, getWeekKey, getTodayStr } from '../lib/utils';
 import { sendCheeringMessage, getNickname, getPersona, getDailyMission } from '../lib/storage';
-import CustomIcon from '../components/CustomIcon';
+import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 
 interface Props {
   userId: string;
@@ -61,7 +61,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           <img src="/images/icon_rank.png" className="custom-icon" />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
-        <p className="rank-reset-hint">🔄 매주 월요일 오전 9시 초기화</p>
+        <p className="rank-reset-hint">{renderTextWithEmoji('🔄 매주 월요일 오전 9시 초기화')}</p>
       </div>
 
       {/* 🎯 오늘의 일일 미션 */}
@@ -261,7 +261,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
                   </div>
                   <div className="rank-row-right">
                     <span className="rank-row-amount rank-row-amount--zero">0원</span>
-                    {i === 0 && <span className="rank-crown">👑</span>}
+                    {i === 0 && <span className="rank-crown"><CustomIcon emoji="👑" /></span>}
                   </div>
                 </div>
               ))}

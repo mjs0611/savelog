@@ -1,3 +1,4 @@
+import React from 'react';
 
 const EMOJI_MAP: Record<string, string> = {
   // Categories
@@ -79,6 +80,10 @@ const EMOJI_MAP: Record<string, string> = {
   '✍️': '/images/icon_records.png',
   '🏪': '/images/icon_cart.png',
   '🍳': '/images/icon_food.png',
+  '🤖': '/images/mbti_robot.png',
+  '🦄': '/images/mbti_unicorn.png',
+  '💌': '/images/icon_mail.png',
+  '🏃': '/images/icon_bus.png',
 };
 
 const SVG_MAP: Record<string, () => React.ReactNode> = {
@@ -116,6 +121,16 @@ const SVG_MAP: Record<string, () => React.ReactNode> = {
       <path d="M16 3.13a4 4 0 0 1 0 7.75"/>
     </svg>
   ),
+  '🔄': () => (
+    <svg className="custom-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+      <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+    </svg>
+  ),
+  '🌟': () => (
+    <svg className="custom-svg-icon" viewBox="0 0 24 24" fill="var(--primary)" stroke="var(--primary)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" width="20" height="20">
+      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+    </svg>
+  ),
 };
 
 export function hasMappedIcon(emoji: string): boolean {
@@ -135,4 +150,22 @@ export default function CustomIcon({ emoji, className = '' }: { emoji: string; c
   }
   
   return <span className={className}>{emoji}</span>;
+}
+
+const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+
+export function renderTextWithEmoji(text: string) {
+  if (!text) return <></>;
+  const result: React.ReactNode[] = [];
+  let buffer = '';
+  for (const { segment } of graphemeSegmenter.segment(text)) {
+    if (hasMappedIcon(segment)) {
+      if (buffer) { result.push(buffer); buffer = ''; }
+      result.push(<CustomIcon key={result.length} emoji={segment} />);
+    } else {
+      buffer += segment;
+    }
+  }
+  if (buffer) result.push(buffer);
+  return <>{result}</>;
 }

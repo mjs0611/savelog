@@ -25,6 +25,8 @@ import {
   setMilestonePosted,
   type StreakData,
   type DailyState,
+  updateJellyPocketSpent,
+  updateGroupRaidAction,
 } from './lib/storage';
 import { initAit, grantPendingReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
@@ -344,6 +346,30 @@ export default function App() {
       if (!entryId && isSupabaseConfigured) {
         showToast('기록 저장에 실패했어요. 다시 시도해 주세요.');
         return;
+      }
+
+      // 1. 젤리 저금통 예산 차감 및 몬스터 레이드 연동 (소셜 포스트 제외)
+      if (!isSocialPost) {
+        items.forEach(item => {
+          updateJellyPocketSpent(item.category, item.amount);
+        });
+
+        const hasSpend = items.some(it => it.category !== '절약 방어' && it.amount > 0);
+        const hasZero = items.some(it => it.amount === 0 && it.category !== '마일스톤');
+        const hasSave = items.some(it => it.category === '절약 방어');
+
+        if (hasZero) {
+          updateGroupRaidAction('zero', '', 0, nickname || '짠친');
+        } else if (hasSave) {
+          const savedAmt = items.find(it => it.category === '절약 방어')?.saved_amount || 0;
+          updateGroupRaidAction('save', '절약 방어', savedAmt, nickname || '짠친');
+        } else if (hasSpend) {
+          items.forEach(it => {
+            if (it.amount > 0) {
+              updateGroupRaidAction('spend', it.category, it.amount, nickname || '짠친');
+            }
+          });
+        }
       }
 
       if (isSocialPost) {

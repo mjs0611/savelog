@@ -16,10 +16,11 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 import type { Entry, WeekRankRow } from '../lib/supabase';
 import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
-import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, setWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
+import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, setWeeklyBudget, getFollowedUsers, saveFollowedUsers, getJellyPockets, setJellyPockets } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
 import CustomIcon from '../components/CustomIcon';
+import JellyPockets from '../components/JellyPockets';
 import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
 
 interface Props {
@@ -98,6 +99,14 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [showBudgetEdit, setShowBudgetEdit] = useState(false);
   const [budgetDraft, setBudgetDraft] = useState(budget.toString());
 
+  useEffect(() => {
+    const handleUpdate = () => {
+      setBudget(getWeeklyBudget());
+    };
+    window.addEventListener('savelog_budget_updated', handleUpdate);
+    return () => window.removeEventListener('savelog_budget_updated', handleUpdate);
+  }, []);
+
   const viralCleanupRef = useRef<(() => void) | null>(null);
 
   function handleSaveBudget() {
@@ -105,6 +114,16 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     if (!isNaN(val) && val > 0) {
       setWeeklyBudget(val);
       setBudget(val);
+      const current = getJellyPockets();
+      const totalCurrent = current.reduce((s, p) => s + p.budget, 0);
+      if (totalCurrent > 0) {
+        const updated = current.map(p => ({
+          ...p,
+          budget: Math.round(val * (p.budget / totalCurrent))
+        }));
+        setJellyPockets(updated);
+      }
+      window.dispatchEvent(new Event('savelog_budget_updated'));
     }
     setShowBudgetEdit(false);
   }
@@ -328,6 +347,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             </span>
           </div>
         </div>
+
+        {/* 디지털 젤리 저금통 (Envelope Budgeting) */}
+        <JellyPockets />
       </div>
 
       {/* 2. Sub-tab Navigation */}

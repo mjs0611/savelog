@@ -6,9 +6,7 @@ import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fe
 import { formatAmount, timeAgo, getWeekKey, getTodayStr } from '../lib/utils';
 import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, getActiveChallengeId, setActiveChallengeId, type StreakData, type DailyState } from '../lib/storage';
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
-import CustomIcon, { hasMappedIcon } from '../components/CustomIcon';
-
-const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
+import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 
 function FeedBannerSlot() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -92,22 +90,6 @@ const WEEKLY_CHALLENGES = [
   { id: 'health-charging', title: '물 마시기 & 만보 걷기 루틴 💧', desc: '지갑도 내 몸도 함께 활력 플러스 충전하기', emoji: '💧' },
 ];
 
-function renderTextWithEmoji(text: string) {
-  if (!text) return <></>;
-  const result: React.ReactNode[] = [];
-  let buffer = '';
-  for (const { segment } of graphemeSegmenter.segment(text)) {
-    if (hasMappedIcon(segment)) {
-      if (buffer) { result.push(buffer); buffer = ''; }
-      result.push(<CustomIcon key={result.length} emoji={segment} />);
-    } else {
-      buffer += segment;
-    }
-  }
-  if (buffer) result.push(buffer);
-  return <>{result}</>;
-}
-
 export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, pendingClaiming, onRecord, onQuickZeroSpend, onClaimPending, onShareToChat }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   const [loading, setLoading] = useState(true);
@@ -128,6 +110,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     toastTimerRef.current = setTimeout(() => { setToastText(null); toastTimerRef.current = null; }, 2200);
   }
   const [doubleTappedHearts, setDoubleTappedHearts] = useState<Record<string, boolean>>({});
+
+  // 라이트박스 (이미지 확대 보기)
+  const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // 팔로우 / 탭 필터
   const [feedTab, setFeedTab] = useState<'all' | 'follow' | 'group'>('all');
@@ -920,7 +905,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
         {/* 인증샷 / 영수증 이미지 */}
         {entry.image && (
-          <div className="feed-card-image-wrap" onDoubleClick={(e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
+          <div className="feed-card-image-wrap" onClick={() => setLightboxImage(entry.image || null)} onDoubleClick={(e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
             <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
             {doubleTappedHearts[entry.id] && (
               <div className="heart-double-tap-overlay"><CustomIcon emoji="❤️" /></div>
@@ -1089,7 +1074,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       {(pullState.y > 0 || pullState.refreshing) && (
         <div className="ptr-indicator" style={{ top: -50, height: 50 }}>
           <span className={pullState.refreshing ? 'ptr-spin' : ''}>
-            {pullState.refreshing ? '🔄' : (pullState.y >= 60 ? '↑ 놓으면 새로고침' : '↓ 당겨서 새로고침')}
+            {pullState.refreshing ? <CustomIcon emoji="🔄" /> : (pullState.y >= 60 ? '↑ 놓으면 새로고침' : '↓ 당겨서 새로고침')}
           </span>
         </div>
       )}
@@ -1714,7 +1699,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                     className="message-template-chip"
                     onClick={() => setMessageText(tpl)}
                   >
-                    {tpl}
+                    {renderTextWithEmoji(tpl)}
                   </button>
                 ))}
               </div>
@@ -1890,6 +1875,16 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           {p.emoji}
         </span>
       ))}
+
+      {/* 🖼️ 라이트박스 이미지 확대 보기 모달 */}
+      {lightboxImage && (
+        <div className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
+          <button className="lightbox-close-btn" onClick={() => setLightboxImage(null)}>✕</button>
+          <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+            <img src={lightboxImage} alt="Expanded Preview" className="lightbox-img" />
+          </div>
+        </div>
+      )}
 
       <div className="rank-bottom-spacer" />
     </div>

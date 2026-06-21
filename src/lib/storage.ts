@@ -470,3 +470,149 @@ export function setWeeklyBudget(amount: number): void {
     localStorage.setItem(WEEKLY_BUDGET_KEY, amount.toString());
   } catch {}
 }
+
+// ── Jelly Pockets (디지털 젤리 저금통) ──────────────────────────────────────────
+const JELLY_POCKETS_KEY = 'savelog_jelly_pockets';
+
+export interface JellyPocket {
+  category: string;
+  emoji: string;
+  budget: number;
+  spent: number;
+}
+
+export const DEFAULT_JELLY_POCKETS: JellyPocket[] = [
+  { category: '식비/식품', emoji: '🍚', budget: 40000, spent: 0 },
+  { category: '카페/간식', emoji: '☕', budget: 20000, spent: 0 },
+  { category: '쇼핑/패션', emoji: '🛍️', budget: 20000, spent: 0 },
+  { category: '기타', emoji: '📦', budget: 20000, spent: 0 }
+];
+
+export function getJellyPockets(): JellyPocket[] {
+  try {
+    const v = localStorage.getItem(JELLY_POCKETS_KEY);
+    if (!v) {
+      const totalBudget = getWeeklyBudget();
+      const pockets = DEFAULT_JELLY_POCKETS.map(p => {
+        const pct = p.budget / 100000;
+        return { ...p, budget: Math.round(totalBudget * pct) };
+      });
+      return pockets;
+    }
+    return JSON.parse(v);
+  } catch {
+    return DEFAULT_JELLY_POCKETS;
+  }
+}
+
+export function setJellyPockets(pockets: JellyPocket[]): void {
+  try {
+    localStorage.setItem(JELLY_POCKETS_KEY, JSON.stringify(pockets));
+    const total = pockets.reduce((sum, p) => sum + p.budget, 0);
+    setWeeklyBudget(total);
+  } catch {}
+}
+
+export function updateJellyPocketSpent(category: string, amount: number): void {
+  try {
+    const pockets = getJellyPockets();
+    const cleanCat = category.split('/')[0];
+    const updated = pockets.map(p => {
+      const pClean = p.category.split('/')[0];
+      if (pClean === cleanCat) {
+        return { ...p, spent: Math.max(0, p.spent + amount) };
+      }
+      return p;
+    });
+    setJellyPockets(updated);
+  } catch {}
+}
+
+// ── Group Savings Raids (그룹 몬스터 레이드) ──────────────────────────────────
+export interface GroupRaid {
+  bossName: string;
+  bossMaxHp: number;
+  bossHp: number;
+  bossWeaknessCategory: string;
+  bossWeaknessEmoji: string;
+  raidCompleted: boolean;
+}
+
+export const RAID_BOSSES = [
+  { name: '🍔 야식 배달 괴수', maxHp: 1500, weaknessCategory: '생활/배달', weaknessEmoji: '🏠' },
+  { name: '☕ 카페인 수호골렘', maxHp: 1000, weaknessCategory: '카페/간식', weaknessEmoji: '☕' },
+  { name: '🛍️ 지름신 핑크 미믹', maxHp: 2000, weaknessCategory: '쇼핑/패션', weaknessEmoji: '🛍️' },
+  { name: '📦 소모성 낭비 유령', maxHp: 1200, weaknessCategory: '기타', weaknessEmoji: '📦' }
+];
+
+export function updateGroupRaidAction(
+  actionType: 'zero' | 'save' | 'spend',
+  category: string,
+  amount: number,
+  nickname: string
+): { damage: number; heal: number; logMessage: string } | null {
+  try {
+    const saved = localStorage.getItem('savelog_pot_group');
+    if (!saved) return null;
+    const group = JSON.parse(saved);
+    if (!group.raid) {
+      const randomBoss = RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
+      group.raid = {
+        bossName: randomBoss.name,
+        bossMaxHp: randomBoss.maxHp,
+        bossHp: randomBoss.maxHp,
+        bossWeaknessCategory: randomBoss.weaknessCategory,
+        bossWeaknessEmoji: randomBoss.weaknessEmoji,
+        raidCompleted: false
+      };
+    }
+    
+    const raid: GroupRaid = group.raid;
+    if (raid.raidCompleted && actionType !== 'zero' && actionType !== 'save') return null;
+    
+    // 만약 이미 완료된 상태에서 데미지가 더 들어오는건 패스
+    if (raid.raidCompleted) return null;
+
+    let damage = 0;
+    let heal = 0;
+    let logMessage = '';
+    
+    if (actionType === 'zero') {
+      damage = 300;
+      logMessage = `🛡️ ${nickname}님이 오늘 무지출 인증에 성공해 보스에게 300 데미지를 입혔습니다!`;
+    } else if (actionType === 'save') {
+      damage = Math.max(50, Math.round(amount / 50));
+      logMessage = `⚔️ ${nickname}님이 ${amount}원 절약을 인증하여 보스에게 ${damage} 데미지를 입혔습니다!`;
+    } else if (actionType === 'spend') {
+      const cleanCat = category.split('/')[0];
+      const cleanWeakness = raid.bossWeaknessCategory.split('/')[0];
+      if (cleanCat === cleanWeakness) {
+        heal = Math.max(50, Math.round(amount / 50));
+        logMessage = `⚠️ ${nickname}님이 약점 카테고리(${raid.bossWeaknessEmoji} ${category})에서 지출하여 보스가 ${heal} HP를 치유했습니다!`;
+      } else {
+        heal = Math.max(20, Math.round(amount / 100));
+        logMessage = `💨 ${nickname}님이 지출하여 보스가 ${heal} HP를 회복했습니다.`;
+      }
+    }
+    
+    if (damage > 0) {
+      raid.bossHp = Math.max(0, raid.bossHp - damage);
+      if (raid.bossHp === 0) {
+        raid.raidCompleted = true;
+        logMessage = `🎉 축하합니다! ${nickname}님의 일격으로 보스 [${raid.bossName}] 퇴치에 대성공했습니다!`;
+      }
+    } else if (heal > 0) {
+      raid.bossHp = Math.min(raid.bossMaxHp, raid.bossHp + heal);
+    }
+    
+    if (logMessage) {
+      group.nudgeHistory = [logMessage, ...(group.nudgeHistory || [])].slice(0, 15);
+    }
+    
+    localStorage.setItem('savelog_pot_group', JSON.stringify(group));
+    return { damage, heal, logMessage };
+  } catch {
+    return null;
+  }
+}
+
