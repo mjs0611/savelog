@@ -18,7 +18,9 @@ import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, submitEntry
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, setWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
+import { getPrevWeekKey } from '../lib/benchmark';
 import CustomIcon from '../components/CustomIcon';
+import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
 
 interface Props {
   userId: string;
@@ -356,7 +358,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <>
             {subTab === 'records' && <RecordsTab entries={allEntries.length > 0 ? allEntries : myEntries} onShareToChat={onShareToChat} />}
             {subTab === 'gallery' && <GalleryTab entries={galleryEntries.length > 0 ? galleryEntries : (allEntries.length > 0 ? allEntries : myEntries)} />}
-            {subTab === 'stats' && <StatsTab entries={myEntries} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
+            {subTab === 'stats' && <StatsTab entries={myEntries} lastWeekEntries={allEntries.filter(e => e.week_key === getPrevWeekKey(getWeekKey()))} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
             {subTab === 'mailbox' && <MailboxTab messages={messages} handleClearAllMessages={handleClearAllMessages} clearConfirm={clearConfirm} handleReplyClick={handleReplyClick} nickname={nickname} />}
           </>
         )}
@@ -704,7 +706,7 @@ function GalleryTab({ entries }: { entries: Entry[] }) {
 }
 
 
-function StatsTab({ entries, streak, personaKey, p, messages, nickname, daily, weekTotal, zeroDays }: any) {
+function StatsTab({ entries, lastWeekEntries, streak, personaKey, p, messages, nickname, daily, weekTotal, zeroDays }: any) {
   // 1. Weekly Spending Bar Chart
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -790,9 +792,12 @@ function StatsTab({ entries, streak, personaKey, p, messages, nickname, daily, w
 
   return (
     <div className="stats-container">
+      {/* 소비 진단 (self-benchmark) */}
+      <SpendDiagnosisCard thisWeek={entries} lastWeek={lastWeekEntries || []} />
+
       {/* 주간 지출 현황 바 차트 */}
       <div className="glass-card">
-        <h4 className="stats-card-title">📊 주간 지출 현황</h4>
+        <h4 className="stats-card-title"><CustomIcon emoji="📊" /> 주간 지출 현황</h4>
         <div className="stat-bar-chart">
           {dailyTotals.map((d, i) => {
             const hPct = (d.total / maxSpend) * 100;
@@ -812,7 +817,7 @@ function StatsTab({ entries, streak, personaKey, p, messages, nickname, daily, w
 
       {/* 카테고리별 지출 */}
       <div className="glass-card">
-        <h4 className="stats-card-title">💰 카테고리별 지출</h4>
+        <h4 className="stats-card-title"><CustomIcon emoji="💰" /> 카테고리별 지출</h4>
         {sortedCats.length === 0 ? (
           <p className="mylog-empty" style={{ padding: '16px 0' }}>지출 내역이 없습니다.</p>
         ) : (
@@ -822,7 +827,7 @@ function StatsTab({ entries, streak, personaKey, p, messages, nickname, daily, w
               return (
                 <div key={i} className="category-row">
                   <div className="category-row-meta">
-                    <span className="category-row-name">{c.emoji} {c.name}</span>
+                    <span className="category-row-name"><CustomIcon emoji={c.emoji} /> {c.name}</span>
                     <span className="category-row-val">{pct.toFixed(0)}% <span className="category-row-amt">{formatAmount(c.amount)}</span></span>
                   </div>
                   <div className="category-bar-track">
