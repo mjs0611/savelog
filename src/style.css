@@ -5860,6 +5860,39 @@ input { font: inherit; outline: none; border: none; }
   background: #F2F4F7;
 }
 
+/* 2.5 System / Raid Battle Log Messages */
+.chat-message-row--system {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  width: 100%;
+  margin: 10px 0;
+  padding: 0 10px;
+}
+.chat-system-message-bubble {
+  background: rgba(0, 0, 0, 0.05);
+  color: var(--text-sub);
+  font-size: 11px;
+  font-weight: 700;
+  padding: 6px 14px;
+  border-radius: 14px;
+  border: 1px solid var(--glass-border);
+  text-align: center;
+  line-height: 1.4;
+  max-width: 85%;
+  word-break: keep-all;
+  box-shadow: var(--shadow-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+.chat-system-message-bubble .inline-icon {
+  width: 14px !important;
+  height: 14px !important;
+  margin: 0 !important;
+}
+
 /* 3. Shared Spending Card */
 .chat-share-card {
   padding: 14px 16px;

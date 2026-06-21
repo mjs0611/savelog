@@ -16,6 +16,7 @@ interface ChatScreenProps {
   nickname: string;
   sharedEntryToPost?: any; // App.tsx에서 전달하는 공유 전용 state
   clearSharedEntry?: () => void;
+  activeTab?: string;
 }
 
 interface FloatingReaction {
@@ -54,7 +55,7 @@ function renderTextWithEmoji(text: string) {
   return <>{result}</>;
 }
 
-export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearSharedEntry }: ChatScreenProps) {
+export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearSharedEntry, activeTab }: ChatScreenProps) {
   const [chatTab, setChatTab] = useState<'open' | 'group'>('open');
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [activeRoomName, setActiveRoomName] = useState<string>('');
@@ -90,6 +91,46 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
   useEffect(() => {
     localStorage.setItem('savelog_group_chats', JSON.stringify(groupRooms));
   }, [groupRooms]);
+
+  // 1.5 계모임(pot group)이 생성되거나 삭제되었을 때 일반 톡방 목록에 실시간 반영
+  useEffect(() => {
+    if (activeTab === 'chat') {
+      try {
+        const saved = localStorage.getItem('savelog_group_chats');
+        let list: GroupChatRoom[] = saved ? JSON.parse(saved) : [];
+        
+        const potSaved = localStorage.getItem('savelog_pot_group');
+        if (potSaved) {
+          const potGroup = JSON.parse(potSaved);
+          const potRoomId = `CHAT-${potGroup.id}`;
+          
+          if (!list.some((r) => r.id === potRoomId)) {
+            const newList = [
+              {
+                id: potRoomId,
+                name: `💬 ${potGroup.name} (계모임)`,
+                code: potRoomId,
+                isCreator: true
+              },
+              ...list
+            ];
+            setGroupRooms(newList);
+            localStorage.setItem('savelog_group_chats', JSON.stringify(newList));
+          }
+        } else {
+          // 계모임이 없으면 계모임 관련 톡방도 자동 제거
+          const hasPotGroupRoom = list.some(r => r.name.includes('(계모임)'));
+          if (hasPotGroupRoom) {
+            const newList = list.filter(r => !r.name.includes('(계모임)'));
+            setGroupRooms(newList);
+            localStorage.setItem('savelog_group_chats', JSON.stringify(newList));
+          }
+        }
+      } catch (e) {
+        console.error(e);
+      }
+    }
+  }, [activeTab]);
 
   // 2. 활성화된 방 변경 시 대화 내역 로드 및 실시간 구독 처리
   useEffect(() => {
@@ -289,13 +330,22 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
       if (activeRoomId === roomId) {
         setActiveRoomId(null);
       }
+      // 만약 계모임 톡방이면 계모임 자체도 탈퇴 처리
+      const potSaved = localStorage.getItem('savelog_pot_group');
+      if (potSaved) {
+        const potGroup = JSON.parse(potSaved);
+        if (`CHAT-${potGroup.id}` === roomId) {
+          localStorage.removeItem('savelog_pot_group');
+        }
+      }
     }
   };
 
   // 초대 코드 복사
   const handleCopyCode = (code: string) => {
-    navigator.clipboard.writeText(code);
-    alert(`초대 코드(${code})가 복사되었습니다! 친구에게 공유해 보세요.`);
+    const displayCode = code.startsWith('CHAT-') ? code.substring(5) : code;
+    navigator.clipboard.writeText(displayCode);
+    alert(`초대 코드(${displayCode})가 복사되었습니다! 친구에게 공유해 보세요.`);
   };
 
   // 대화 기록에서 최근 대화 참여자 추출 (stateless Presence 대체)
@@ -381,6 +431,16 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
             </div>
           ) : (
             messages.map((msg) => {
+              if (msg.user_id === 'system') {
+                return (
+                  <div key={msg.id} className="chat-message-row chat-message-row--system">
+                    <div className="chat-system-message-bubble">
+                      {renderTextWithEmoji(msg.message || '')}
+                    </div>
+                  </div>
+                );
+              }
+
               const isMe = msg.user_id === userId;
               const p = msg.persona ? PERSONAS[msg.persona] : null;
 
@@ -402,7 +462,7 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
 
                     {msg.type === 'text' && (
                       <div className={`chat-msg-bubble ${isMe ? 'chat-msg-bubble--me' : ''}`}>
-                        {msg.message}
+                        {renderTextWithEmoji(msg.message || '')}
                       </div>
                     )}
 

@@ -40,6 +40,7 @@ import PersonaTest from './screens/PersonaTest';
 import ChatScreen from './screens/ChatScreen';
 import CommunityScreen from './screens/CommunityScreen';
 import CustomIcon from './components/CustomIcon';
+import { sendChatMessage } from './lib/chat';
 
 type Tab = 'feed' | 'chat' | 'community' | 'mylog';
 
@@ -358,15 +359,28 @@ export default function App() {
         const hasZero = items.some(it => it.amount === 0 && it.category !== '마일스톤');
         const hasSave = items.some(it => it.category === '절약 방어');
 
+        const handleRaidAction = (type: 'zero' | 'save' | 'spend', category: string, amount: number) => {
+          const result = updateGroupRaidAction(type, category, amount, nickname || '짠친');
+          if (result && result.logMessage) {
+            const savedPot = localStorage.getItem('savelog_pot_group');
+            if (savedPot) {
+              const potGroup = JSON.parse(savedPot);
+              const roomId = `CHAT-${potGroup.id}`;
+              sendChatMessage('system', '시스템', 'system', 'text', result.logMessage, undefined, roomId)
+                .catch(err => console.error('Failed to send raid message:', err));
+            }
+          }
+        };
+
         if (hasZero) {
-          updateGroupRaidAction('zero', '', 0, nickname || '짠친');
+          handleRaidAction('zero', '', 0);
         } else if (hasSave) {
           const savedAmt = items.find(it => it.category === '절약 방어')?.saved_amount || 0;
-          updateGroupRaidAction('save', '절약 방어', savedAmt, nickname || '짠친');
+          handleRaidAction('save', '절약 방어', savedAmt);
         } else if (hasSpend) {
           items.forEach(it => {
             if (it.amount > 0) {
-              updateGroupRaidAction('spend', it.category, it.amount, nickname || '짠친');
+              handleRaidAction('spend', it.category, it.amount);
             }
           });
         }
@@ -528,6 +542,7 @@ export default function App() {
             nickname={nickname || '절약가'}
             sharedEntryToPost={sharedEntryToPost}
             clearSharedEntry={() => setSharedEntryToPost(null)}
+            activeTab={tab}
           />
         </div>
         <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
