@@ -380,7 +380,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <>
             {subTab === 'records' && <RecordsTab entries={allEntries.length > 0 ? allEntries : myEntries} onShareToChat={onShareToChat} />}
             {subTab === 'gallery' && <GalleryTab entries={galleryEntries.length > 0 ? galleryEntries : (allEntries.length > 0 ? allEntries : myEntries)} />}
-            {subTab === 'stats' && <StatsTab entries={myEntries} lastWeekEntries={allEntries.filter(e => e.week_key === getPrevWeekKey(getWeekKey()))} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
+            {subTab === 'stats' && <StatsTab entries={myEntries} allEntries={allEntries} lastWeekEntries={allEntries.filter(e => e.week_key === getPrevWeekKey(getWeekKey()))} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
             {subTab === 'mailbox' && <MailboxTab messages={messages} handleClearAllMessages={handleClearAllMessages} clearConfirm={clearConfirm} handleReplyClick={handleReplyClick} nickname={nickname} />}
           </>
         )}
@@ -450,7 +450,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <p className="how-to-title">포인트 획득 방법</p>
               <div className="how-to-rows">
                 <div className="how-to-row"><span><CustomIcon emoji="📝" /> 매일 기록</span><span className="how-to-reward-muted">+3원 대기</span></div>
-                <div className="how-to-row"><span><CustomIcon emoji="🔥" /> 7일 연속 완주</span><span className="how-to-reward-muted">+20원 대기</span></div>
+                <div className="how-to-row"><span><CustomIcon emoji="🏆" /> 주간 순위 보상</span><span className="how-to-reward-muted">순위별 지급</span></div>
                 <div className="how-to-row how-to-row--note"><span>└ 광고 시청 후 토스포인트 지급</span><span /></div>
               </div>
             </div>
@@ -728,7 +728,7 @@ function GalleryTab({ entries }: { entries: Entry[] }) {
 }
 
 
-function StatsTab({ entries, lastWeekEntries, streak, personaKey, p, messages, nickname, daily, weekTotal, zeroDays }: any) {
+function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKey, p, messages, nickname, daily, weekTotal, zeroDays }: any) {
   // 1. Weekly Spending Bar Chart
   const today = new Date();
   const days = Array.from({ length: 7 }, (_, i) => {
@@ -802,6 +802,44 @@ function StatsTab({ entries, lastWeekEntries, streak, personaKey, p, messages, n
     const y = 92 + r * Math.sin(angle);
     return `${x.toFixed(1)},${y.toFixed(1)}`;
   };
+  // ── 절약 Wrapped (주간 결산 카드) ──
+  const weeklyBudget = getWeeklyBudget();
+  const weekSaved = Math.max(0, weeklyBudget - weekTotal);
+  const recordedThisWeek = new Set(entries.map((e: any) => e.date)).size;
+  const topCat = sortedCats[0];
+  const [wrappedSharing, setWrappedSharing] = useState(false);
+  async function handleShareWrapped() {
+    if (wrappedSharing) return;
+    setWrappedSharing(true);
+    try {
+      const text = `📅 이번 주 절약 결산! 지킨 돈 ${formatAmount(weekSaved)} · ${recordedThisWeek}일 기록 · 무지출 ${zeroDays}일${topCat ? ` · 최다 ${topCat.name}` : ''}`;
+      await submitEntry({
+        user_id: entries[0]?.user_id || allEntries[0]?.user_id || 'unknown',
+        nickname, persona: personaKey || 'pig',
+        items: [{ category: '주간결산', emoji: '📅', amount: 0, comment: text }],
+        total_amount: 0, is_balance_game: false, date: getTodayStr(), week_key: getWeekKey()
+      });
+      alert('이번 주 결산을 피드에 공유했어요!');
+    } finally { setWrappedSharing(false); }
+  }
+
+  // ── 소비 파형 (요일·시간대 공명 패턴) ──
+  const waveSource = (allEntries.length ? allEntries : entries);
+  const dowTotals = Array(7).fill(0);
+  const hourBuckets = [0, 0, 0, 0]; // 새벽0-6 / 오전6-12 / 오후12-18 / 저녁18-24
+  waveSource.forEach((e: any) => {
+    const d = new Date(e.created_at || e.date);
+    if (!isNaN(d.getTime()) && e.total_amount > 0) {
+      dowTotals[d.getDay()] += e.total_amount;
+      hourBuckets[Math.min(3, Math.floor(d.getHours() / 6))] += e.total_amount;
+    }
+  });
+  const dowMax = Math.max(...dowTotals, 1);
+  const peakDow = dowTotals.indexOf(Math.max(...dowTotals));
+  const hourLabels = ['🌙 새벽', '🌅 오전', '☀️ 오후', '🌆 저녁'];
+  const peakHour = hourBuckets.indexOf(Math.max(...hourBuckets));
+  const hasWaveData = dowTotals.some(v => v > 0);
+
   const myPoints = [0, 1, 2, 3, 4].map(i => getPoint(scores[i], i)).join(' ');
   const gridPoints = [0.2, 0.4, 0.6, 0.8, 1.0].map((ratio) => [0, 1, 2, 3, 4].map(i => getPoint(100 * ratio, i)).join(' '));
   const labels = [
@@ -814,6 +852,35 @@ function StatsTab({ entries, lastWeekEntries, streak, personaKey, p, messages, n
 
   return (
     <div className="stats-container">
+      {/* 📅 절약 Wrapped — 이번 주 결산 카드 */}
+      <div className="glass-card" style={{ background: 'linear-gradient(135deg, rgba(0,245,160,0.14) 0%, rgba(168,85,247,0.12) 100%)', border: '1.5px solid rgba(0,245,160,0.25)' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
+          <h4 className="stats-card-title" style={{ margin: 0 }}>📅 이번 주 절약 Wrapped</h4>
+          <button className="mylog-budget-edit" onClick={handleShareWrapped} disabled={wrappedSharing}>공유</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
+          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>이번 주 지킨 돈</p>
+            <p style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800, color: 'var(--primary)' }}>{formatAmount(weekSaved)}</p>
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>기록 · 무지출</p>
+            <p style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800 }}>{recordedThisWeek}일 · {zeroDays}일</p>
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>최다 지출</p>
+            <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800 }}>{topCat ? <><CustomIcon emoji={topCat.emoji} /> {topCat.name}</> : '없음 🎉'}</p>
+          </div>
+          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+            <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>나의 소비 페르소나</p>
+            <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800, color: p?.color }}>{p?.name || '짠친'}</p>
+          </div>
+        </div>
+        <p style={{ margin: '12px 0 0', fontSize: '12px', color: 'var(--text-sub)', textAlign: 'center' }}>
+          {streak.streak > 0 ? `🔥 ${streak.streak}일 연속 기록 중! 한 주를 멋지게 마무리했어요` : '이번 주도 한 줄씩 쌓아가요 🌿'}
+        </p>
+      </div>
+
       {/* 소비 진단 (self-benchmark) */}
       <SpendDiagnosisCard thisWeek={entries} lastWeek={lastWeekEntries || []} />
 
@@ -835,6 +902,32 @@ function StatsTab({ entries, lastWeekEntries, streak, personaKey, p, messages, n
             );
           })}
         </div>
+      </div>
+
+      {/* 🌊 소비 파형 — 요일·시간대 공명 패턴 */}
+      <div className="glass-card">
+        <h4 className="stats-card-title">🌊 나의 소비 파형</h4>
+        {!hasWaveData ? (
+          <p className="mylog-empty" style={{ padding: '16px 0' }}>지출 기록이 쌓이면 소비 리듬이 보여요.</p>
+        ) : (
+          <>
+            <div style={{ display: 'flex', alignItems: 'flex-end', gap: '4px', height: '90px', marginTop: '8px' }}>
+              {dowTotals.map((v: number, i: number) => {
+                const h = Math.max(4, Math.round(v / dowMax * 100));
+                const isPeak = i === peakDow && v > 0;
+                return (
+                  <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
+                    <div style={{ width: '100%', height: `${h}%`, borderRadius: '6px 6px 0 0', background: isPeak ? 'linear-gradient(180deg,#ff4d4f,#fbbf24)' : 'rgba(255,255,255,0.15)' }} />
+                    <span style={{ fontSize: '10px', fontWeight: isPeak ? 800 : 500, color: isPeak ? '#fbbf24' : 'var(--text-sub)' }}>{dayNames[i]}</span>
+                  </div>
+                );
+              })}
+            </div>
+            <p style={{ margin: '14px 0 0', fontSize: '12px', lineHeight: 1.5, color: 'var(--text-sub)', textAlign: 'center' }}>
+              지름신은 <strong style={{ color: '#fbbf24' }}>{dayNames[peakDow]}요일 {hourLabels[peakHour]}</strong>에 공명해요.<br />그 시간대엔 지갑을 한 번 더 단속해보세요 🛡️
+            </p>
+          </>
+        )}
       </div>
 
       {/* 카테고리별 지출 */}

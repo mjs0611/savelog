@@ -57,6 +57,7 @@ export interface WeekRankRow {
   total: number;
   days: number;
   doubtCount: number; // 이번 주 entries에 달린 '진짜야?' 리액션 합계
+  score?: number;     // 하이브리드 절약 점수
 }
 
 // ── Write ─────────────────────────────────────────────────────────────────────
@@ -188,15 +189,22 @@ export async function fetchWeekRank(weekKey: string): Promise<WeekRankRow[] | nu
   }
 
   return Array.from(map.values())
-    .map(({ dateSet, latestDate: _ld, earliestDate, entryIds: _ids, ...rest }) => ({
-      ...rest,
-      days: dateSet.size,
-      earliestDate,
-      doubtCount: doubtByUser.get(rest.user_id) ?? 0,
-    }))
+    .map(({ dateSet, latestDate: _ld, earliestDate, entryIds: _ids, ...rest }) => {
+      const days = dateSet.size;
+      const recordScore = days * 800;
+      const budgetRatio = Math.max(0, 100000 - rest.total) / 100000;
+      const savingScore = Math.round(budgetRatio * 4400);
+      const score = recordScore + savingScore;
+      return {
+        ...rest,
+        days,
+        earliestDate,
+        doubtCount: doubtByUser.get(rest.user_id) ?? 0,
+        score
+      };
+    })
     .sort((a, b) => {
-      if (a.total !== b.total) return a.total - b.total;
-      if (a.days !== b.days) return b.days - a.days;
+      if (a.score !== b.score) return b.score - a.score;
       return a.earliestDate < b.earliestDate ? -1 : a.earliestDate > b.earliestDate ? 1 : 0;
     })
     .map(({ earliestDate: _ed, ...row }) => row);
@@ -510,9 +518,9 @@ function buildMockFeed(_userId: string): EntryWithReactions[] {
 }
 
 const MOCK_RANK: WeekRankRow[] = [
-  { user_id: 'mock-c', nickname: '한줄러', total: 0, days: 5, doubtCount: 0 },
-  { user_id: 'mock-a', nickname: '잔잔한민지', total: 11500, days: 5, doubtCount: 0 },
-  { user_id: 'mock-b', nickname: '든든길동', total: 24500, days: 4, doubtCount: 0 },
+  { user_id: 'mock-c', nickname: '한줄러', total: 0, days: 5, doubtCount: 0, score: 8400 },
+  { user_id: 'mock-a', nickname: '잔잔한민지', total: 11500, days: 5, doubtCount: 0, score: 7894 },
+  { user_id: 'mock-b', nickname: '든든길동', total: 24500, days: 4, doubtCount: 0, score: 6522 },
 ];
 
 // ── Stories (24시간 만료 인스타식) ────────────────────────────────────────────

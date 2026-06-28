@@ -92,12 +92,12 @@ export default function JellyPockets() {
             faceEmoji = '🐹';
           }
 
-          // 저금통 테마 색상 지정
-          let jellyColor = 'var(--primary)';
-          if (p.category.includes('식비')) jellyColor = '#FF9500';
-          if (p.category.includes('카페')) jellyColor = '#FFD93D';
-          if (p.category.includes('쇼핑')) jellyColor = '#FF7676';
-          if (p.category.includes('기타')) jellyColor = '#3182F6';
+          // 저금통 테마 색상 지정 (선명하고 매력적인 3D 젤리 비주얼을 위한 고채도 그라데이션)
+          let jellyColor = 'linear-gradient(135deg, var(--primary), #FFAFAF)';
+          if (p.category.includes('식비')) jellyColor = 'linear-gradient(135deg, #FF6F00, #FFC107)';
+          if (p.category.includes('카페')) jellyColor = 'linear-gradient(135deg, #FF9100, #FFE57F)';
+          if (p.category.includes('쇼핑')) jellyColor = 'linear-gradient(135deg, #FF1744, #FF8A80)';
+          if (p.category.includes('기타')) jellyColor = 'linear-gradient(135deg, #2979FF, #82B1FF)';
 
           return (
             <div key={p.category} className={jarClassName}>

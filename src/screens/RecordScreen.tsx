@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@toss/tds-mobile';
 import type { SpendingItem } from '../lib/supabase';
 import { formatAmount } from '../lib/utils';
 import CustomIcon from '../components/CustomIcon';
+import { getWeeklyBudget } from '../lib/storage';
 
 const UNIFIED_CATEGORIES = [
   { label: '식비/식품', emoji: '🍚' },
@@ -30,6 +31,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
   const [activeSubmitType, setActiveSubmitType] = useState<'spend' | 'save' | 'dilemma' | 'zero' | 'tip' | null>(null);
+  const [dopamineDelayMode, setDopamineDelayMode] = useState(false);
+  const [timeLeft, setTimeLeft] = useState(600);
 
   const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
   const isFoodCategory = ['식비/식품', '카페/간식'].includes(selCat.label);
@@ -140,6 +143,103 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
     }
   }
 
+  useEffect(() => {
+    if (!dopamineDelayMode) return;
+    if (timeLeft <= 0) {
+      handleSubmit('save');
+      return;
+    }
+    const timer = setInterval(() => {
+      setTimeLeft(prev => prev - 1);
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [dopamineDelayMode, timeLeft]);
+
+  if (dopamineDelayMode) {
+    const minutes = Math.floor(timeLeft / 60);
+    const seconds = timeLeft % 60;
+    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
+    
+    return (
+      <div className="modal-overlay">
+        <div className="modal-sheet" style={{ textAlign: 'center', padding: '24px' }}>
+          <div className="modal-header" style={{ justifyContent: 'center' }}>
+            <h2 className="modal-title">👾 지름신 쫓아내는 중...</h2>
+          </div>
+          
+          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '20px' }}>
+            <div className="dopamine-timer-circle" style={{
+              width: '160px',
+              height: '160px',
+              borderRadius: '50%',
+              border: '8px solid var(--primary-light)',
+              borderTopColor: 'var(--primary)',
+              display: 'flex',
+              flexDirection: 'column',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: 'var(--shadow-md)',
+              background: 'rgba(255,255,255,0.7)'
+            }}>
+              <span style={{ fontSize: '32px', fontWeight: 900, color: 'var(--text-main)' }}>{timeStr}</span>
+              <span style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>남은 시간</span>
+            </div>
+            
+            <div style={{ padding: '0 20px' }}>
+              <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>
+                충동구매 욕구는 평균 10분 뒤에 사라집니다
+              </p>
+              <p style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5, margin: 0 }}>
+                현재 지각적 도파민 딜레이가 가동되었습니다. 10분을 버텨내면 <strong>절약 방어 성공 뱃지</strong>와 함께 <strong>젤리 리워드</strong>를 받게 됩니다!
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '20px' }}>
+              <button 
+                className="fast-forward-btn" 
+                onClick={() => handleSubmit('save')}
+                style={{
+                  flex: 1,
+                  background: 'var(--primary)',
+                  color: '#fff',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  cursor: 'pointer',
+                  boxShadow: 'var(--shadow-sm)'
+                }}
+              >
+                💪 참아냈어요! (즉시 성공)
+              </button>
+              
+              <button 
+                onClick={() => {
+                  setDopamineDelayMode(false);
+                  setTimeLeft(600);
+                }}
+                style={{
+                  flex: 1,
+                  background: '#F2F4F7',
+                  color: 'var(--text-sub)',
+                  border: 'none',
+                  borderRadius: '12px',
+                  padding: '14px',
+                  fontWeight: 800,
+                  fontSize: '13px',
+                  cursor: 'pointer'
+                }}
+              >
+                💸 그냥 살래요 (포기)
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="modal-overlay">
       <div className="modal-sheet">
@@ -246,6 +346,43 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 />
               </label>
             )}
+          {amount > 0 && (
+            <div className="utility-deflector-card glass-card" style={{
+              marginTop: '16px',
+              padding: '16px',
+              borderRadius: '16px',
+              border: '1px solid rgba(255, 74, 107, 0.15)',
+              background: 'rgba(255, 74, 107, 0.03)',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '10px'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>💡</span>
+                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>한계 효용 디플렉터 (소비 시간 변환)</span>
+              </div>
+              <div style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
+                이 소비 금액은 최저임금 기준(시급 9,860원)으로 <strong>{(amount / 9860).toFixed(1)}시간</strong> 동안 일한 노동력과 같으며, 하루 평균 예산의 <strong>{(amount / (getWeeklyBudget() / 7)).toFixed(1)}일 치</strong>에 해당합니다.
+              </div>
+              <button
+                onClick={() => setDopamineDelayMode(true)}
+                style={{
+                  background: 'var(--primary-light)',
+                  color: 'var(--primary)',
+                  border: 'none',
+                  borderRadius: '10px',
+                  padding: '10px',
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  cursor: 'pointer',
+                  textAlign: 'center',
+                  transition: 'background 0.2s'
+                }}
+              >
+                ⏱️ 10분 참기 타이머 가동 (도파민 디플렉터)
+              </button>
+            </div>
+          )}
           </div>
         </div>
 

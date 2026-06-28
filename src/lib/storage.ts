@@ -597,6 +597,16 @@ export function updateGroupRaidAction(
     
     if (damage > 0) {
       raid.bossHp = Math.max(0, raid.bossHp - damage);
+      
+      if (group.members) {
+        const member = group.members.find((m: any) => m.name === nickname);
+        if (member) {
+          member.damage = (member.damage || 0) + damage;
+        } else {
+          group.members.push({ name: nickname, spent: 0, persona: 'pig', damage });
+        }
+      }
+
       if (raid.bossHp === 0) {
         raid.raidCompleted = true;
         logMessage = `🎉 축하합니다! ${nickname}님의 일격으로 보스 [${raid.bossName}] 퇴치에 대성공했습니다!`;
@@ -615,4 +625,440 @@ export function updateGroupRaidAction(
     return null;
   }
 }
+
+// ── Implementation Intentions ───────────────────────────────────────────────
+const INTENT_TRIGGER_KEY = 'savelog_intent_trigger';
+export function getIntentTrigger(): string | null {
+  try { return localStorage.getItem(INTENT_TRIGGER_KEY); } catch { return null; }
+}
+export function setIntentTrigger(val: string): void {
+  try { localStorage.setItem(INTENT_TRIGGER_KEY, val); } catch {}
+}
+
+// ── Pet Naming ───────────────────────────────────────────────────────────────
+const PET_NAME_KEY = 'savelog_pet_name';
+export function getPetName(): string | null {
+  try { return localStorage.getItem(PET_NAME_KEY); } catch { return null; }
+}
+export function setPetName(name: string): void {
+  try { localStorage.setItem(PET_NAME_KEY, name); } catch {}
+}
+
+// ── Jelly Balance ────────────────────────────────────────────────────────────
+const JELLY_BALANCE_KEY = 'savelog_jelly_balance';
+export function getJellyBalance(): number {
+  try {
+    const v = localStorage.getItem(JELLY_BALANCE_KEY);
+    return v ? parseInt(v, 10) : 100; // 기본 100 젤리 지급
+  } catch { return 100; }
+}
+export function addJelly(amount: number): number {
+  const current = getJellyBalance();
+  const next = current + amount;
+  try {
+    localStorage.setItem(JELLY_BALANCE_KEY, next.toString());
+    window.dispatchEvent(new CustomEvent('savelog_jelly_updated', { detail: next }));
+  } catch {}
+  return next;
+}
+export function useJelly(amount: number): boolean {
+  const current = getJellyBalance();
+  if (current < amount) return false;
+  const next = current - amount;
+  try {
+    localStorage.setItem(JELLY_BALANCE_KEY, next.toString());
+    window.dispatchEvent(new CustomEvent('savelog_jelly_updated', { detail: next }));
+    return true;
+  } catch { return false; }
+}
+
+// ── Pet Customization & Shop ────────────────────────────────────────────────
+const PET_OWNED_ITEMS_KEY = 'savelog_pet_owned_items';
+const PET_EQUIPPED_ITEMS_KEY = 'savelog_pet_equipped_items';
+
+export interface ShopItem {
+  id: string;
+  name: string;
+  emoji: string;
+  price: number;
+  type: 'head' | 'face' | 'neck' | 'room';
+}
+
+export const SHOP_ITEMS: ShopItem[] = [
+  { id: 'gentle_hat', name: '멋쟁이 신사 모자', emoji: '🎩', price: 50, type: 'head' },
+  { id: 'hipster_glasses', name: '힙스터 선글라스', emoji: '🕶️', price: 70, type: 'face' },
+  { id: 'golden_crown', name: '황금 왕관', emoji: '👑', price: 150, type: 'head' },
+  { id: 'red_ribbon', name: '빨간 리본', emoji: '🎀', price: 40, type: 'neck' },
+  { id: 'plant_pot', name: '반려 식물 화분', emoji: '🪴', price: 60, type: 'room' },
+  { id: 'mini_sofa', name: '아늑한 미니 소파', emoji: '🛋️', price: 100, type: 'room' },
+];
+
+export function getOwnedItems(): string[] {
+  try {
+    const v = localStorage.getItem(PET_OWNED_ITEMS_KEY);
+    return v ? JSON.parse(v) : [];
+  } catch { return []; }
+}
+
+export function getEquippedItems(): Record<string, string | null> {
+  try {
+    const v = localStorage.getItem(PET_EQUIPPED_ITEMS_KEY);
+    return v ? JSON.parse(v) : { head: null, face: null, neck: null, room: null };
+  } catch { return { head: null, face: null, neck: null, room: null }; }
+}
+
+export function buyItem(id: string, price: number): boolean {
+  const owned = getOwnedItems();
+  if (owned.includes(id)) return false;
+  if (useJelly(price)) {
+    owned.push(id);
+    try {
+      localStorage.setItem(PET_OWNED_ITEMS_KEY, JSON.stringify(owned));
+      return true;
+    } catch {}
+  }
+  return false;
+}
+
+export function equipItem(id: string | null, type: string): void {
+  const equipped = getEquippedItems();
+  equipped[type] = id;
+  try {
+    localStorage.setItem(PET_EQUIPPED_ITEMS_KEY, JSON.stringify(equipped));
+    window.dispatchEvent(new Event('savelog_pet_equipped_changed'));
+  } catch {}
+}
+
+// ── Saving Goal (절약 위치에너지 → 목표 충전) ──────────────────────────────
+// 안 쓴 돈(잠재에너지)을 사용자가 정한 실제 목표 게이지로 적립한다.
+const SAVING_GOAL_KEY = 'savelog_saving_goal';
+export interface SavingGoal { name: string; emoji: string; target: number; saved: number; }
+export function getSavingGoal(): SavingGoal | null {
+  try { const v = localStorage.getItem(SAVING_GOAL_KEY); return v ? JSON.parse(v) : null; } catch { return null; }
+}
+export function setSavingGoal(goal: SavingGoal): void {
+  try {
+    localStorage.setItem(SAVING_GOAL_KEY, JSON.stringify(goal));
+    window.dispatchEvent(new Event('savelog_goal_updated'));
+  } catch {}
+}
+export function clearSavingGoal(): void {
+  try { localStorage.removeItem(SAVING_GOAL_KEY); window.dispatchEvent(new Event('savelog_goal_updated')); } catch {}
+}
+// 안 쓴 돈을 목표에 충전. 충전된 금액(목표 초과분 제외)을 반환.
+export function addToGoal(amount: number): number {
+  const g = getSavingGoal();
+  if (!g || amount <= 0 || g.saved >= g.target) return 0;
+  const charged = Math.min(amount, g.target - g.saved);
+  setSavingGoal({ ...g, saved: g.saved + charged });
+  return charged;
+}
+
+// ── Wishlist Cooldown (충동 48시간 대기 후 결정) ────────────────────────────
+// 사고 싶은 것을 대기방에 넣고 48h 뒤 "아직도 원해?"로 충동을 시간으로 식힌다.
+const WISHLIST_KEY = 'savelog_wishlist';
+export const WISHLIST_COOLDOWN_MS = 48 * 60 * 60 * 1000;
+export interface WishlistItem { id: string; name: string; price: number; addedAt: number; status: 'waiting' | 'resisted' | 'bought'; }
+export function getWishlist(): WishlistItem[] {
+  try { const v = localStorage.getItem(WISHLIST_KEY); return v ? JSON.parse(v) as WishlistItem[] : []; } catch { return []; }
+}
+function saveWishlist(items: WishlistItem[]): void {
+  try { localStorage.setItem(WISHLIST_KEY, JSON.stringify(items)); } catch {}
+}
+export function addWishlistItem(name: string, price: number): WishlistItem[] {
+  const items = getWishlist();
+  items.unshift({ id: `w-${Date.now()}`, name, price, addedAt: Date.now(), status: 'waiting' });
+  saveWishlist(items);
+  return items;
+}
+export function resolveWishlistItem(id: string, bought: boolean): WishlistItem[] {
+  const items = getWishlist().map(it =>
+    it.id === id ? { ...it, status: (bought ? 'bought' : 'resisted') as WishlistItem['status'] } : it
+  );
+  saveWishlist(items);
+  return items;
+}
+export function removeWishlistItem(id: string): WishlistItem[] {
+  const items = getWishlist().filter(it => it.id !== id);
+  saveWishlist(items);
+  return items;
+}
+// 쿨다운이 끝났는지 (48h 경과 + 아직 waiting)
+export function isWishlistItemReady(it: WishlistItem): boolean {
+  return it.status === 'waiting' && Date.now() - it.addedAt >= WISHLIST_COOLDOWN_MS;
+}
+
+// ── Part 2. 행동 과학 및 물리학 기반 메커니즘 ──
+
+// 1. 모의 담금질 (Simulated Annealing)
+const SYSTEM_START_DATE_KEY = 'savelog_system_start_date';
+
+export function getSystemStartDate(): string {
+  let d = localStorage.getItem(SYSTEM_START_DATE_KEY);
+  if (!d) {
+    const today = new Date();
+    d = today.toISOString().split('T')[0];
+    localStorage.setItem(SYSTEM_START_DATE_KEY, d);
+  }
+  return d;
+}
+
+export function getSystemWeek(): number {
+  const startStr = getSystemStartDate();
+  const start = new Date(startStr);
+  const today = new Date();
+  const diffTime = Math.abs(today.getTime() - start.getTime());
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  return Math.max(1, Math.ceil(diffDays / 7));
+}
+
+export function getSystemTemperature(): number {
+  const week = getSystemWeek();
+  // 온도: 1주차 0.8 -> 2주차 0.6 -> 3주차 0.4 -> 4주차+ 0.2 (floor)
+  // 1주차부터 복원계수 k=1-T가 0.2로 시작해 완만한 복원력이 즉시 작동한다.
+  return Math.max(0.2, parseFloat((0.8 - (week - 1) * 0.2).toFixed(2)));
+}
+
+export function getRestoringCoefficient(): number {
+  return parseFloat((1.0 - getSystemTemperature()).toFixed(2));
+}
+
+// 2. 훅의 법칙 (Hooke's Law Restoring Budget)
+const RESTORING_ADJUSTMENT_KEY = 'savelog_restoring_adjustment';
+
+export function getRestoringAdjustment(): number {
+  try {
+    const v = localStorage.getItem(RESTORING_ADJUSTMENT_KEY);
+    return v ? parseInt(v, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setRestoringAdjustment(amt: number): void {
+  try {
+    localStorage.setItem(RESTORING_ADJUSTMENT_KEY, amt.toString());
+  } catch {}
+}
+
+export function applyDailyRestoringForce(spentYesterday: number): number {
+  const baseDailyBudget = Math.round(getWeeklyBudget() / 7);
+  const targetWithAdjustment = baseDailyBudget + getRestoringAdjustment();
+  const deviation = spentYesterday - targetWithAdjustment; // x: 초과 지출 변위
+  
+  const k = getRestoringCoefficient();
+  // F = -k * x (복원력)
+  const restoringForce = Math.round(-k * deviation);
+  
+  // 다음 날 적용할 복원 보정치 업데이트 (누적되지 않고 매일 갱신)
+  setRestoringAdjustment(restoringForce);
+  return restoringForce;
+}
+
+// 3. 예산 엔트로피 (Budget Entropy)
+const BUDGET_ENTROPY_KEY = 'savelog_budget_entropy';
+
+export function getBudgetEntropy(): number {
+  try {
+    const v = localStorage.getItem(BUDGET_ENTROPY_KEY);
+    return v ? parseInt(v, 10) : 0;
+  } catch {
+    return 0;
+  }
+}
+
+export function setBudgetEntropy(val: number): void {
+  try {
+    const clamped = Math.max(0, Math.min(100, val));
+    localStorage.setItem(BUDGET_ENTROPY_KEY, clamped.toString());
+    window.dispatchEvent(new Event('savelog_entropy_updated'));
+  } catch {}
+}
+
+export function ageBudgetEntropy(expiredSkeletonsCount = 0): number {
+  const current = getBudgetEntropy();
+  const increase = 15 + (expiredSkeletonsCount * 10);
+  const next = Math.min(100, current + increase);
+  setBudgetEntropy(next);
+  return next;
+}
+
+export function reduceBudgetEntropy(amount: number): number {
+  const current = getBudgetEntropy();
+  const next = Math.max(0, current - amount);
+  setBudgetEntropy(next);
+  return next;
+}
+
+// 4. 자이가르닉 스켈레톤 (Zeigarnik Skeletons)
+const SKELETONS_KEY = 'savelog_zeigarnik_skeletons';
+
+export interface ZeigarnikSkeleton {
+  id: string;
+  name: string;
+  emoji: string;
+  timeLabel: string;
+  targetCategory: string;
+  status: 'pending' | 'resolved' | 'expired';
+}
+
+export const DEFAULT_SKELETONS: ZeigarnikSkeleton[] = [
+  { id: 'sk-lunch', name: '점심 식사', emoji: '🍚', timeLabel: '13:00', targetCategory: '식비/식품', status: 'pending' },
+  { id: 'sk-cafe', name: '카페/간식 타임', emoji: '☕', timeLabel: '15:30', targetCategory: '카페/간식', status: 'pending' },
+  { id: 'sk-commute', name: '퇴근/하교 길', emoji: '🚌', timeLabel: '18:30', targetCategory: '기타', status: 'pending' }
+];
+
+export function getZeigarnikSkeletons(): ZeigarnikSkeleton[] {
+  try {
+    const v = localStorage.getItem(SKELETONS_KEY);
+    if (!v) {
+      localStorage.setItem(SKELETONS_KEY, JSON.stringify(DEFAULT_SKELETONS));
+      return DEFAULT_SKELETONS;
+    }
+    return JSON.parse(v);
+  } catch {
+    return DEFAULT_SKELETONS;
+  }
+}
+
+export function saveZeigarnikSkeletons(skeletons: ZeigarnikSkeleton[]): void {
+  try {
+    localStorage.setItem(SKELETONS_KEY, JSON.stringify(skeletons));
+    window.dispatchEvent(new Event('savelog_skeletons_updated'));
+  } catch {}
+}
+
+export function resolveSkeleton(id: string): void {
+  const skeletons = getZeigarnikSkeletons().map(sk => 
+    sk.id === id ? { ...sk, status: 'resolved' as const } : sk
+  );
+  saveZeigarnikSkeletons(skeletons);
+  reduceBudgetEntropy(20); // 완료 시 엔트로피 20% 감소
+}
+
+// 매일 자정이 넘어 복귀할 때 물리 엔진 리셋 및 연동
+// ⚠️ 하루에 정확히 한 번만 진행되어야 한다. savelog_daily.date는 첫 기록 전까지
+// 어제로 남아있어 판정 기준으로 쓰면 같은 날 여러 번(앱·피드 마운트·복귀) 재실행되어
+// 엔트로피가 중복 누적된다. 전용 키로 "마지막 물리 실행 날짜"를 따로 관리한다.
+const LAST_PHYSICS_DATE_KEY = 'savelog_last_physics_date';
+export function checkAndResetDailyPhysics(today: string): void {
+  let lastPhysicsDate: string | null = null;
+  try { lastPhysicsDate = localStorage.getItem(LAST_PHYSICS_DATE_KEY); } catch {}
+
+  if (lastPhysicsDate === today) return; // 오늘 이미 처리됨 → 재실행 금지
+
+  // 최초 실행(기존 유저 포함): 누적 없이 스켈레톤만 초기화
+  if (!lastPhysicsDate) {
+    saveZeigarnikSkeletons(DEFAULT_SKELETONS);
+    try { localStorage.setItem(LAST_PHYSICS_DATE_KEY, today); } catch {}
+    return;
+  }
+
+  // 날짜가 바뀐 첫 호출 — 하루치 물리 진행을 1회만 적용
+  // 1. 미결된 자이가르닉 과제 개수 → 엔트로피 만료 벌점
+  const skeletons = getZeigarnikSkeletons();
+  const expiredCount = skeletons.filter(s => s.status === 'pending').length;
+
+  // 2. 일일 자연 엔트로피 증가(+15%) + 미루기 만료 벌점(+10% × N)
+  ageBudgetEntropy(expiredCount);
+
+  // 3. 훅의 법칙 복원 가속 (어제 초과분 피드백)
+  let spentYesterday = 0;
+  try {
+    const lastStateRaw = localStorage.getItem('savelog_daily');
+    if (lastStateRaw) spentYesterday = JSON.parse(lastStateRaw).spentAmount || 0;
+  } catch {}
+  applyDailyRestoringForce(spentYesterday);
+
+  // 4. 새로운 하루를 위해 스켈레톤 초기화 + 실행 날짜 기록
+  saveZeigarnikSkeletons(DEFAULT_SKELETONS);
+  try { localStorage.setItem(LAST_PHYSICS_DATE_KEY, today); } catch {}
+}
+
+// 5. 약속 보증금 금고 (Commitment Vault)
+const COMMITMENT_VAULT_KEY = 'savelog_commitment_vault';
+
+export interface CommitmentContract {
+  id: string;
+  name: string;
+  category: string;
+  budgetLimit: number;
+  depositAmount: number;
+  startDate: string;
+  endDate: string;
+  status: 'active' | 'success' | 'failed';
+}
+
+export function getCommitmentContracts(): CommitmentContract[] {
+  try {
+    const v = localStorage.getItem(COMMITMENT_VAULT_KEY);
+    return v ? JSON.parse(v) : [];
+  } catch {
+    return [];
+  }
+}
+
+export function saveCommitmentContracts(contracts: CommitmentContract[]): void {
+  try {
+    localStorage.setItem(COMMITMENT_VAULT_KEY, JSON.stringify(contracts));
+    window.dispatchEvent(new Event('savelog_commitments_updated'));
+  } catch {}
+}
+
+export function createCommitmentContract(name: string, category: string, budgetLimit: number, depositAmount: number): boolean {
+  if (!useJelly(depositAmount)) return false;
+  
+  const contracts = getCommitmentContracts();
+  const today = new Date();
+  const nextWeek = new Date();
+  nextWeek.setDate(today.getDate() + 7);
+  
+  const newContract: CommitmentContract = {
+    id: `commit-${Date.now()}`,
+    name,
+    category,
+    budgetLimit,
+    depositAmount,
+    startDate: today.toISOString().split('T')[0],
+    endDate: nextWeek.toISOString().split('T')[0],
+    status: 'active'
+  };
+  
+  contracts.push(newContract);
+  saveCommitmentContracts(contracts);
+  return true;
+}
+
+export function resolveWeeklyCommitmentContracts(entries: any[]): void {
+  const contracts = getCommitmentContracts();
+  const activeContracts = contracts.filter(c => c.status === 'active');
+  if (activeContracts.length === 0) return;
+  
+  const todayStr = new Date().toISOString().split('T')[0];
+  const updated = contracts.map(c => {
+    if (c.status !== 'active') return c;
+    
+    if (todayStr >= c.endDate) {
+      const categorySpent = entries
+        .filter(e => {
+          const entryDate = e.date || e.created_at?.split('T')[0];
+          return entryDate >= c.startDate && entryDate <= c.endDate && e.category?.split('/')[0] === c.category.split('/')[0];
+        })
+        .reduce((sum, e) => sum + (e.amount || 0), 0);
+        
+      if (categorySpent <= c.budgetLimit) {
+        // 성공 시 원금 환급 + 50% 보너스 이자 지급
+        addJelly(c.depositAmount + Math.round(c.depositAmount * 0.5));
+        return { ...c, status: 'success' as const };
+      } else {
+        // 실패 시 예치 보증금 소멸
+        return { ...c, status: 'failed' as const };
+      }
+    }
+    return c;
+  });
+  
+  saveCommitmentContracts(updated);
+}
+
 

@@ -23,15 +23,27 @@ import {
   addStreakShield,
   getMilestonePosted,
   setMilestonePosted,
+  getClaimedRankReward,
+  setClaimedRankReward,
   type StreakData,
   type DailyState,
   updateJellyPocketSpent,
   updateGroupRaidAction,
+  addJelly,
+  getIntentTrigger,
+  setIntentTrigger,
+  getWeeklyBudget,
+  addToGoal,
+  checkAndResetDailyPhysics,
+  resolveSkeleton,
+  getZeigarnikSkeletons,
+  reduceBudgetEntropy,
+  getBudgetEntropy,
 } from './lib/storage';
-import { initAit, grantPendingReward } from './lib/tosspoint';
+import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, type SpendingItem, type WeekRankRow } from './lib/supabase';
-import { getTodayStr, getWeekKey, getPrevWeekKey } from './lib/utils';
+import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
 import ProfileScreen from './screens/ProfileScreen';
@@ -64,6 +76,7 @@ export default function App() {
 
   const [nickname, setNicknameState] = useState<string | null>(() => getNickname());
   const [nicknameInput, setNicknameInput] = useState('');
+  const [intentTrigger, setIntentTriggerState] = useState<string | null>(() => getIntentTrigger());
   const [tab, setTab]           = useState<Tab>(() => {
     const path = window.location.pathname.replace(/^\//, '').split('/')[0];
     if (path === 'chat') return 'chat';
@@ -82,6 +95,7 @@ export default function App() {
   const [zeroNoteText, setZeroNoteText] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [pendingClaiming, setPendingClaiming] = useState(false);
+  const [rankClaiming, setRankClaiming] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
@@ -93,6 +107,7 @@ export default function App() {
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
   const pendingClaimingRef = useRef(false);
+  const rankClaimingRef = useRef(false);
   const rankLoadIdRef = useRef(0);
 
   function handleShareToChat(entry: any) {
@@ -101,6 +116,7 @@ export default function App() {
   }
 
   useEffect(() => {
+    checkAndResetDailyPhysics(getTodayStr());
     initAit();
     initBannerAds();
     preloadReward(); // 항상 리워드 광고 미리 로드
@@ -137,6 +153,7 @@ export default function App() {
     function handleVisibilityChange() {
       if (document.visibilityState === 'visible') {
         const currentDay = getTodayStr();
+        checkAndResetDailyPhysics(currentDay);
         setDaily(prev => prev.date !== currentDay ? loadDailyState(currentDay) : prev);
         setStreak(getEffectiveStreak());
         setStreakShields(getStreakShields());
@@ -259,57 +276,127 @@ export default function App() {
   if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) {
     const isMigration = !!nickname;
     return (
-      <div className="screen setup-screen">
-        <div className="setup-hero">
-          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
-          <h1 className="setup-title">savelog</h1>
-          {isMigration ? (
-            <p className="setup-desc">더 안전한 서비스 이용을 위해<br />토스 계정 연동이 필요해요</p>
-          ) : (
-            <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
-          )}
+      <div className="app-root">
+        <div className="bg-glow-orb orb-1"></div>
+        <div className="bg-glow-orb orb-2"></div>
+        <div className="bg-glow-orb orb-3"></div>
+        <div className="screen setup-screen">
+          <div className="setup-hero">
+            <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
+            <h1 className="setup-title">savelog</h1>
+            {isMigration ? (
+              <p className="setup-desc">더 안전한 서비스 이용을 위해<br />토스 계정 연동이 필요해요</p>
+            ) : (
+              <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
+            )}
+          </div>
+          <Button size="xlarge" display="full" color="primary" variant="fill" onClick={handleTossLogin} disabled={loginLoading}>
+            {loginLoading ? '연동 중...' : isMigration ? '토스 계정 연동하기' : '토스로 시작하기'}
+          </Button>
+          {loginError && <p className="login-error-msg">{loginError}</p>}
         </div>
-        <Button size="xlarge" display="full" color="primary" variant="fill" onClick={handleTossLogin} disabled={loginLoading}>
-          {loginLoading ? '연동 중...' : isMigration ? '토스 계정 연동하기' : '토스로 시작하기'}
-        </Button>
-        {loginError && <p className="login-error-msg">{loginError}</p>}
       </div>
     );
   }
 
   if (!nickname) {
     return (
-      <div className="screen setup-screen">
-        <div className="setup-hero">
-          <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
-          <h1 className="setup-title">savelog</h1>
-          <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
-        </div>
+      <div className="app-root">
+        <div className="bg-glow-orb orb-1"></div>
+        <div className="bg-glow-orb orb-2"></div>
+        <div className="bg-glow-orb orb-3"></div>
+        <div className="screen setup-screen">
+          <div className="setup-hero">
+            <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
+            <h1 className="setup-title">savelog</h1>
+            <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
+          </div>
 
-        <div className="setup-textfield-wrap">
-          <TextField
-            variant="box"
-            label="닉네임을 설정해 주세요"
-            placeholder="예: 절약왕민지"
-            value={nicknameInput}
-            maxLength={12}
-            help="최대 12자 · 나중에 변경 가능해요"
-            onChange={(e: any) => setNicknameInput(e.target.value)}
-            onKeyDown={(e: any) => e.key === 'Enter' && handleSetNickname()}
-            autoFocus
-          />
-        </div>
+          <div className="setup-textfield-wrap">
+            <TextField
+              variant="box"
+              label="닉네임을 설정해 주세요"
+              placeholder="예: 절약왕민지"
+              value={nicknameInput}
+              maxLength={12}
+              help="최대 12자 · 나중에 변경 가능해요"
+              onChange={(e: any) => setNicknameInput(e.target.value)}
+              onKeyDown={(e: any) => e.key === 'Enter' && handleSetNickname()}
+              autoFocus
+            />
+          </div>
 
-        <Button
-          size="xlarge"
-          display="full"
-          color="primary"
-          variant="fill"
-          onClick={handleSetNickname}
-          disabled={!nicknameInput.trim()}
-        >
-          시작하기
-        </Button>
+          <Button
+            size="xlarge"
+            display="full"
+            color="primary"
+            variant="fill"
+            onClick={handleSetNickname}
+            disabled={!nicknameInput.trim()}
+          >
+            시작하기
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!intentTrigger) {
+    const triggers = [
+      { key: 'lunch', label: '🍚 점심 식사 마치고', desc: '낮 시간에 밀리지 않고 가볍게 기록해요' },
+      { key: 'cafe', label: '☕ 카페 갈 때', desc: '커피 값이나 간식 비용을 잊지 않고 적어요' },
+      { key: 'commute', label: '🚌 퇴근길 버스/지하철에서', desc: '하루의 소비를 돌아보기 좋은 이동 시간이에요' },
+      { key: 'bed', label: '🛌 자기 전 침대에서', desc: '오늘 하루 지갑 수비 결과를 정돈하고 자요' }
+    ];
+    return (
+      <div className="app-root">
+        <div className="bg-glow-orb orb-1"></div>
+        <div className="bg-glow-orb orb-2"></div>
+        <div className="bg-glow-orb orb-3"></div>
+        <div className="screen setup-screen">
+          <div className="setup-hero" style={{ paddingBottom: '16px' }}>
+            <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
+            <h2 className="setup-title" style={{ fontSize: '20px', lineHeight: '1.4', margin: '16px 0 8px 0' }}>언제 지갑 수비를 기록할까요?</h2>
+            <p className="setup-desc">구체적인 순간을 약속하면<br />습관 유지 확률이 91%까지 올라갑니다.</p>
+          </div>
+
+          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', padding: '0 24px', boxSizing: 'border-box', marginBottom: '32px' }}>
+            {triggers.map(t => (
+              <div
+                key={t.key}
+                onClick={() => {
+                  setIntentTrigger(t.label);
+                  setIntentTriggerState(t.label);
+                }}
+                style={{
+                  background: 'rgba(255, 255, 255, 0.65)',
+                  border: '1px solid rgba(120, 100, 80, 0.08)',
+                  borderRadius: '16px',
+                  padding: '16px 20px',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  boxShadow: 'var(--shadow-sm)',
+                  transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
+                }}
+                onMouseEnter={(e) => { 
+                  e.currentTarget.style.background = '#FFFFFF'; 
+                  e.currentTarget.style.borderColor = 'var(--primary)';
+                  e.currentTarget.style.transform = 'translateY(-2px)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
+                }}
+                onMouseLeave={(e) => { 
+                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.65)'; 
+                  e.currentTarget.style.borderColor = 'rgba(120, 100, 80, 0.08)';
+                  e.currentTarget.style.transform = 'translateY(0)';
+                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
+                }}
+              >
+                <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>{t.label}</h4>
+                <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: '1.4' }}>{t.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       </div>
     );
   }
@@ -358,6 +445,26 @@ export default function App() {
         const hasSpend = items.some(it => it.category !== '절약 방어' && it.amount > 0);
         const hasZero = items.some(it => it.amount === 0 && it.category !== '마일스톤');
         const hasSave = items.some(it => it.category === '절약 방어');
+
+        // 자이가르닉 스켈레톤 과제 해소 연동
+        const skeletons = getZeigarnikSkeletons();
+        items.forEach(it => {
+          const cat = it.category ? it.category.split('/')[0] : '';
+          if (cat === '식비' && skeletons.some(s => s.id === 'sk-lunch' && s.status === 'pending')) {
+            resolveSkeleton('sk-lunch');
+          } else if (cat === '카페' && skeletons.some(s => s.id === 'sk-cafe' && s.status === 'pending')) {
+            resolveSkeleton('sk-cafe');
+          } else if (skeletons.some(s => s.id === 'sk-commute' && s.status === 'pending')) {
+            resolveSkeleton('sk-commute');
+          }
+        });
+
+        // 예산 엔트로피 차감 연동
+        if (hasZero) {
+          reduceBudgetEntropy(15);
+        } else if (hasSave) {
+          reduceBudgetEntropy(10);
+        }
 
         const handleRaidAction = (type: 'zero' | 'save' | 'spend', category: string, amount: number) => {
           const result = updateGroupRaidAction(type, category, amount, nickname || '짠친');
@@ -432,17 +539,38 @@ export default function App() {
           }
         }
 
-        const isStreakBonus = newStreak.streak > 0 && newStreak.streak % 7 === 0;
-        const totalEarn = 3 + (isStreakBonus ? 20 : 0);
+        // 포인트는 글 올리기(매일 첫 기록)에만 지급 — 연속 출석 보너스 없음
+        const totalEarn = 3;
         const prevPending = getPendingPoints();
         const newPending = addPendingPoints(totalEarn);
         const actualEarned = newPending - prevPending;
         setPendingPoints(newPending);
         if (newPending > 0) preloadReward();
 
-        const toastMsg = isStreakBonus
-          ? (actualEarned > 0 ? `🔥 7일 연속 완주! 총 +${actualEarned}원 적립 대기 (광고 보고 받기)` : `🔥 7일 연속 완주! (포인트 한도 도달 — 광고 보고 먼저 받기)`)
-          : (actualEarned > 0 ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기)` : `✅ 기록 완료! (오늘 포인트 한도 도달)`);
+        // 젤리 지급 (기본 10 젤리, 무지출 10 젤리 추가, 미션 달성 15 젤리 추가)
+        let jellyReward = 10;
+        if (total === 0) jellyReward += 10;
+        if (missionCleared) jellyReward += 15;
+        
+        const currentEntropy = getBudgetEntropy();
+        const entropyDecay = currentEntropy > 70;
+        if (entropyDecay) {
+          jellyReward = Math.round(jellyReward * 0.5);
+        }
+        addJelly(jellyReward);
+
+        // 안 쓴 돈(잠재에너지)을 목표 게이지로 충전 — 하루 예산 대비 아낀 만큼 + 명시적 절약 방어액
+        const dailyBudget = Math.round(getWeeklyBudget() / 7);
+        const savedFromBudget = Math.max(0, dailyBudget - total);
+        const savedFromDefense = items.reduce((s, it) => s + (it.saved_amount ?? 0), 0);
+        const finalChargeInput = entropyDecay ? Math.round((savedFromBudget + savedFromDefense) * 0.5) : (savedFromBudget + savedFromDefense);
+        const chargedToGoal = addToGoal(finalChargeInput);
+
+        const goalMsg = chargedToGoal > 0 ? ` · 🎯 목표에 ${formatAmount(chargedToGoal)} 충전` : '';
+        const decayAlert = entropyDecay ? ' (⚠️엔트로피 50% 감쇄)' : '';
+        const toastMsg = actualEarned > 0
+          ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기) · +${jellyReward} 젤리${decayAlert} 🐹${goalMsg}`
+          : `✅ 기록 완료! · +${jellyReward} 젤리${decayAlert} 🐹${goalMsg}`;
         showToast(toastMsg);
       } else {
         showToast('✅ 추가 기록 완료!');
@@ -489,6 +617,31 @@ export default function App() {
     }, () => {
       pendingClaimingRef.current = false;
       setPendingClaiming(false);
+      showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
+    });
+  }
+
+  function handleClaimRankReward(amount: number) {
+    const weekKey = getPrevWeekKey(); // 리워드는 지난 주 성적 기준
+    if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
+    rankClaimingRef.current = true;
+    setRankClaiming(true);
+    showReward(async () => {
+      try {
+        const ok = await grantRankReward(amount);
+        if (!ok) {
+          showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
+          return;
+        }
+        setClaimedRankReward(weekKey);
+        showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
+      } finally {
+        rankClaimingRef.current = false;
+        setRankClaiming(false);
+      }
+    }, () => {
+      rankClaimingRef.current = false;
+      setRankClaiming(false);
       showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
     });
   }
@@ -583,6 +736,9 @@ export default function App() {
               prevWeekRank={prevWeekRank}
               loading={rankLoading}
               loadFailed={rankLoadFailed}
+              onClaimRankReward={handleClaimRankReward}
+              claimedThisWeek={getClaimedRankReward(getPrevWeekKey())}
+              rankClaiming={rankClaiming}
               onRetry={loadRank}
             />
           </div>

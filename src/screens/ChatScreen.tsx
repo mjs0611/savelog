@@ -5,7 +5,7 @@ import {
   sendChatMessage,
   subscribeToChat
 } from '../lib/chat';
-import { PERSONAS, getPersona } from '../lib/storage';
+import { PERSONAS, getPersona, RAID_BOSSES, addJelly } from '../lib/storage';
 import { toggleReaction } from '../lib/supabase';
 import CustomIcon, { hasMappedIcon } from '../components/CustomIcon';
 
@@ -55,10 +55,85 @@ function renderTextWithEmoji(text: string) {
   return <>{result}</>;
 }
 
+function renderSystemMessage(msgText: string) {
+  const isAttack = msgText.startsWith('⚔️') || msgText.startsWith('🛡️');
+  const isHeal = msgText.startsWith('⚠️') || msgText.startsWith('💨');
+  const isDefeated = msgText.startsWith('🎉');
+
+  if (isAttack) {
+    return (
+      <div className="chat-raid-log chat-raid-log--attack">
+        <div className="chat-raid-log-badge">⚔️ 보스 공격</div>
+        <div className="chat-raid-log-body">
+          {renderTextWithEmoji(msgText)}
+        </div>
+      </div>
+    );
+  }
+
+  if (isHeal) {
+    return (
+      <div className="chat-raid-log chat-raid-log--heal">
+        <div className="chat-raid-log-badge">⚠️ 보스 회복</div>
+        <div className="chat-raid-log-body">
+          {renderTextWithEmoji(msgText)}
+        </div>
+      </div>
+    );
+  }
+
+  if (isDefeated) {
+    return (
+      <div className="chat-raid-log chat-raid-log--victory">
+        <div className="chat-raid-log-badge">🏆 레이드 클리어</div>
+        <div className="chat-raid-log-body">
+          {renderTextWithEmoji(msgText)}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="chat-system-message-bubble">
+      {renderTextWithEmoji(msgText)}
+    </div>
+  );
+}
+
 export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearSharedEntry, activeTab }: ChatScreenProps) {
   const [chatTab, setChatTab] = useState<'open' | 'group'>('open');
   const [activeRoomId, setActiveRoomId] = useState<string | null>(null);
   const [activeRoomName, setActiveRoomName] = useState<string>('');
+  const [potGroup, setPotGroup] = useState<any>(() => {
+    try {
+      const saved = localStorage.getItem('savelog_pot_group');
+      return saved ? JSON.parse(saved) : null;
+    } catch {
+      return null;
+    }
+  });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('savelog_pot_group');
+      setPotGroup(saved ? JSON.parse(saved) : null);
+    } catch {
+      setPotGroup(null);
+    }
+  }, [activeRoomId]);
+
+  const [raidClaimed, setRaidClaimed] = useState<boolean>(() => {
+    try {
+      const cleanId = activeRoomId ? activeRoomId.replace('CHAT-', '') : '';
+      return localStorage.getItem(`savelog_raid_claimed_${cleanId}`) === 'true';
+    } catch { return false; }
+  });
+
+  useEffect(() => {
+    if (!activeRoomId) return;
+    const cleanId = activeRoomId.replace('CHAT-', '');
+    setRaidClaimed(localStorage.getItem(`savelog_raid_claimed_${cleanId}`) === 'true');
+  }, [activeRoomId]);
   
   // 일반 톡방 (그룹 초대방) 목록
   const [groupRooms, setGroupRooms] = useState<GroupChatRoom[]>(() => {
@@ -322,6 +397,88 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
     setActiveRoomName(newRoom.name);
   };
 
+  // 보스 레이드 시작(보스 소환) 처리
+  const handleSummonBoss = () => {
+    const randomBoss = RAID_BOSSES[Math.floor(Math.random() * RAID_BOSSES.length)];
+    const cleanId = activeRoomId ? activeRoomId.replace('CHAT-', '') : Math.random().toString(36).substring(2, 9);
+    const newGroup = {
+      id: cleanId,
+      name: activeRoomName || '나의 계모임',
+      budget: 300000,
+      members: [
+        { name: nickname || '나', spent: 0, persona: userPersona }
+      ],
+      nudgeHistory: ['레이드가 시작되었습니다!'],
+      raid: {
+        bossName: randomBoss.name,
+        bossMaxHp: randomBoss.maxHp,
+        bossHp: randomBoss.maxHp,
+        bossWeaknessCategory: randomBoss.weaknessCategory,
+        bossWeaknessEmoji: randomBoss.weaknessEmoji,
+        raidCompleted: false
+      }
+    };
+    localStorage.setItem('savelog_pot_group', JSON.stringify(newGroup));
+    setPotGroup(newGroup);
+
+    // system 메시지를 짠톡방 히스토리에 전송
+    const startMsg = `👾 [${randomBoss.name}] 보스가 출현했습니다! 약점 카테고리(${randomBoss.weaknessEmoji} ${randomBoss.weaknessCategory.split('/')[0]})에서 지출하면 보스가 치유되니 주의하세요! 무지출/절약 인증으로 공격할 수 있습니다.`;
+    sendChatMessage('system', '시스템', 'system', 'text', startMsg, undefined, activeRoomId || 'global')
+      .then(() => {
+        if (activeRoomId) {
+          fetchChatHistory(activeRoomId).then(history => { if (history) setMessages(history); });
+        }
+      })
+      .catch(err => console.error('Failed to send start message:', err));
+  };
+
+  // 보스 전리품 분배 (링겔만 효과 방지)
+  const handleClaimRaidLoot = () => {
+    if (!potGroup || !potGroup.raid) return;
+    const cleanId = activeRoomId!.replace('CHAT-', '');
+    
+    const members = potGroup.members || [];
+    const totalDamage = members.reduce((sum: number, m: any) => sum + (m.damage || 0), 0);
+    
+    const myName = nickname || '나';
+    const myMember = members.find((m: any) => m.name === myName) || { name: myName, damage: 0 };
+    
+    const totalLoot = 50; // 총 50 젤리
+    let myShare = 0;
+    
+    if (totalDamage > 0) {
+      myShare = Math.round(totalLoot * ((myMember.damage || 0) / totalDamage));
+    } else {
+      myShare = Math.round(totalLoot / Math.max(1, members.length));
+    }
+    
+    const maxDamage = Math.max(...members.map((m: any) => m.damage || 0));
+    if (myMember.damage > 0 && myMember.damage === maxDamage) {
+      myShare += 10; // MVP 보너스 +10 젤리
+    }
+    
+    // 유저의 젤리 지갑에 적립
+    addJelly(myShare);
+    localStorage.setItem(`savelog_raid_claimed_${cleanId}`, 'true');
+    setRaidClaimed(true);
+    
+    // 전체 톡방에 분배 결과 메시지 출력
+    const lines = members.map((m: any) => {
+      const share = totalDamage > 0 ? Math.round(totalLoot * ((m.damage || 0) / totalDamage)) : Math.round(totalLoot / members.length);
+      const mvpBonus = (m.damage > 0 && m.damage === maxDamage) ? ' (MVP 🏆)' : '';
+      const finalShare = share + (mvpBonus ? 10 : 0);
+      return `- ${m.name}: ⚔️${m.damage || 0} 데미지 (${finalShare} 젤리 적립${mvpBonus})`;
+    });
+    
+    const claimMsg = `🎁 보스 [${potGroup.raid.bossName}] 처치 전리품이 분배되었습니다!\n\n${lines.join('\n')}\n\n* 무임승차(0 데미지) 멤버는 보상이 지급되지 않습니다. (링겔만 태만 방지제 작동)`;
+    
+    sendChatMessage('system', '시스템', 'system', 'text', claimMsg, undefined, activeRoomId!)
+      .then(() => {
+        fetchChatHistory(activeRoomId!).then(history => { if (history) setMessages(history); });
+      })
+      .catch(err => console.error(err));
+  };
+
   // 톡방 탈퇴 기능
   const handleLeaveRoom = (roomId: string, e: React.MouseEvent) => {
     e.stopPropagation();
@@ -417,6 +574,99 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
           </div>
         </div>
 
+        {/* 👾 그룹 톡방 보스 레이드 보드 / 소환 카드 */}
+        {isGroupChat && (() => {
+          const hasActiveRaid = potGroup && (`CHAT-${potGroup.id}` === activeRoomId);
+          if (hasActiveRaid) {
+            const r = potGroup.raid;
+            if (!r) return null;
+            const hpPct = Math.round((r.bossHp / r.bossMaxHp) * 100);
+            return (
+              <div className="pot-raid-board" style={{ margin: '10px 14px', cursor: 'default' }}>
+                <div className="pot-raid-boss-info">
+                  <div className="pot-raid-boss-avatar-wrap">
+                    <span>👾</span>
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                      <span className="pot-raid-boss-name">{r.bossName}</span>
+                      <span className="pot-raid-boss-hp-text">{r.bossHp} / {r.bossMaxHp} HP</span>
+                    </div>
+                    <p className="pot-raid-boss-weakness">
+                      <span className="pot-weakness-badge">약점</span> <CustomIcon emoji={r.bossWeaknessEmoji} /> {r.bossWeaknessCategory.split('/')[0]} 지출 시 치유됨!
+                    </p>
+                  </div>
+                </div>
+                <div className="pot-raid-hp-bar-track">
+                  <div 
+                    className={`pot-raid-hp-bar-fill ${r.raidCompleted ? 'pot-raid-hp--defeated' : ''}`}
+                    style={{ width: `${hpPct}%` }}
+                  />
+                </div>
+                {r.raidCompleted ? (
+                  raidClaimed ? (
+                    <p className="pot-raid-victory-banner">🎉 전리품 분배가 완료되었습니다! (전투 로그에서 내역 확인 가능)</p>
+                  ) : (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', alignItems: 'center' }}>
+                      <p className="pot-raid-victory-banner" style={{ margin: 0 }}>🎉 보스 퇴치 성공! 전리품 상자가 도착했습니다.</p>
+                      <button 
+                        onClick={handleClaimRaidLoot}
+                        style={{
+                          width: '100%',
+                          background: 'linear-gradient(135deg, #FF5A76 0%, #E22D50 100%)',
+                          color: '#fff',
+                          border: 'none',
+                          padding: '8px',
+                          borderRadius: '10px',
+                          fontWeight: 800,
+                          fontSize: '11px',
+                          cursor: 'pointer',
+                          boxShadow: 'var(--shadow-sm)',
+                          marginTop: '4px'
+                        }}
+                      >
+                        🎁 전리품 상자 열고 젤리 분배받기 (링겔만 방지)
+                      </button>
+                    </div>
+                  )
+                ) : (
+                  <p style={{ fontStyle: 'italic', fontSize: '9.5px', color: 'var(--text-mute)', margin: '4px 0 0 0', textAlign: 'center' }}>
+                    나의 무지출(⚔️300) 또는 절약 방어(⚔️금액비례) 등록 시 보스를 공격해요!
+                  </p>
+                )}
+              </div>
+            );
+          } else {
+            return (
+              <div className="glass-card summon-card" style={{ margin: '10px 14px', padding: '14px', borderRadius: '16px', display: 'flex', flexDirection: 'column', gap: '8px', border: '1px dashed var(--primary)' }}>
+                <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+                  <span style={{ fontSize: '20px' }}>👾</span>
+                  <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>협동 보스 레이드 시작하기</span>
+                </div>
+                <p style={{ fontSize: '11px', color: 'var(--text-sub)', margin: 0, lineHeight: 1.5 }}>
+                  이 그룹 톡방에 몬스터 레이드 보스를 소환합니다! 친구들과 함께 무지출과 절약을 인증해 보스를 무찌르고 럭키 박스를 획득해 보세요.
+                </p>
+                <button 
+                  onClick={handleSummonBoss}
+                  style={{ 
+                    background: 'var(--primary-light)', 
+                    color: 'var(--primary)', 
+                    fontSize: '11px', 
+                    fontWeight: 800, 
+                    padding: '8px', 
+                    borderRadius: '10px', 
+                    border: 'none', 
+                    textAlign: 'center', 
+                    cursor: 'pointer' 
+                  }}
+                >
+                  보스 레이드 시작하기 ⚔️
+                </button>
+              </div>
+            );
+          }
+        })()}
+
         {/* 메시지 영역 */}
         <div className="chat-messages-container" ref={messagesContainerRef} style={{ flex: 1, overflowY: 'auto', padding: '16px 14px' }}>
           {loading ? (
@@ -434,9 +684,7 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
               if (msg.user_id === 'system') {
                 return (
                   <div key={msg.id} className="chat-message-row chat-message-row--system">
-                    <div className="chat-system-message-bubble">
-                      {renderTextWithEmoji(msg.message || '')}
-                    </div>
+                    {renderSystemMessage(msg.message || '')}
                   </div>
                 );
               }

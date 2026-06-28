@@ -2,11 +2,39 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { DailyState, StreakData } from '../lib/storage';
-import { getDailyMission, getPersona, PERSONAS, getNickname, MAX_PENDING_POINTS, RAID_BOSSES, type GroupRaid } from '../lib/storage';
+import {
+  getDailyMission,
+  getPersona,
+  PERSONAS,
+  getNickname,
+  MAX_PENDING_POINTS,
+  RAID_BOSSES,
+  type GroupRaid,
+  getIntentTrigger,
+  getPetName,
+  setPetName,
+  getJellyBalance,
+  getOwnedItems,
+  getEquippedItems,
+  buyItem,
+  equipItem,
+  SHOP_ITEMS,
+  addJelly,
+  getWeeklyBudget,
+  getSavingGoal,
+  setSavingGoal,
+  addToGoal,
+  getWishlist,
+  addWishlistItem,
+  resolveWishlistItem,
+  isWishlistItemReady,
+  WISHLIST_COOLDOWN_MS
+} from '../lib/storage';
 import { formatAmount, formatWeekRange, getWeekKey } from '../lib/utils';
 import type { WeekRankRow } from '../lib/supabase';
 import { BANNER_AD_ID, initBannerAds } from '../lib/ads';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
+import { sendChatMessage } from '../lib/chat';
 
 function BannerAdSlot({ adGroupId }: { adGroupId: string }) {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -131,6 +159,75 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isWobbling, setIsWobbling] = useState(false);
 
+  // 🐹 절약 요정 이름, 젤리 재화, 꾸미기 샵 및 아이템 장착 상태
+  const [petName, setPetNameState] = useState(() => getPetName() || '');
+  const [jellyBalance, setJellyBalance] = useState(() => getJellyBalance());
+  const [ownedItems, setOwnedItems] = useState<string[]>(() => getOwnedItems());
+  const [equippedItems, setEquippedItems] = useState<Record<string, string | null>>(() => getEquippedItems());
+  const [showShopModal, setShowShopModal] = useState(false);
+  const [editingPetName, setEditingPetName] = useState(false);
+  const [petNameInput, setPetNameInput] = useState(() => getPetName() || '');
+  const intentTrigger = getIntentTrigger();
+
+  // 🎯 절약 목표(위치에너지) + 🛒 위시리스트 쿨다운 상태
+  const [savingGoal, setSavingGoalState] = useState(() => getSavingGoal());
+  const [goalForm, setGoalForm] = useState(false);
+  const [goalName, setGoalName] = useState('');
+  const [goalEmoji, setGoalEmoji] = useState('✈️');
+  const [goalTarget, setGoalTarget] = useState('');
+  const [wishlist, setWishlistState] = useState(() => getWishlist());
+  const [wishName, setWishName] = useState('');
+  const [wishPrice, setWishPrice] = useState('');
+
+  // 외부(App/기록창 등)에서 젤리·장착·목표가 갱신될 때 동기화하는 effect
+  useEffect(() => {
+    const handleJellyUpdate = (e: any) => {
+      if (e.detail !== undefined) setJellyBalance(e.detail);
+    };
+    const handleEquipUpdate = () => {
+      setEquippedItems(getEquippedItems());
+    };
+    const handleGoalUpdate = () => setSavingGoalState(getSavingGoal());
+    window.addEventListener('savelog_jelly_updated', handleJellyUpdate as EventListener);
+    window.addEventListener('savelog_pet_equipped_changed', handleEquipUpdate);
+    window.addEventListener('savelog_goal_updated', handleGoalUpdate);
+    return () => {
+      window.removeEventListener('savelog_jelly_updated', handleJellyUpdate as EventListener);
+      window.removeEventListener('savelog_pet_equipped_changed', handleEquipUpdate);
+      window.removeEventListener('savelog_goal_updated', handleGoalUpdate);
+    };
+  }, []);
+
+  const handleSaveGoal = () => {
+    const t = parseInt(goalTarget.replace(/[^0-9]/g, ''), 10);
+    if (!goalName.trim() || !t || t <= 0) return;
+    const g = { name: goalName.trim(), emoji: goalEmoji, target: t, saved: savingGoal?.saved ?? 0 };
+    setSavingGoal(g);
+    setSavingGoalState(g);
+    setGoalForm(false);
+    setGoalName(''); setGoalTarget('');
+  };
+
+  const readyWish = wishlist.filter(isWishlistItemReady);
+  const handleWishResolve = (id: string, bought: boolean) => {
+    const item = wishlist.find(w => w.id === id);
+    setWishlistState(resolveWishlistItem(id, bought));
+    if (!bought && item) {
+      const charged = addToGoal(item.price);
+      addJelly(15);
+      showPotToast(charged > 0
+        ? `👏 충동을 이겨냈어요! 목표에 ${formatAmount(item.price)} 충전 · +15 젤리`
+        : `👏 충동을 이겨냈어요! +15 젤리`);
+    }
+  };
+  const handleAddWish = () => {
+    const p = parseInt(wishPrice.replace(/[^0-9]/g, ''), 10);
+    if (!wishName.trim() || !p || p <= 0) return;
+    setWishlistState(addWishlistItem(wishName.trim(), p));
+    setWishName(''); setWishPrice('');
+    showPotToast('🛒 48시간 뒤 다시 물어볼게요. 그때도 원하면 그때 사요!');
+  };
+
   // 👥 짠물 계모임 관련 상태 및 로직
   const [group, setGroup] = useState<PotGroup | null>(() => {
     try {
@@ -236,17 +333,43 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
     showPotToast('계모임에서 탈퇴했습니다.');
   };
 
+  const [selectedNudgeMember, setSelectedNudgeMember] = useState<string | null>(null);
+
   const handleNudgeMember = (memberName: string) => {
-    if (!group) return;
+    setSelectedNudgeMember(memberName);
+  };
+
+  const handleNudgeAction = (actionType: 'shield' | 'steal' | 'coffee') => {
+    if (!group || !selectedNudgeMember) return;
     const myName = getNickname() || '나';
-    const message = `${myName}님이 ${memberName}님을 콕 찔렀습니다.`;
+    let message = '';
+    let toast = '';
+    
+    if (actionType === 'shield') {
+      message = `🛡️ ${myName}님이 ${selectedNudgeMember}님에게 지갑 방어 쉴드를 씌웠습니다! 약점 소비가 1회 무효화됩니다.`;
+      toast = `🛡️ ${selectedNudgeMember}님에게 방어 쉴드를 씌워주었습니다.`;
+    } else if (actionType === 'steal') {
+      message = `💸 ${myName}님이 ${selectedNudgeMember}님의 지갑을 흔들며 경고합니다: '정신 차리고 지갑 닫으세요! 🚨'`;
+      toast = `💸 ${selectedNudgeMember}님을 강하게 단속했습니다!`;
+    } else if (actionType === 'coffee') {
+      message = `☕ ${myName}님이 ${selectedNudgeMember}님에게 가상 커피 기프티콘을 선물했습니다: '이거 드시고 오늘은 참아봐요!'`;
+      toast = `☕ ${selectedNudgeMember}님에게 가상 커피 선물을 보냈습니다.`;
+    }
+    
     const updatedHistory = [message, ...group.nudgeHistory.slice(0, 15)];
     const updatedGroup = {
       ...group,
       nudgeHistory: updatedHistory
     };
+    
     setGroup(updatedGroup);
-    showPotToast(`💬 ${memberName}님에게 "오늘도 같이 가요 🌿" 한마디 보냈어요.`);
+    setSelectedNudgeMember(null);
+    showPotToast(toast);
+
+    // 짠톡방(그룹 톡방)에도 메시지 실시간 공유
+    const roomId = `CHAT-${group.id}`;
+    sendChatMessage(userId, myName, 'system', 'text', message, undefined, roomId)
+      .catch(err => console.error('Failed to send raid message:', err));
   };
 
   // 실시간 짠물 계모임 타인 활동 시뮬레이션 효과
@@ -347,6 +470,41 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         </div>
       </div>
 
+      {/* ⏰ 손실 회피 마감 임박 경고 배너 */}
+      {(() => {
+        const now = new Date();
+        const hoursLeft = 23 - now.getHours();
+        const showLossWarning = !daily.recorded && hoursLeft <= 3; // 밤 9시 이후 미기록
+        if (!showLossWarning) return null;
+        return (
+          <div
+            className="glass-card loss-warning-card"
+            style={{
+              background: 'linear-gradient(135deg, rgba(255, 77, 79, 0.15) 0%, rgba(255, 77, 79, 0.05) 100%)',
+              border: '1.5px dashed rgba(255, 77, 79, 0.4)',
+              borderRadius: '20px',
+              padding: '16px',
+              marginBottom: '16px',
+              textAlign: 'left'
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+              <span style={{ fontSize: '18px' }}><CustomIcon emoji="⏰" /></span>
+              <span style={{ fontSize: '14px', fontWeight: 800, color: '#ff4d4f' }}>
+                오늘의 지갑 수비 마감 임박 (남은 시간 {hoursLeft + 1}시간)
+              </span>
+            </div>
+            <p style={{ margin: 0, fontSize: '13px', lineHeight: '1.5', color: '#f5f5f5' }}>
+              {streak.streak > 0 ? (
+                <>지금 기록하지 않으면 연속 <strong>{streak.streak}일</strong>의 불꽃 기록이 깨지고, 힘들게 모은 보호 쉴드도 소모돼요! 😭</>
+              ) : (
+                <>오늘 하루를 기록하고 젤리를 모아 요정을 꾸며보세요! 🐹</>
+              )}
+            </p>
+          </div>
+        );
+      })()}
+
       {/* ✍️ 핵심 소비/무지출 기록 콘솔 (최상단 전면 배치) */}
       <div className="glass-card primary-record-card" id="tutorial-step-1">
         {daily.recorded ? (
@@ -370,7 +528,13 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
               <img src="/images/savelog_main_character.svg" className="custom-icon--lg" />
               <div>
                 <h4 className="record-cta-heading">오늘 하루를 한 줄로 남겨봐요 <CustomIcon emoji="✍️" /></h4>
-                <p className="record-cta-detail">매일 기록하면 짠물 온도 상승 & 토스포인트 적립!</p>
+                {intentTrigger ? (
+                  <p className="record-cta-detail" style={{ color: 'var(--primary)', fontWeight: 800 }}>
+                    💡 오늘의 약속: <u>'{intentTrigger}'</u> 기록하기
+                  </p>
+                ) : (
+                  <p className="record-cta-detail">매일 기록하면 짠물 온도 상승 & 토스포인트 적립!</p>
+                )}
               </div>
             </div>
 
@@ -414,33 +578,200 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         );
       })()}
 
+      {/* 🥗 이번 주 소비 칼로리 (소비 다이어트 메타포) */}
+      {(() => {
+        const weeklyBudget = Math.max(1, getWeeklyBudget());
+        const myRow = weekRank.find(r => r.user_id === userId);
+        const spent = myRow?.total ?? 0;
+        const pct = Math.min(100, Math.round(spent / weeklyBudget * 100));
+        const over = spent > weeklyBudget;
+        const remain = weeklyBudget - spent;
+        const ringColor = over ? '#ff4d4f' : pct >= 80 ? '#fbbf24' : 'var(--primary)';
+        const R = 30, C = 2 * Math.PI * R;
+        return (
+          <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '16px' }}>
+            <svg width="76" height="76" viewBox="0 0 76 76" style={{ flexShrink: 0 }}>
+              <circle cx="38" cy="38" r={R} fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="7" />
+              <circle cx="38" cy="38" r={R} fill="none" stroke={ringColor} strokeWidth="7" strokeLinecap="round"
+                strokeDasharray={C} strokeDashoffset={C * (1 - Math.min(1, pct / 100))} transform="rotate(-90 38 38)" />
+              <text x="38" y="35" textAnchor="middle" fontSize="15" fontWeight="800" fill="#fff">{pct}%</text>
+              <text x="38" y="49" textAnchor="middle" fontSize="9" fill="#b0b8c1">소비</text>
+            </svg>
+            <div style={{ flex: 1, textAlign: 'left' }}>
+              <h4 style={{ margin: '0 0 4px', fontSize: '14px', fontWeight: 800 }}>🥗 이번 주 소비 칼로리</h4>
+              <p style={{ margin: 0, fontSize: '12px', lineHeight: 1.5, color: 'var(--text-sub)' }}>
+                예산 <strong>{formatAmount(weeklyBudget)}</strong> 중 <strong style={{ color: ringColor }}>{formatAmount(spent)}</strong> 섭취<br />
+                {over
+                  ? <span style={{ color: '#ff4d4f', fontWeight: 800 }}>{formatAmount(-remain)} 과식 — 남은 날 단식이 필요해요 🚨</span>
+                  : <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{formatAmount(remain)} 더 먹을 수 있어요 🍽️</span>}
+              </p>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 🎯 절약 목표 게이지 (안 쓴 돈 = 위치에너지 → 목표로 충전) */}
+      {savingGoal && !goalForm ? (
+        <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+            <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}>{savingGoal.emoji} {savingGoal.name}</h4>
+            <button style={{ background: 'none', border: 'none', color: 'var(--text-sub)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+              onClick={() => { setGoalName(savingGoal.name); setGoalEmoji(savingGoal.emoji); setGoalTarget(String(savingGoal.target)); setGoalForm(true); }}>수정</button>
+          </div>
+          {(() => {
+            const pct = Math.min(100, Math.round(savingGoal.saved / savingGoal.target * 100));
+            const done = savingGoal.saved >= savingGoal.target;
+            return (
+              <>
+                <div style={{ height: '14px', borderRadius: '100px', background: 'rgba(255,255,255,0.08)', overflow: 'hidden' }}>
+                  <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: done ? 'linear-gradient(90deg,#fbbf24,#f59e0b)' : 'linear-gradient(90deg, var(--primary), #34d399)', transition: 'width 0.4s' }} />
+                </div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '8px', fontSize: '12px' }}>
+                  <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{formatAmount(savingGoal.saved)} ({pct}%)</span>
+                  <span style={{ color: 'var(--text-sub)' }}>목표 {formatAmount(savingGoal.target)}</span>
+                </div>
+                <p style={{ margin: '10px 0 0', fontSize: '12px', color: done ? '#fbbf24' : 'var(--text-sub)', lineHeight: 1.5 }}>
+                  {done ? '🎉 목표 달성! 잠재에너지가 가득 찼어요. 이제 방출할 시간!' : '오늘 안 쓴 돈이 잠재에너지로 차곡차곡 충전돼요 ⚡'}
+                </p>
+              </>
+            );
+          })()}
+        </div>
+      ) : goalForm ? (
+        <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
+          <h4 style={{ margin: '0 0 12px', fontSize: '15px', fontWeight: 800 }}>🎯 절약 목표 정하기</h4>
+          <div style={{ display: 'flex', gap: '6px', marginBottom: '10px', flexWrap: 'wrap' }}>
+            {['✈️','💻','👟','🎮','💍','🏠','🎸','📷'].map(e => (
+              <button key={e} onClick={() => setGoalEmoji(e)} style={{ fontSize: '20px', padding: '6px', borderRadius: '10px', cursor: 'pointer', background: goalEmoji === e ? 'rgba(0,245,160,0.15)' : 'rgba(255,255,255,0.05)', border: goalEmoji === e ? '1.5px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)' }}>{e}</button>
+            ))}
+          </div>
+          <input className="nickname-input" value={goalName} onChange={e => setGoalName(e.target.value)} maxLength={16} placeholder="목표 이름 (예: 제주 여행)"
+            style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff', fontSize: '14px', marginBottom: '8px' }} />
+          <input className="nickname-input" value={goalTarget} onChange={e => setGoalTarget(e.target.value)} inputMode="numeric" placeholder="목표 금액 (원)"
+            style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff', fontSize: '14px', marginBottom: '12px' }} />
+          <div style={{ display: 'flex', gap: '8px' }}>
+            <button onClick={handleSaveGoal} disabled={!goalName.trim() || !parseInt(goalTarget.replace(/[^0-9]/g,''),10)}
+              style={{ flex: 1, padding: '10px', borderRadius: '10px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer' }}>저장</button>
+            {savingGoal && <button onClick={() => setGoalForm(false)} style={{ padding: '10px 16px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer' }}>취소</button>}
+          </div>
+        </div>
+      ) : (
+        <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'center', cursor: 'pointer' }} onClick={() => setGoalForm(true)}>
+          <p style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}>🎯 절약 목표를 정해보세요</p>
+          <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-sub)' }}>안 쓴 돈이 목표 게이지를 채워줘요. 무형의 절약을 눈에 보이는 전진으로!</p>
+        </div>
+      )}
+
+      {/* 🛒 위시리스트 쿨다운 (충동 48h 대기) */}
+      <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left' }}>
+        <h4 style={{ margin: '0 0 4px', fontSize: '15px', fontWeight: 800 }}>🛒 충동 대기방</h4>
+        <p style={{ margin: '0 0 12px', fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5 }}>지금 사고 싶은 걸 넣어두면 48시간 뒤 다시 물어봐요. 충동을 시간으로 식혀요.</p>
+
+        {readyWish.length > 0 && readyWish.map(it => (
+          <div key={it.id} style={{ background: 'rgba(255,184,0,0.08)', border: '1.5px solid rgba(251,191,36,0.4)', borderRadius: '14px', padding: '12px', marginBottom: '10px' }}>
+            <p style={{ margin: '0 0 8px', fontSize: '13px', fontWeight: 800 }}>⏰ "{it.name}" ({formatAmount(it.price)}) — 아직도 원하세요?</p>
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => handleWishResolve(it.id, false)} style={{ flex: 1, padding: '8px', borderRadius: '10px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12px' }}>👏 참았어요</button>
+              <button onClick={() => handleWishResolve(it.id, true)} style={{ flex: 1, padding: '8px', borderRadius: '10px', background: 'rgba(255,255,255,0.08)', color: '#fff', border: 'none', fontWeight: 700, cursor: 'pointer', fontSize: '12px' }}>샀어요</button>
+            </div>
+          </div>
+        ))}
+
+        {wishlist.filter(w => w.status === 'waiting' && !isWishlistItemReady(w)).map(it => {
+          const hoursLeft = Math.max(1, Math.ceil((it.addedAt + WISHLIST_COOLDOWN_MS - Date.now()) / 3600000));
+          return (
+            <div key={it.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 0', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+              <span style={{ fontSize: '13px' }}>{it.name} <span style={{ color: 'var(--text-sub)', fontSize: '11px' }}>{formatAmount(it.price)}</span></span>
+              <span style={{ fontSize: '11px', color: 'var(--text-mute)' }}>⏳ {hoursLeft}시간 후</span>
+            </div>
+          );
+        })}
+
+        <div style={{ display: 'flex', gap: '8px', marginTop: '12px' }}>
+          <input className="nickname-input" value={wishName} onChange={e => setWishName(e.target.value)} maxLength={20} placeholder="사고 싶은 것"
+            style={{ flex: 2, minWidth: 0, padding: '9px 12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff', fontSize: '13px' }} />
+          <input className="nickname-input" value={wishPrice} onChange={e => setWishPrice(e.target.value)} inputMode="numeric" placeholder="가격"
+            style={{ flex: 1, minWidth: 0, padding: '9px 12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff', fontSize: '13px' }} />
+          <button onClick={handleAddWish} style={{ padding: '9px 14px', borderRadius: '10px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>담기</button>
+        </div>
+      </div>
+
       {/* 🐹 절약 요정 다마고치 키우기 Widget (초슬림 가로형 컴팩트 레이아웃) */}
       {(() => {
         const personaKey = getPersona() || 'hamster';
         const p = PERSONAS[personaKey];
         const petLevel = Math.min(5, 1 + Math.floor(streak.totalDays / 3));
 
+        const getPetSpeech = () => {
+          if (speech) return speech;
+          if (daily.recorded) {
+            const spent = daily.spentAmount ?? 0;
+            if (spent === 0) {
+              if (personaKey === 'cost_ai') return "무지출 완료! 가성비 무한대(∞) 달성에 성공했어요! 🤖";
+              if (personaKey === 'flexer') return "지갑을 닫고 오늘 하루 낭만을 가득 채우셨군요! 🦄";
+              if (personaKey === 'keeper') return "지름신을 멋지게 이겨내고 오늘의 예산을 지켜냈어요! 🛒";
+              return "도토리를 하나도 안 쓰고 세이브했네요! 대단해요 🐹";
+            } else {
+              if (personaKey === 'cost_ai') return `오늘 ${formatAmount(spent)}을 썼군요. 가성비를 충족한 소비였길! 🤖`;
+              if (personaKey === 'flexer') return `오늘의 ${formatAmount(spent)} 지출, 낭만적인 순간이었길 바라요! 🦄`;
+              if (personaKey === 'keeper') return `신중히 고민하고 산 물건이기를 바랄게요. 후회는 없겠죠? 🛒`;
+              return `오늘 ${formatAmount(spent)} 지출이 발생했지만 괜찮아요. 내일 또 아껴봐요! 🐹`;
+            }
+          } else {
+            if (intentTrigger) {
+              return `약속하신 '${intentTrigger}' 상황이네요! 지갑 수비 일지를 작성해 볼까요? 💤`;
+            }
+            return "오늘 하루를 가볍게 기록해 주세요. 요정이 기다리고 있어요! 💤";
+          }
+        };
+
+        const activeSpeech = getPetSpeech();
+
         return (
           <div className="glass-card pet-card" id="tutorial-step-3" style={{ position: 'relative', cursor: 'pointer' }} onClick={handlePetClick}>
-            {speech && (
-              <div className="pet-speech-bubble">
-                {speech}
+            {activeSpeech && (
+              <div className="pet-speech-bubble" style={{ display: 'block' }}>
+                {activeSpeech}
               </div>
             )}
-            <div className="pet-inner">
-              <div className="pet-left">
+            <div className="pet-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+              <div className="pet-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
                 <div
                   className={`pet-avatar-circle ${isWobbling ? 'wobble-anim' : ''}`}
                   style={{
                     border: `1.8px solid ${p?.color || '#FF5E62'}`,
                     boxShadow: `0 0 15px ${(p?.color || '#FF5E62')}15`,
+                    position: 'relative',
+                    overflow: 'visible'
                   }}
                 >
                   <img src={p?.icon} alt="" className="pet-avatar-img" />
+                  
+                  {/* 장착한 악세사리 오버레이 */}
+                  {equippedItems.head && (
+                    <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '24px', pointerEvents: 'none', zIndex: 10 }}>
+                      {SHOP_ITEMS.find(i => i.id === equippedItems.head)?.emoji}
+                    </span>
+                  )}
+                  {equippedItems.face && (
+                    <span style={{ position: 'absolute', top: '2px', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', pointerEvents: 'none', zIndex: 10 }}>
+                      {SHOP_ITEMS.find(i => i.id === equippedItems.face)?.emoji}
+                    </span>
+                  )}
+                  {equippedItems.neck && (
+                    <span style={{ position: 'absolute', bottom: '-4px', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', pointerEvents: 'none', zIndex: 10 }}>
+                      {SHOP_ITEMS.find(i => i.id === equippedItems.neck)?.emoji}
+                    </span>
+                  )}
+                  {equippedItems.room && (
+                    <span style={{ position: 'absolute', bottom: '-2px', right: '-8px', fontSize: '16px', pointerEvents: 'none', zIndex: 10 }}>
+                      {SHOP_ITEMS.find(i => i.id === equippedItems.room)?.emoji}
+                    </span>
+                  )}
                 </div>
                 <div className="pet-info">
                   <div className="pet-name-row">
-                    <span className="pet-name">{p?.name} 요정</span>
+                    <span className="pet-name">{petName || `${p?.name} 요정`}</span>
                     <span className="pet-level">LV.{petLevel}</span>
                   </div>
                   <span className="pet-status">
@@ -448,6 +779,23 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                   </span>
                 </div>
               </div>
+              <button
+                className="pet-shop-btn"
+                style={{
+                  background: 'rgba(255, 255, 255, 0.1)',
+                  border: '1px solid rgba(255, 255, 255, 0.15)',
+                  borderRadius: '12px',
+                  color: '#ffffff',
+                  padding: '6px 12px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  zIndex: 20
+                }}
+                onClick={(e) => { e.stopPropagation(); setShowShopModal(true); }}
+              >
+                꾸미기 🎩
+              </button>
             </div>
           </div>
         );
@@ -702,6 +1050,244 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
         })()}
       </SimpleModal>
 
+      {/* 🐹 다마고치 펫 상점 & 커스터마이징 모달 */}
+      <SimpleModal open={showShopModal} onClose={() => { setShowShopModal(false); setEditingPetName(false); }}>
+        <div style={{ padding: '20px 16px', color: 'var(--text-main)', textAlign: 'left' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+            <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>🐹 요정 꾸미기 & 상점</h3>
+            <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary)' }}>
+              🪙 내 젤리: {jellyBalance}개
+            </span>
+          </div>
+
+          {/* 1. 요정 이름 변경 섹션 */}
+          <div className="glass-card" style={{ padding: '12px 16px', background: 'rgba(255,255,255,0.03)', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.08)', marginBottom: '20px' }}>
+            <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}>요정의 이름</p>
+            {editingPetName ? (
+              <div style={{ display: 'flex', gap: '8px' }}>
+                <input
+                  className="nickname-input"
+                  style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border)', color: '#fff', fontSize: '14px' }}
+                  value={petNameInput}
+                  onChange={(e) => setPetNameInput(e.target.value)}
+                  maxLength={10}
+                  placeholder="새로운 이름 입력"
+                />
+                <button
+                  style={{ padding: '8px 16px', borderRadius: '10px', background: 'var(--primary)', color: '#000', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}
+                  onClick={() => {
+                    const cleanName = petNameInput.trim();
+                    if (cleanName) {
+                      setPetName(cleanName);
+                      setPetNameState(cleanName);
+                    }
+                    setEditingPetName(false);
+                  }}
+                >
+                  저장
+                </button>
+              </div>
+            ) : (
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '15px', fontWeight: 800 }}>{petName || '이름 없음 (기본 요정)'}</span>
+                <button
+                  style={{ background: 'none', border: 'none', color: 'var(--text-sub)', fontSize: '12px', textDecoration: 'underline', cursor: 'pointer' }}
+                  onClick={() => setEditingPetName(true)}
+                >
+                  수정
+                </button>
+              </div>
+            )}
+          </div>
+
+          {/* 2. 아이템 상점 섹션 */}
+          <p style={{ margin: '0 0 10px 0', fontSize: '14px', fontWeight: 800 }}>🎩 요정 악세사리 상점</p>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '12px', maxHeight: '250px', overflowY: 'auto', paddingRight: '4px' }}>
+            {SHOP_ITEMS.map((item) => {
+              const isOwned = ownedItems.includes(item.id);
+              const isEquipped = equippedItems[item.type] === item.id;
+              
+              return (
+                <div
+                  key={item.id}
+                  style={{
+                    background: 'rgba(255,255,255,0.03)',
+                    border: isEquipped ? '1.5px solid var(--primary)' : '1px solid rgba(255,255,255,0.08)',
+                    borderRadius: '16px',
+                    padding: '12px',
+                    textAlign: 'center',
+                    position: 'relative'
+                  }}
+                >
+                  <span style={{ fontSize: '32px', display: 'block', margin: '4px 0' }}>{item.emoji}</span>
+                  <span style={{ fontSize: '12px', fontWeight: 800, display: 'block', color: 'var(--text-main)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{item.name}</span>
+                  
+                  {isOwned ? (
+                    <button
+                      style={{
+                        marginTop: '8px',
+                        width: '100%',
+                        padding: '6px 0',
+                        borderRadius: '10px',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: isEquipped ? 'rgba(0, 245, 160, 0.15)' : 'rgba(255,255,255,0.1)',
+                        color: isEquipped ? 'var(--primary)' : 'var(--text-main)'
+                      }}
+                      onClick={() => {
+                        if (isEquipped) {
+                          equipItem(null, item.type);
+                        } else {
+                          equipItem(item.id, item.type);
+                        }
+                        setEquippedItems(getEquippedItems());
+                      }}
+                    >
+                      {isEquipped ? '장착 해제' : '착용하기'}
+                    </button>
+                  ) : (
+                    <button
+                      style={{
+                        marginTop: '8px',
+                        width: '100%',
+                        padding: '6px 0',
+                        borderRadius: '10px',
+                        border: 'none',
+                        fontSize: '11px',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        background: jellyBalance >= item.price ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
+                        color: jellyBalance >= item.price ? '#000000' : 'rgba(255,255,255,0.3)'
+                      }}
+                      disabled={jellyBalance < item.price}
+                      onClick={() => {
+                        if (buyItem(item.id, item.price)) {
+                          setOwnedItems(getOwnedItems());
+                          setJellyBalance(getJellyBalance());
+                          showPotToast(`🛒 ${item.name} 구매 완료!`);
+                        }
+                      }}
+                    >
+                      🪙 {item.price} 젤리
+                    </button>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+          
+          <div style={{ marginTop: '20px' }}>
+            <Button
+              size="large"
+              display="full"
+              color="primary"
+              variant="fill"
+              onClick={() => setShowShopModal(false)}
+            >
+              닫기
+            </Button>
+          </div>
+        </div>
+      </SimpleModal>
+
+      {/* 🤝 짠물 계모임 액션 선택 모달 */}
+      <SimpleModal open={selectedNudgeMember !== null} onClose={() => setSelectedNudgeMember(null)}>
+        {selectedNudgeMember && (
+          <div style={{ padding: '20px 16px', color: 'var(--text-main)', textAlign: 'left' }}>
+            <h3 style={{ margin: '0 0 8px 0', fontSize: '18px', fontWeight: 800 }}>🤝 {selectedNudgeMember}님 찌르기</h3>
+            <p style={{ margin: '0 0 20px 0', fontSize: '13px', color: 'var(--text-sub)' }}>
+              보스 레이드 격파를 돕거나, 재미있는 신호를 보낼 수 있습니다.
+            </p>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '12px', marginBottom: '24px' }}>
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  width: '100%'
+                }}
+                onClick={() => handleNudgeAction('shield')}
+              >
+                <span style={{ fontSize: '24px' }}>🛡️</span>
+                <div>
+                  <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 800 }}>지갑 방어 쉴드 씌우기</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>약점 지출 발생 시 보스 HP 회복을 1회 무효화해 줍니다.</p>
+                </div>
+              </button>
+
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  width: '100%'
+                }}
+                onClick={() => handleNudgeAction('steal')}
+              >
+                <span style={{ fontSize: '24px' }}>💸</span>
+                <div>
+                  <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 800 }}>지갑 강탈하기 (도발)</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>'정신 차리고 지갑 닫기!' 코믹하고 강한 일침을 보냅니다.</p>
+                </div>
+              </button>
+
+              <button
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '12px',
+                  background: 'rgba(255,255,255,0.04)',
+                  border: '1.5px solid rgba(255,255,255,0.1)',
+                  borderRadius: '16px',
+                  padding: '16px',
+                  color: '#fff',
+                  cursor: 'pointer',
+                  textAlign: 'left',
+                  transition: 'all 0.2s ease',
+                  width: '100%'
+                }}
+                onClick={() => handleNudgeAction('coffee')}
+              >
+                <span style={{ fontSize: '24px' }}>☕</span>
+                <div>
+                  <h4 style={{ margin: '0 0 2px 0', fontSize: '14px', fontWeight: 800 }}>커피 기프티콘 던지기</h4>
+                  <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>가상의 따뜻한 커피 선물을 보내 카페인 유혹을 수비해 줍니다.</p>
+                </div>
+              </button>
+            </div>
+
+            <Button
+              size="large"
+              display="full"
+              color="primary"
+              variant="weak"
+              onClick={() => setSelectedNudgeMember(null)}
+            >
+              취소
+            </Button>
+          </div>
+        )}
+      </SimpleModal>
+
       {/* 짠물 계모임 내부용 간이 토스트 알림 */}
       {potToast && (
         <div className="point-toast pot-toast-overlay">{renderTextWithEmoji(potToast)}</div>
@@ -761,11 +1347,7 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
                 <div className="streak-line" />
                 <div className="streak-node">
                   {isGift ? (
-                    isDone ? (
-                      <img src="/images/lucky_chest_opened.png" className="custom-icon streak-node-icon streak-node-icon--lg" />
-                    ) : (
-                      <img src="/images/lucky_chest_closed.png" className="custom-icon streak-node-icon streak-node-icon--lg streak-node-icon--muted" />
-                    )
+                    <img src="/images/icon_medal.png" className={`custom-icon streak-node-icon streak-node-icon--lg${isDone ? '' : ' streak-node-icon--muted'}`} />
                   ) : isDone ? (
                     <svg width="12" height="9" viewBox="0 0 12 9" fill="none" className="svg-primary">
                       <path d="M1 4.5L4 7.5L11 1" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
@@ -781,9 +1363,6 @@ export default function HomeScreen({ daily, streak, weekRank, userId, pendingPoi
             );
           })}
         </div>
-        {streak.streak > 0 && streak.streak % 7 === 0 && pendingPoints > 0 && (
-          <p className="streak-reward-hint"><CustomIcon emoji="🔥" /> 7일 연속 완주 보너스 포함 · 위에서 광고 보고 받기</p>
-        )}
       </div>
 
 

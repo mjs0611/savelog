@@ -4,7 +4,25 @@ import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
 import { fetchFeed, toggleReaction, fetchBalanceGameEntry, submitBalanceVote, fetchFollows, toggleFollowSupabase, searchUsers, type BalanceEntry, type SearchUser } from '../lib/supabase';
 import { formatAmount, timeAgo, getWeekKey, getTodayStr } from '../lib/utils';
-import { PERSONAS, getPersona, getNickname, sendCheeringMessage, getFollowedUsers, saveFollowedUsers, getActiveChallengeId, setActiveChallengeId, type StreakData, type DailyState } from '../lib/storage';
+import { 
+  PERSONAS, 
+  getPersona, 
+  getNickname, 
+  sendCheeringMessage, 
+  getFollowedUsers, 
+  saveFollowedUsers, 
+  getActiveChallengeId, 
+  setActiveChallengeId, 
+  type StreakData, 
+  type DailyState,
+  getSystemTemperature,
+  getRestoringAdjustment,
+  getWeeklyBudget,
+  getBudgetEntropy,
+  getZeigarnikSkeletons,
+  resolveSkeleton,
+  checkAndResetDailyPhysics
+} from '../lib/storage';
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 
@@ -110,6 +128,34 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     toastTimerRef.current = setTimeout(() => { setToastText(null); toastTimerRef.current = null; }, 2200);
   }
   const [doubleTappedHearts, setDoubleTappedHearts] = useState<Record<string, boolean>>({});
+
+  // ── 물리 엔진 및 자이가르닉 스케이트 상태 ──
+  const [skeletons, setSkeletons] = useState(() => getZeigarnikSkeletons());
+  const [entropy, setEntropy] = useState(() => getBudgetEntropy());
+  const [temp, setTemp] = useState(() => getSystemTemperature());
+  const [restoringAdjustment, setRestoringAdjustment] = useState(() => getRestoringAdjustment());
+
+  useEffect(() => {
+    checkAndResetDailyPhysics(getTodayStr());
+    setSkeletons(getZeigarnikSkeletons());
+    setEntropy(getBudgetEntropy());
+    setTemp(getSystemTemperature());
+    setRestoringAdjustment(getRestoringAdjustment());
+
+    const handleSync = () => {
+      setSkeletons(getZeigarnikSkeletons());
+      setEntropy(getBudgetEntropy());
+      setTemp(getSystemTemperature());
+      setRestoringAdjustment(getRestoringAdjustment());
+    };
+    
+    window.addEventListener('savelog_entropy_updated', handleSync);
+    window.addEventListener('savelog_skeletons_updated', handleSync);
+    return () => {
+      window.removeEventListener('savelog_entropy_updated', handleSync);
+      window.removeEventListener('savelog_skeletons_updated', handleSync);
+    };
+  }, []);
 
   // 라이트박스 (이미지 확대 보기)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
@@ -1109,6 +1155,145 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           </div>
         </div>
       )}
+
+      {/* 🌌 오늘의 지갑 수비 요약 대시보드 */}
+      <div className="glass-card orbit-control-panel" style={{
+        margin: '0 0 16px 0',
+        padding: '18px',
+        borderRadius: 'var(--radius-md)',
+        border: '1.5px solid var(--glass-border)',
+        boxShadow: 'var(--shadow-sm)',
+        background: 'linear-gradient(135deg, #FFFFFF 0%, rgba(49, 130, 246, 0.03) 100%)'
+      }}>
+        {/* 제어실 헤더 */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '14px', borderBottom: '1px solid rgba(0,0,0,0.05)', paddingBottom: '10px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+            <span style={{ fontSize: '18px' }}>🌌</span>
+            <span style={{ fontSize: '14px', fontWeight: 900, color: 'var(--text-main)' }}>오늘의 지갑 수비 요약</span>
+          </div>
+          <span style={{ 
+            fontSize: '10.5px', 
+            background: 'var(--primary-light)',
+            color: 'var(--primary)',
+            padding: '4px 10px',
+            borderRadius: '20px',
+            fontWeight: 800
+          }}>
+            습관 단계: {temp >= 0.8 ? '1단계 (느슨함)' : temp >= 0.6 ? '2단계 (보통)' : temp >= 0.4 ? '3단계 (단단함)' : '4단계 (매우 단단함)'}
+          </span>
+        </div>
+
+        {/* 훅의 법칙 스프링 예산 상황 */}
+        <div className="physics-spring-section" style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
+          <div style={{ 
+            background: 'rgba(49, 130, 246, 0.03)', 
+            padding: '14px', 
+            borderRadius: '16px', 
+            border: '1px solid rgba(49, 130, 246, 0.08)' 
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>오늘의 추천 지출 예산</span>
+              <span style={{ fontSize: '16px', fontWeight: 900, color: 'var(--primary)' }}>
+                {formatAmount(Math.max(0, Math.round(getWeeklyBudget() / 7) + restoringAdjustment))}
+              </span>
+            </div>
+            <p style={{ margin: '6px 0 0 0', fontSize: '11px', color: 'var(--text-sub)', lineHeight: 1.45 }}>
+              {restoringAdjustment === 0 
+                ? '어제 지출을 예산에 딱 맞게 수비하여 지갑이 평형 상태를 유지하고 있습니다.' 
+                : restoringAdjustment < 0 
+                  ? `⚠️ 어제 예산보다 더 썼기 때문에, 오늘 쓸 수 있는 돈이 자동으로 ${formatAmount(Math.abs(restoringAdjustment))} 타이트하게 줄어들었습니다.`
+                  : `🎉 어제 지출을 아낀 덕분에, 오늘 쓸 수 있는 예산이 자동으로 ${formatAmount(restoringAdjustment)} 늘어났습니다.`}
+            </p>
+          </div>
+        </div>
+
+        {/* 예산 엔트로피 무질서 게이지 */}
+        <div className="entropy-section" style={{ marginBottom: '16px' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '6px' }}>
+            <span style={{ fontSize: '11.5px', fontWeight: 800, color: 'var(--text-main)' }}>가계부 방치 지수 (밀린 정도)</span>
+            <span style={{ fontSize: '11.5px', fontWeight: 900, color: entropy > 70 ? 'var(--primary)' : 'var(--text-sub)' }}>{entropy}%</span>
+          </div>
+          <div style={{ height: '8px', background: 'rgba(0,0,0,0.05)', borderRadius: '10px', overflow: 'hidden' }}>
+            <div style={{ 
+              width: `${entropy}%`, 
+              height: '100%', 
+              background: entropy > 70 ? 'linear-gradient(90deg, #FF4D4F, #FF7875)' : 'linear-gradient(90deg, #3182F6, #00F5A0)',
+              borderRadius: '10px',
+              transition: 'width 0.5s ease-out'
+            }} />
+          </div>
+          {entropy > 70 && (
+            <p style={{ margin: '6px 0 0 0', fontSize: '10.5px', color: '#FF4D4F', fontWeight: 700, lineHeight: 1.4 }}>
+              ⚠️ 방치 지수가 70%를 넘어 젤리 단지의 젤리 생산 속도가 절반으로 줄어들었습니다! 아래 밀린 순간들을 기록해 방치 지수를 낮춰보세요.
+            </p>
+          )}
+        </div>
+
+        {/* 자이가르닉 미완료 순간 카드 */}
+        {skeletons.some(sk => sk.status === 'pending') && (
+          <div className="zeigarnik-skeletons" style={{ borderTop: '1px dashed rgba(0,0,0,0.08)', paddingTop: '12px' }}>
+            <span style={{ fontSize: '11px', fontWeight: 800, color: 'var(--text-sub)', display: 'block', marginBottom: '8px' }}>
+              ⏳ 오늘 기록해야 할 지갑 수비 순간
+            </span>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+              {skeletons.filter(sk => sk.status === 'pending').map(sk => (
+                <div key={sk.id} style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'space-between', 
+                  background: 'rgba(255, 74, 107, 0.02)', 
+                  border: '1px solid rgba(255, 74, 107, 0.06)',
+                  padding: '8px 12px',
+                  borderRadius: '12px'
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <span style={{ fontSize: '16px' }}>{sk.emoji}</span>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>{sk.name}</span>
+                      <span style={{ fontSize: '9.5px', color: 'var(--text-mute)' }}>기록 알림 시간 {sk.timeLabel}</span>
+                    </div>
+                  </div>
+                  <div style={{ display: 'flex', gap: '6px' }}>
+                    <button 
+                      onClick={() => {
+                        resolveSkeleton(sk.id);
+                        onQuickZeroSpend();
+                      }}
+                      style={{ 
+                        fontSize: '10px', 
+                        background: 'var(--primary-light)', 
+                        color: 'var(--primary)', 
+                        border: 'none', 
+                        padding: '6px 10px', 
+                        borderRadius: '8px', 
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      무지출 완료 🌿
+                    </button>
+                    <button 
+                      onClick={onRecord}
+                      style={{ 
+                        fontSize: '10px', 
+                        background: 'rgba(0,0,0,0.04)', 
+                        color: 'var(--text-main)', 
+                        border: 'none', 
+                        padding: '6px 10px', 
+                        borderRadius: '8px', 
+                        fontWeight: 800,
+                        cursor: 'pointer'
+                      }}
+                    >
+                      기록하기 💸
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
 
       {/* 📝 인라인 포스트 컴포저 (Facebook/LinkedIn 스타일 기록 CTA) */}
       <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
