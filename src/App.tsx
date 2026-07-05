@@ -34,6 +34,9 @@ import {
   setIntentTrigger,
   getWeeklyBudget,
   addToGoal,
+  getFollowedUsers,
+  saveFollowedUsers,
+  addRouletteSpins,
   checkAndResetDailyPhysics,
   resolveSkeleton,
   getZeigarnikSkeletons,
@@ -42,7 +45,7 @@ import {
 } from './lib/storage';
 import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
-import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, type SpendingItem, type WeekRankRow } from './lib/supabase';
+import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
@@ -52,14 +55,38 @@ import PersonaTest from './screens/PersonaTest';
 import ChatScreen from './screens/ChatScreen';
 import CommunityScreen from './screens/CommunityScreen';
 import CustomIcon from './components/CustomIcon';
+import GuideModal from './components/GuideModal';
 import { sendChatMessage } from './lib/chat';
 
-type Tab = 'feed' | 'chat' | 'community' | 'mylog';
+type Tab = 'feed' | 'community' | 'mylog';
+type TalkTab = 'chat' | 'board';
+
+// ── 딥링크 초대 파라미터 파싱 (모듈 로드 시 1회) ──────────────────────────────
+// 공유 링크(intoss://savelog?room=… / ?duo=…)로 진입한 경우 pending으로 저장해 두고,
+// 로그인·닉네임 설정이 끝난 뒤 자동 입장/듀오 수락 플로우가 소비한다.
+try {
+  const bootParams = new URLSearchParams(window.location.search);
+  const bootRoom = bootParams.get('room');
+  const bootDuo = bootParams.get('duo');
+  const bootInviter = bootParams.get('by'); // 톡방 초대자 — 자동 맞팔(짝꿍) 대상
+  if (bootRoom) {
+    localStorage.setItem('savelog_pending_room', JSON.stringify({ code: bootRoom, name: bootParams.get('rn') || '' }));
+  }
+  if (bootDuo) {
+    localStorage.setItem('savelog_pending_duo', JSON.stringify({ id: bootDuo, nick: bootParams.get('dn') || '' }));
+  } else if (bootInviter) {
+    // 초대 링크로 들어온 유저는 초대자와 자동 맞팔 (그래프 시딩) — duo는 수락 플로우에서 함께 처리
+    localStorage.setItem('savelog_pending_mutual', JSON.stringify({ id: bootInviter, nick: bootParams.get('bn') || '' }));
+  }
+  if (bootRoom || bootDuo) {
+    // 재실행 시 중복 트리거 방지를 위해 주소에서 파라미터 제거
+    window.history.replaceState(null, '', window.location.pathname);
+  }
+} catch { /* URL 파싱 실패는 무시 */ }
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'feed',      icon: '/images/icon_feed.png', label: '피드' },
-  { key: 'chat',      icon: '/images/icon_mail.png', label: '짠톡방' },
-  { key: 'community', icon: '/images/icon_rank.png', label: '커뮤니티' },
+  { key: 'community', icon: '/images/icon_mail.png', label: '커뮤니티' },
   { key: 'mylog',     icon: '/images/icon_profile.png', label: '마이로그'  },
 ];
 
@@ -78,11 +105,18 @@ export default function App() {
   const [nicknameInput, setNicknameInput] = useState('');
   const [intentTrigger, setIntentTriggerState] = useState<string | null>(() => getIntentTrigger());
   const [tab, setTab]           = useState<Tab>(() => {
+    // 톡방 초대 링크로 진입 → 커뮤니티(짠톡방) 탭에서 시작
+    if (localStorage.getItem('savelog_pending_room')) return 'community';
     const path = window.location.pathname.replace(/^\//, '').split('/')[0];
-    if (path === 'chat') return 'chat';
-    if (path === 'community') return 'community';
+    if (path === 'chat' || path === 'community') return 'community';
     if (path === 'mylog' || path === 'profile') return 'mylog';
     return 'feed';
+  });
+  // 커뮤니티 탭 내부: 짠톡방(실시간 채팅) / 게시판(주제별) 서브탭
+  const [talkTab, setTalkTab] = useState<TalkTab>(() => {
+    if (localStorage.getItem('savelog_pending_room')) return 'chat';
+    const path = window.location.pathname.replace(/^\//, '').split('/')[0];
+    return path === 'community' ? 'board' : 'chat';
   });
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
   const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
@@ -104,6 +138,14 @@ export default function App() {
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [sharedEntryToPost, setSharedEntryToPost] = useState<any>(null);
   const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
+  // 첫 실행 사용법 안내 — 온보딩 완료 후 메인 화면에서 1회 표시
+  const [showFirstGuide, setShowFirstGuide] = useState<boolean>(() => {
+    try { return !localStorage.getItem('savelog_seen_guide'); } catch { return false; }
+  });
+  function closeFirstGuide() {
+    try { localStorage.setItem('savelog_seen_guide', '1'); } catch {}
+    setShowFirstGuide(false);
+  }
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
   const pendingClaimingRef = useRef(false);
@@ -112,7 +154,8 @@ export default function App() {
 
   function handleShareToChat(entry: any) {
     setSharedEntryToPost(entry);
-    setTab('chat');
+    setTab('community');
+    setTalkTab('chat');
   }
 
   useEffect(() => {
@@ -169,6 +212,59 @@ export default function App() {
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
   }, []);
+
+  // 듀오 초대 링크(?duo=) 수락 — 온보딩(로그인·닉네임·트리거) 완료 후 1회 처리
+  useEffect(() => {
+    if (!nickname || !intentTrigger) return;
+    if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
+    const raw = localStorage.getItem('savelog_pending_duo');
+    if (!raw) return;
+    localStorage.removeItem('savelog_pending_duo');
+    (async () => {
+      try {
+        const { id: inviterId, nick: inviterNick } = JSON.parse(raw);
+        if (!inviterId || inviterId === userId) return;
+        const buddyNick = inviterNick || '짠친';
+        const [mine, theirs] = await Promise.all([fetchMyDuo(userId), fetchMyDuo(inviterId)]);
+        if (mine) { showToast('이미 맺어진 머니 듀오가 있어요. 해제 후 다시 수락할 수 있어요.'); return; }
+        if (theirs) { showToast(`${buddyNick}님은 이미 다른 듀오가 있어요.`); return; }
+        const duo = await createDuo(userId, nickname, inviterId, buddyNick);
+        if (duo) {
+          showToast(`💞 ${buddyNick}님과 머니 듀오를 맺었어요! 마이로그에서 확인하세요.`);
+          window.dispatchEvent(new Event('savelog_duo_updated'));
+          // 듀오 = 짝꿍의 정점 — 팔로우 관계도 함께 맺어 그래프 정합성 유지
+          applyMutualFollow(inviterId, buddyNick, false);
+        }
+      } catch { /* 초대 수락 실패는 조용히 무시 */ }
+    })();
+  }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
+
+  // 초대자와 자동 맞팔 처리 (서버 양방향 + 로컬 팔로잉 목록 반영)
+  function applyMutualFollow(otherId: string, otherNick: string, withToast: boolean) {
+    if (!otherId || otherId === userId) return;
+    ensureMutualFollow(userId, nickname || '짠친', otherId, otherNick || '짠친').then(ok => {
+      if (!ok) return;
+      const followed = getFollowedUsers();
+      if (!followed[otherId]) {
+        saveFollowedUsers({ ...followed, [otherId]: otherNick || '짠친' });
+      }
+      setFeedRefreshToken(t => t + 1);
+      if (withToast) showToast(`🤝 ${otherNick || '초대한 친구'}님과 짝꿍이 되었어요!`);
+    }).catch(() => {});
+  }
+
+  // 톡방 초대 링크(?room=&by=)로 들어온 경우 — 초대자와 자동 맞팔 (그래프 시딩)
+  useEffect(() => {
+    if (!nickname || !intentTrigger) return;
+    if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
+    const raw = localStorage.getItem('savelog_pending_mutual');
+    if (!raw) return;
+    localStorage.removeItem('savelog_pending_mutual');
+    try {
+      const { id, nick } = JSON.parse(raw);
+      applyMutualFollow(id, nick, true);
+    } catch { /* 파싱 실패 무시 */ }
+  }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
 
   function navigateTo(next: Tab) {
     setTab(next);
@@ -364,6 +460,7 @@ export default function App() {
             {triggers.map(t => (
               <div
                 key={t.key}
+                className="onboarding-trigger-card"
                 onClick={() => {
                   setIntentTrigger(t.label);
                   setIntentTriggerState(t.label);
@@ -376,19 +473,6 @@ export default function App() {
                   cursor: 'pointer',
                   textAlign: 'left',
                   boxShadow: 'var(--shadow-sm)',
-                  transition: 'all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                }}
-                onMouseEnter={(e) => { 
-                  e.currentTarget.style.background = '#FFFFFF'; 
-                  e.currentTarget.style.borderColor = 'var(--primary)';
-                  e.currentTarget.style.transform = 'translateY(-2px)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-md)';
-                }}
-                onMouseLeave={(e) => { 
-                  e.currentTarget.style.background = 'rgba(255, 255, 255, 0.65)'; 
-                  e.currentTarget.style.borderColor = 'rgba(120, 100, 80, 0.08)';
-                  e.currentTarget.style.transform = 'translateY(0)';
-                  e.currentTarget.style.boxShadow = 'var(--shadow-sm)';
                 }}
               >
                 <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>{t.label}</h4>
@@ -566,11 +650,22 @@ export default function App() {
         const finalChargeInput = entropyDecay ? Math.round((savedFromBudget + savedFromDefense) * 0.5) : (savedFromBudget + savedFromDefense);
         const chargedToGoal = addToGoal(finalChargeInput);
 
+        // 머니 듀오 공동 목표에도 기여 + 공동 스트릭 갱신 (활성 듀오가 있을 때만)
+        contributeToDuo(userId, savedFromBudget + savedFromDefense, today).catch(() => {});
+
+        // 🎰 룰렛권 지급 — 기록 1회=1장, 무지출이면 2장 (가변 보상 훅)
+        const spinsEarned = total === 0 ? 2 : 1;
+        addRouletteSpins(spinsEarned);
+
+        // 🐲 주간 공동 보스 공격 — 하루 첫 기록만 유효 (도배 방지). 무지출 30 / 절약방어 20 / 기록 10
+        const bossDamage = total === 0 ? 30 : items.some(it => it.category === '절약 방어') ? 20 : 10;
+        attackWeeklyBoss(weekKey, bossDamage).catch(() => {});
+
         const goalMsg = chargedToGoal > 0 ? ` · 🎯 목표에 ${formatAmount(chargedToGoal)} 충전` : '';
         const decayAlert = entropyDecay ? ' (⚠️엔트로피 50% 감쇄)' : '';
         const toastMsg = actualEarned > 0
-          ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기) · +${jellyReward} 젤리${decayAlert} 🐹${goalMsg}`
-          : `✅ 기록 완료! · +${jellyReward} 젤리${decayAlert} 🐹${goalMsg}`;
+          ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기) · +${jellyReward} 젤리${decayAlert} · 🎰 룰렛권 +${spinsEarned}${goalMsg}`
+          : `✅ 기록 완료! · +${jellyReward} 젤리${decayAlert} · 🎰 룰렛권 +${spinsEarned}${goalMsg}`;
         showToast(toastMsg);
       } else {
         showToast('✅ 추가 기록 완료!');
@@ -646,6 +741,13 @@ export default function App() {
     });
   }
 
+  // 연락처 초대 발송 완료 시 보상 — openContactsInvite가 모달 close 시점에 실제 발송 수를 전달
+  function handleFriendsInvited(count: number) {
+    addStreakShield(count);
+    setStreakShields(getStreakShields());
+    showToast(`🛡️ 친구 ${count}명 초대 완료! 스트릭 보호권 +${count} 적립`);
+  }
+
   function showToast(msg: string) {
     if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
     setShowPointToast(msg);
@@ -687,19 +789,27 @@ export default function App() {
             onClaimPending={handleClaimPending}
             onNavigateToMyLog={() => navigateTo('mylog')}
             onShareToChat={handleShareToChat}
-          />
-        </div>
-        <div className={tab !== 'chat' ? 'tab-panel--hidden' : ''}>
-          <ChatScreen
-            userId={userId}
-            nickname={nickname || '절약가'}
-            sharedEntryToPost={sharedEntryToPost}
-            clearSharedEntry={() => setSharedEntryToPost(null)}
-            activeTab={tab}
+            onShieldEarned={handleFriendsInvited}
           />
         </div>
         <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
-          <CommunityScreen userId={userId} />
+          {/* 커뮤니티 = 짠톡방(실시간 채팅) + 게시판(주제별) 통합 */}
+          <div className="talk-subtab-bar">
+            <button className={`talk-subtab-btn${talkTab === 'chat' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('chat')}>💬 짠톡방</button>
+            <button className={`talk-subtab-btn${talkTab === 'board' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('board')}>📋 게시판</button>
+          </div>
+          <div className={talkTab !== 'chat' ? 'tab-panel--hidden' : ''}>
+            <ChatScreen
+              userId={userId}
+              nickname={nickname || '절약가'}
+              sharedEntryToPost={sharedEntryToPost}
+              clearSharedEntry={() => setSharedEntryToPost(null)}
+              activeTab={tab === 'community' && talkTab === 'chat' ? 'chat' : ''}
+            />
+          </div>
+          <div className={talkTab !== 'board' ? 'tab-panel--hidden' : ''}>
+            <CommunityScreen userId={userId} />
+          </div>
         </div>
         <div className={tab !== 'mylog' ? 'tab-panel--hidden' : ''}>
           <ProfileScreen
@@ -708,14 +818,13 @@ export default function App() {
             streak={streak}
             weekRank={weekRank}
             daily={daily}
+            pendingPoints={pendingPoints}
+            pendingClaiming={pendingClaiming}
+            onClaimPending={handleClaimPending}
             refreshToken={profileRefreshToken}
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
-            onShieldEarned={() => {
-              addStreakShield(1);
-              setStreakShields(getStreakShields());
-              showToast('🛡️ 공유 완료! 스트릭 보호권 +1 적립');
-            }}
+            onShieldEarned={handleFriendsInvited}
             onShareToChat={handleShareToChat}
             onOpenRanking={() => { loadRank(); setShowRankingModal(true); }}
           />
@@ -817,6 +926,9 @@ export default function App() {
           }}
         />
       )}
+
+      {/* 첫 실행 사용법 안내 */}
+      <GuideModal open={showFirstGuide} onClose={closeFirstGuide} />
 
       {/* 포인트 토스트 */}
       {showPointToast && (

@@ -7,6 +7,7 @@ import {
 } from '../lib/chat';
 import { PERSONAS, getPersona, RAID_BOSSES, addJelly } from '../lib/storage';
 import { toggleReaction } from '../lib/supabase';
+import { shareExternal, buildRoomInviteMessage } from '../lib/share';
 import CustomIcon, { hasMappedIcon } from '../components/CustomIcon';
 
 const graphemeSegmenter = new Intl.Segmenter(undefined, { granularity: 'grapheme' });
@@ -113,6 +114,23 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
     }
   });
 
+  const [bossDamaged, setBossDamaged] = useState(false);
+  const prevHpRef = useRef<number | null>(null);
+
+  const currentBossHp = potGroup?.raid?.bossHp;
+  useEffect(() => {
+    if (currentBossHp !== undefined && currentBossHp !== null) {
+      if (prevHpRef.current !== null && currentBossHp < prevHpRef.current) {
+        setBossDamaged(true);
+        const timer = setTimeout(() => setBossDamaged(false), 500);
+        return () => clearTimeout(timer);
+      }
+      prevHpRef.current = currentBossHp;
+    } else {
+      prevHpRef.current = null;
+    }
+  }, [currentBossHp]);
+
   useEffect(() => {
     try {
       const saved = localStorage.getItem('savelog_pot_group');
@@ -166,6 +184,23 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
   useEffect(() => {
     localStorage.setItem('savelog_group_chats', JSON.stringify(groupRooms));
   }, [groupRooms]);
+
+  // 초대 딥링크(?room=)로 진입한 경우 자동 입장 — App.tsx가 pending으로 저장해 둠
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem('savelog_pending_room');
+      if (!raw) return;
+      localStorage.removeItem('savelog_pending_room');
+      const { code, name } = JSON.parse(raw) as { code: string; name?: string };
+      if (!code) return;
+      const roomId = code.startsWith('CHAT-') ? code : `CHAT-${code.toUpperCase()}`;
+      const roomName = name || `그룹 톡방 (${roomId.replace(/^CHAT-/, '')})`;
+      setChatTab('group');
+      setGroupRooms(prev => prev.some(r => r.id === roomId) ? prev : [{ id: roomId, name: roomName, code: roomId, isCreator: false }, ...prev]);
+      setActiveRoomId(roomId);
+      setActiveRoomName(roomName);
+    } catch { /* 초대 정보 파싱 실패는 무시 */ }
+  }, []);
 
   // 1.5 계모임(pot group)이 생성되거나 삭제되었을 때 일반 톡방 목록에 실시간 반영
   useEffect(() => {
@@ -229,6 +264,13 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
           if (prev.some((m) => m.id === newMsg.id)) return prev;
           return [...prev, newMsg];
         });
+        // 시스템 메시지 수신 시 보스 레이드 HP 등 potGroup 실시간 리로드
+        if (newMsg.user_id === 'system') {
+          try {
+            const saved = localStorage.getItem('savelog_pot_group');
+            if (saved) setPotGroup(JSON.parse(saved));
+          } catch {}
+        }
       }
     });
 
@@ -371,18 +413,20 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
 
   // 초대 코드로 참여 처리
   const handleJoinRoomSubmit = () => {
-    const code = joinCode.trim().toUpperCase();
-    if (!code) return;
+    const entered = joinCode.trim().toUpperCase();
+    if (!entered) return;
+    // 개설자의 room id는 'CHAT-XXXXXX' 형식 — 표시용 코드(XXXXXX)로 참여해도 같은 방에 합류하도록 정규화
+    const code = entered.startsWith('CHAT-') ? entered : `CHAT-${entered}`;
 
     // 중복 체크
-    if (groupRooms.some(r => r.code === code)) {
+    if (groupRooms.some(r => r.code === code || r.code === entered)) {
       alert('이미 참여 중인 일반 톡방입니다.');
       return;
     }
 
     const newRoom: GroupChatRoom = {
       id: code,
-      name: joinRoomName.trim() || `그룹 톡방 (${code})`,
+      name: joinRoomName.trim() || `그룹 톡방 (${entered.replace(/^CHAT-/, '')})`,
       code: code,
       isCreator: false
     };
@@ -498,11 +542,14 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
     }
   };
 
-  // 초대 코드 복사
-  const handleCopyCode = (code: string) => {
-    const displayCode = code.startsWith('CHAT-') ? code.substring(5) : code;
-    navigator.clipboard.writeText(displayCode);
-    alert(`초대 코드(${displayCode})가 복사되었습니다! 친구에게 공유해 보세요.`);
+  // 톡방 초대 공유 — 딥링크 포함 네이티브 공유 시트 (받은 사람은 링크 한 번에 입장 + 초대자와 자동 맞팔)
+  const handleShareInvite = (roomId: string, roomName?: string) => {
+    const displayCode = roomId.startsWith('CHAT-') ? roomId.substring(5) : roomId;
+    const name = roomName || groupRooms.find(r => r.id === roomId)?.name || activeRoomName || '짠톡방';
+    const query = `room=${encodeURIComponent(roomId)}&rn=${encodeURIComponent(name)}&by=${encodeURIComponent(userId)}&bn=${encodeURIComponent(nickname || '짠친')}`;
+    shareExternal(buildRoomInviteMessage(name, displayCode), query).then(ok => {
+      if (!ok) alert(`공유에 실패했어요. 초대 코드(${displayCode})를 직접 전달해 주세요.`);
+    });
   };
 
   // 대화 기록에서 최근 대화 참여자 추출 (stateless Presence 대체)
@@ -547,8 +594,8 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
             </div>
           </div>
           {isGroupChat && (
-            <button className="chat-invite-copy-btn" onClick={() => handleCopyCode(activeRoomId)} style={{ fontSize: '11px', background: 'var(--primary)', color: '#fff', padding: '6px 12px', borderRadius: '20px', fontWeight: 600 }}>
-              코드 복사 <CustomIcon emoji="👥" />
+            <button className="chat-invite-copy-btn" onClick={() => handleShareInvite(activeRoomId)} style={{ fontSize: '11px', background: 'var(--primary)', color: '#fff', padding: '6px 12px', borderRadius: '20px', fontWeight: 600 }}>
+              친구 초대 <CustomIcon emoji="👥" />
             </button>
           )}
         </div>
@@ -582,9 +629,9 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
             if (!r) return null;
             const hpPct = Math.round((r.bossHp / r.bossMaxHp) * 100);
             return (
-              <div className="pot-raid-board" style={{ margin: '10px 14px', cursor: 'default' }}>
+              <div className="pot-raid-board rpg-theme-board" style={{ margin: '10px 14px', cursor: 'default' }}>
                 <div className="pot-raid-boss-info">
-                  <div className="pot-raid-boss-avatar-wrap">
+                  <div className={`pot-raid-boss-avatar-wrap ${bossDamaged ? 'boss-damage-blink' : ''}`}>
                     <span>👾</span>
                   </div>
                   <div style={{ flex: 1 }}>
@@ -597,9 +644,9 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
                     </p>
                   </div>
                 </div>
-                <div className="pot-raid-hp-bar-track">
+                <div className="pot-raid-hp-bar-track rpg-hp-track">
                   <div 
-                    className={`pot-raid-hp-bar-fill ${r.raidCompleted ? 'pot-raid-hp--defeated' : ''}`}
+                    className={`pot-raid-hp-bar-fill rpg-hp-fill ${r.raidCompleted ? 'pot-raid-hp--defeated' : ''}`}
                     style={{ width: `${hpPct}%` }}
                   />
                 </div>
@@ -607,10 +654,10 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
                   raidClaimed ? (
                     <p className="pot-raid-victory-banner">🎉 전리품 분배가 완료되었습니다! (전투 로그에서 내역 확인 가능)</p>
                   ) : (
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '6px', width: '100%', alignItems: 'center' }}>
+                    <div className="loot-chest-container" onClick={handleClaimRaidLoot}>
                       <p className="pot-raid-victory-banner" style={{ margin: 0 }}>🎉 보스 퇴치 성공! 전리품 상자가 도착했습니다.</p>
+                      <span className="loot-chest-icon">🎁</span>
                       <button 
-                        onClick={handleClaimRaidLoot}
                         style={{
                           width: '100%',
                           background: 'linear-gradient(135deg, #FF5A76 0%, #E22D50 100%)',
@@ -625,7 +672,7 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
                           marginTop: '4px'
                         }}
                       >
-                        🎁 전리품 상자 열고 젤리 분배받기 (링겔만 방지)
+                        상자 열고 젤리 분배받기 (링겔만 방지)
                       </button>
                     </div>
                   )
@@ -917,9 +964,16 @@ export default function ChatScreen({ userId, nickname, sharedEntryToPost, clearS
                 >
                   <div style={{ flex: 1 }}>
                     <h4 style={{ fontWeight: 700, fontSize: '15px', color: 'var(--text-main)', marginBottom: '4px' }}>{renderTextWithEmoji(room.name)}</h4>
-                    <p style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>초대코드: {room.code}</p>
+                    <p style={{ fontSize: '11px', color: 'var(--primary)', fontWeight: 600 }}>초대코드: {room.code.replace(/^CHAT-/, '')}</p>
                   </div>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <button
+                      className="chat-room-invite-btn"
+                      onClick={(e) => { e.stopPropagation(); handleShareInvite(room.id, room.name); }}
+                      style={{ fontSize: '11px', color: '#fff', background: 'var(--primary)', padding: '4px 8px', borderRadius: '6px', fontWeight: 600 }}
+                    >
+                      초대
+                    </button>
                     <button
                       className="chat-room-leave-btn"
                       onClick={(e) => handleLeaveRoom(room.id, e)}

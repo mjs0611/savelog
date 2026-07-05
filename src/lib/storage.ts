@@ -661,6 +661,26 @@ export function addJelly(amount: number): number {
   } catch {}
   return next;
 }
+
+// ── 🎰 무지출 룰렛 — 기록 완료가 룰렛권이 되는 가변 보상 ─────────────────────
+const ROULETTE_SPINS_KEY = 'savelog_roulette_spins';
+
+export function getRouletteSpins(): number {
+  try { return parseInt(localStorage.getItem(ROULETTE_SPINS_KEY) ?? '0', 10) || 0; } catch { return 0; }
+}
+
+export function addRouletteSpins(n: number): number {
+  const next = Math.max(0, getRouletteSpins() + n);
+  try {
+    localStorage.setItem(ROULETTE_SPINS_KEY, String(next));
+    window.dispatchEvent(new CustomEvent('savelog_roulette_updated', { detail: next }));
+  } catch {}
+  return next;
+}
+
+export function consumeRouletteSpin(): number {
+  return addRouletteSpins(-1);
+}
 export function useJelly(amount: number): boolean {
   const current = getJellyBalance();
   if (current < amount) return false;
@@ -786,6 +806,39 @@ export function removeWishlistItem(id: string): WishlistItem[] {
 // 쿨다운이 끝났는지 (48h 경과 + 아직 waiting)
 export function isWishlistItemReady(it: WishlistItem): boolean {
   return it.status === 'waiting' && Date.now() - it.addedAt >= WISHLIST_COOLDOWN_MS;
+}
+
+// ── 돈 멘탈 케어: 소비 감정 태그 (오늘 마지막 감정) ──────────────────────────
+// 지출에 감정을 붙여 기록 → 펫이 그 감정에 맞춰 위로/지지한다. (가계부 → 멘탈 다이어리)
+const LAST_EMOTION_KEY = 'savelog_last_emotion';
+export function setLastEmotion(date: string, emotion: string): void {
+  try { localStorage.setItem(LAST_EMOTION_KEY, JSON.stringify({ date, emotion })); } catch {}
+}
+export function getLastEmotion(date: string): string | null {
+  try {
+    const v = localStorage.getItem(LAST_EMOTION_KEY);
+    if (!v) return null;
+    const o = JSON.parse(v);
+    return o.date === date ? o.emotion : null;
+  } catch { return null; }
+}
+
+// ── 소비 고민 결정 해소 (짠친 투표 후 작성자가 최종 결정) ─────────────────────
+// "이거 살까?" 고민글을 올리고 짠친 투표를 받은 뒤, 작성자가 참았는지/질렀는지 결정한다.
+const RESOLVED_DILEMMAS_KEY = 'savelog_resolved_dilemmas';
+export type DilemmaOutcome = 'resisted' | 'bought';
+export function getResolvedDilemmas(): Record<string, DilemmaOutcome> {
+  try { const v = localStorage.getItem(RESOLVED_DILEMMAS_KEY); return v ? JSON.parse(v) : {}; } catch { return {}; }
+}
+export function getDilemmaOutcome(entryId: string): DilemmaOutcome | null {
+  return getResolvedDilemmas()[entryId] ?? null;
+}
+export function resolveDilemma(entryId: string, outcome: DilemmaOutcome): void {
+  try {
+    const map = getResolvedDilemmas();
+    map[entryId] = outcome;
+    localStorage.setItem(RESOLVED_DILEMMAS_KEY, JSON.stringify(map));
+  } catch {}
 }
 
 // ── Part 2. 행동 과학 및 물리학 기반 메커니즘 ──

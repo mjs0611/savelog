@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import type { Entry } from '../lib/supabase';
 import { diagnoseWoW } from '../lib/benchmark';
 import { formatAmount } from '../lib/utils';
@@ -12,6 +13,13 @@ interface Props {
 // 평균이 아니라 '과거의 나'를 기준점으로 두어 부메랑 효과를 피하고 절감 후보를 드러낸다.
 export default function SpendDiagnosisCard({ thisWeek, lastWeek }: Props) {
   const d = diagnoseWoW(thisWeek, lastWeek);
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    // 렌더 후 다음 마이크로태스크에서 애니메이션 트리거
+    const timer = setTimeout(() => setMounted(true), 50);
+    return () => clearTimeout(timer);
+  }, []);
 
   // Layer 0 정직한 콜드스타트: 비교할 지난주 데이터가 없을 때
   if (!d.hasPrevData) {
@@ -91,7 +99,7 @@ export default function SpendDiagnosisCard({ thisWeek, lastWeek }: Props) {
                   <div className="diagnosis-compare-bar-track">
                     <div 
                       className="diagnosis-compare-fill diagnosis-compare-fill--prev" 
-                      style={{ width: `${Math.max(2, prevPct)}%` }}
+                      style={{ width: mounted ? `${Math.max(2, prevPct)}%` : '0%' }}
                     />
                   </div>
                   <span className="diagnosis-compare-val">{formatAmount(r.previous)}</span>
@@ -101,7 +109,7 @@ export default function SpendDiagnosisCard({ thisWeek, lastWeek }: Props) {
                   <div className="diagnosis-compare-bar-track">
                     <div 
                       className={`diagnosis-compare-fill diagnosis-compare-fill--${r.status}`} 
-                      style={{ width: `${Math.max(2, currPct)}%` }}
+                      style={{ width: mounted ? `${Math.max(2, currPct)}%` : '0%' }}
                     />
                   </div>
                   <span className={`diagnosis-compare-val ${r.status === 'up' ? 'font-bold font-up' : r.status === 'down' ? 'font-bold font-down' : ''}`}>

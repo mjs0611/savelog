@@ -111,6 +111,8 @@ export default function JellyPockets() {
               <div className="jelly-jar-glass">
                 <div className="jelly-jar-lid" />
                 <div className="jelly-jar-body">
+                  <div className="jelly-jar-glass-shine" />
+                  <div className="jelly-jar-glass-highlight" />
                   <div className="jelly-balls-container">
                     {balls.map((_, i) => (
                       <div 

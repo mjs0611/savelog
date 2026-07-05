@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Button } from '@toss/tds-mobile';
 import type { SpendingItem } from '../lib/supabase';
-import { formatAmount } from '../lib/utils';
-import CustomIcon from '../components/CustomIcon';
-import { getWeeklyBudget } from '../lib/storage';
+import { formatAmount, getTodayStr } from '../lib/utils';
+import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
+import { getWeeklyBudget, setLastEmotion } from '../lib/storage';
 
 const UNIFIED_CATEGORIES = [
   { label: '식비/식품', emoji: '🍚' },
@@ -33,6 +33,9 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   const [activeSubmitType, setActiveSubmitType] = useState<'spend' | 'save' | 'dilemma' | 'zero' | 'tip' | null>(null);
   const [dopamineDelayMode, setDopamineDelayMode] = useState(false);
   const [timeLeft, setTimeLeft] = useState(600);
+  // 💭 소비 감정 태그 (돈 멘탈 케어)
+  const [emotion, setEmotion] = useState<string | null>(null);
+  const EMOTIONS = ['😌 필요했어', '😅 충동이었어', '😤 홧김에', '🙂 후회없어'];
 
   const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
   const isFoodCategory = ['식비/식품', '카페/간식'].includes(selCat.label);
@@ -112,7 +115,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
       let isBalanceGame = false;
 
       if (type === 'spend') {
-        const item = { category: selCat.label, emoji: selCat.emoji, amount };
+        if (emotion) setLastEmotion(getTodayStr(), emotion);
+        const item: SpendingItem = { category: selCat.label, emoji: selCat.emoji, amount, ...(emotion ? { comment: `[${emotion}]` } : {}) };
         finalItems = isAdditional
           ? [item]
           : [{ category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }, item];
@@ -164,7 +168,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
       <div className="modal-overlay">
         <div className="modal-sheet" style={{ textAlign: 'center', padding: '24px' }}>
           <div className="modal-header" style={{ justifyContent: 'center' }}>
-            <h2 className="modal-title">👾 지름신 쫓아내는 중...</h2>
+            <h2 className="modal-title"><CustomIcon emoji="👾" /> 지름신 쫓아내는 중...</h2>
           </div>
           
           <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '20px' }}>
@@ -211,7 +215,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                   boxShadow: 'var(--shadow-sm)'
                 }}
               >
-                💪 참아냈어요! (즉시 성공)
+                <CustomIcon emoji="💪" /> 참아냈어요! (즉시 성공)
               </button>
               
               <button 
@@ -231,7 +235,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                   cursor: 'pointer'
                 }}
               >
-                💸 그냥 살래요 (포기)
+                <CustomIcon emoji="💸" /> 그냥 살래요 (포기)
               </button>
             </div>
           </div>
@@ -358,7 +362,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               gap: '10px'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <span>💡</span>
+                <CustomIcon emoji="💡" />
                 <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>한계 효용 디플렉터 (소비 시간 변환)</span>
               </div>
               <div style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
@@ -385,6 +389,33 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           )}
           </div>
         </div>
+
+        {/* 4.5 소비 감정 태그 (돈 멘탈 케어) */}
+        {amount > 0 && (
+          <div style={{ marginBottom: '4px' }}>
+            <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}><CustomIcon emoji="💭" /> 이 소비, 지금 마음은 어때요? <span style={{ fontWeight: 500, color: 'var(--text-mute)' }}>(선택)</span></p>
+            <div className="emotion-select-container">
+              {EMOTIONS.map(e => {
+                let btnClass = '';
+                if (e.includes('필요')) btnClass = 'emotion-btn--need';
+                else if (e.includes('충동')) btnClass = 'emotion-btn--impulse';
+                else if (e.includes('홧김')) btnClass = 'emotion-btn--stress';
+                else if (e.includes('후회')) btnClass = 'emotion-btn--no-regret';
+                
+                return (
+                  <button
+                    key={e}
+                    type="button"
+                    onClick={() => setEmotion(prev => prev === e ? null : e)}
+                    className={`emotion-select-btn ${btnClass} ${emotion === e ? 'active' : ''}`}
+                  >
+                    {renderTextWithEmoji(e)}
+                  </button>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         {/* 5. 동적 제출 버튼 그룹 */}
         <div className="modal-footer" style={{ flexDirection: 'column', gap: '8px' }}>

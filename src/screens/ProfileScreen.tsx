@@ -1,6 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
-import { contactsViral } from '@apps-in-toss/web-framework';
 
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
   if (!open) return null;
@@ -19,9 +18,13 @@ import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, setWeeklyBudget, getFollowedUsers, saveFollowedUsers, getJellyPockets, setJellyPockets } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
+import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
 import CustomIcon from '../components/CustomIcon';
 import JellyPockets from '../components/JellyPockets';
+import MyCockpit from '../components/MyCockpit';
+import MoneyMemory from '../components/MoneyMemory';
 import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
+import GuideModal from '../components/GuideModal';
 
 interface Props {
   userId: string;
@@ -30,14 +33,17 @@ interface Props {
   onNicknameChange: (name: string) => void;
   onStartTest: () => void;
   refreshToken?: number;
-  onShieldEarned?: () => void;
+  onShieldEarned?: (count: number) => void;
   weekRank?: WeekRankRow[];
   daily?: DailyState;
+  pendingPoints?: number;
+  pendingClaiming?: boolean;
+  onClaimPending?: () => void;
   onShareToChat?: (entry: any) => void;
   onOpenRanking?: () => void;
 }
 
-export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, daily, onShareToChat, onOpenRanking }: Props) {
+export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, weekRank = [], daily, pendingPoints = 0, pendingClaiming = false, onClaimPending, onShareToChat, onOpenRanking }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
   
@@ -56,6 +62,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const clearConfirmTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
   
   const [showSettings, setShowSettings] = useState(false);
+  const [showGuide, setShowGuide] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
   const [marketingModalOpen, setMarketingModalOpen] = useState(false);
   const [replyModalOpen, setReplyModalOpen] = useState(false);
@@ -107,8 +114,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     return () => window.removeEventListener('savelog_budget_updated', handleUpdate);
   }, []);
 
-  const viralCleanupRef = useRef<(() => void) | null>(null);
-
   function handleSaveBudget() {
     const val = parseInt(budgetDraft.replace(/,/g, ''), 10);
     if (!isNaN(val) && val > 0) {
@@ -129,31 +134,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   }
 
   function handleShare() {
-    if (viralCleanupRef.current) return;
-    try {
-      viralCleanupRef.current = contactsViral({
-        options: { moduleId: 'f92f08bb-0044-4762-bbdd-25d8458a1a07' },
-        onEvent: (event) => {
-          if (event.type === 'sendViral') {
-            onShieldEarned?.();
-          } else if (event.type === 'close') {
-            viralCleanupRef.current?.();
-            viralCleanupRef.current = null;
-          }
-        },
-        onError: () => {
-          viralCleanupRef.current?.();
-          viralCleanupRef.current = null;
-        },
-      });
-    } catch {
-      viralCleanupRef.current = null;
-    }
+    // 실제 발송 완료 수만큼 모달 close 시점에 보상 (오픈 직후 재생 이벤트는 무시)
+    openContactsInvite(onShieldEarned);
   }
-
-  useEffect(() => {
-    return () => { viralCleanupRef.current?.(); };
-  }, []);
 
   useEffect(() => {
     let cancelled = false;
@@ -352,6 +335,14 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         <JellyPockets />
       </div>
 
+      {/* 🐹 내 절약 코쿼핏 (리워드·펫·목표·듀오) — 피드에서 마이로그로 이동 */}
+      {daily && onClaimPending && (
+        <MyCockpit userId={userId} daily={daily} streak={streak} weekRank={weekRank} pendingPoints={pendingPoints} pendingClaiming={pendingClaiming} onClaimPending={onClaimPending} />
+      )}
+
+      {/* 💎 머니 회고 (재정 기억 복리) */}
+      <MoneyMemory userId={userId} />
+
       {/* 2. Sub-tab Navigation */}
       <div className="mylog-subtab-bar">
         {(['records', 'gallery', 'stats', 'mailbox'] as const).map(t => (
@@ -438,6 +429,10 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <span>소비 성향 재분석</span>
               <span className="setting-arrow">›</span>
             </div>
+            <div className="setting-menu-item" onClick={() => { setShowSettings(false); setShowGuide(true); }}>
+              <span>❓ savelog 사용법</span>
+              <span className="setting-arrow">›</span>
+            </div>
           </div>
 
           <div className="settings-section">
@@ -483,6 +478,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           </Button>
         </div>
       </SimpleModal>
+
+      <GuideModal open={showGuide} onClose={() => setShowGuide(false)} />
 
       {/* 기존 모달들 유지 */}
       <SimpleModal open={termsModalOpen} onClose={() => setTermsModalOpen(false)}>
@@ -682,26 +679,45 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
               <div className="timeline-zero-badge"><CustomIcon emoji="✨" /> 지갑 힐링 데이! <CustomIcon emoji="🌿" /></div>
             )}
             <div className="timeline-items">
-              {d.items.map((item, idx) => (
-                <div key={idx} className="timeline-item">
-                  <span className="timeline-item-emoji"><CustomIcon emoji={item.emoji} /></span>
-                  <div className="timeline-item-info">
-                    <span className="timeline-item-cat">
-                      {item.category === '절약 방어' ? (
-                        <span><CustomIcon emoji="🌱" /> 플러스 저축</span>
-                      ) : item.category === '무지출' ? (
-                        <span><CustomIcon emoji="🌿" /> 지갑 힐링</span>
-                      ) : (
-                        item.category
-                      )}
+              {d.items.map((item, idx) => {
+                const emotionMatch = (item.comment || '').match(/^\[(.*?)\]/);
+                const emotionTag = emotionMatch ? emotionMatch[1] : null;
+                const commentText = (item.comment || '').replace(/^\[.*?\]\s*/, '');
+
+                let emotionClass = '';
+                if (emotionTag) {
+                  if (emotionTag.includes('필요')) emotionClass = 'emotion-badge--need';
+                  else if (emotionTag.includes('충동')) emotionClass = 'emotion-badge--impulse';
+                  else if (emotionTag.includes('홧김')) emotionClass = 'emotion-badge--stress';
+                  else if (emotionTag.includes('후회')) emotionClass = 'emotion-badge--no-regret';
+                }
+
+                return (
+                  <div key={idx} className="timeline-item">
+                    <span className="timeline-item-emoji"><CustomIcon emoji={item.emoji} /></span>
+                    <div className="timeline-item-info">
+                      <span className="timeline-item-cat">
+                        {item.category === '절약 방어' ? (
+                          <span><CustomIcon emoji="🌱" /> 플러스 저축</span>
+                        ) : item.category === '무지출' ? (
+                          <span><CustomIcon emoji="🌿" /> 지갑 힐링</span>
+                        ) : (
+                          item.category
+                        )}
+                        {emotionTag && (
+                          <span className={`timeline-item-emotion-badge ${emotionClass}`}>
+                            {emotionTag}
+                          </span>
+                        )}
+                      </span>
+                      {commentText && <span className="timeline-item-comment">{commentText}</span>}
+                    </div>
+                    <span className={`timeline-item-amount ${item.amount === 0 ? 'timeline-item-amount--zero' : ''}`}>
+                      {item.amount > 0 ? formatAmount(item.amount) : ''}
                     </span>
-                    {item.comment && <span className="timeline-item-comment">{item.comment}</span>}
                   </div>
-                  <span className={`timeline-item-amount ${item.amount === 0 ? 'timeline-item-amount--zero' : ''}`}>
-                    {item.amount > 0 ? formatAmount(item.amount) : ''}
-                  </span>
-                </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         );
@@ -856,7 +872,10 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
       <div className="glass-card" style={{ background: 'linear-gradient(135deg, rgba(0,245,160,0.14) 0%, rgba(168,85,247,0.12) 100%)', border: '1.5px solid rgba(0,245,160,0.25)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 className="stats-card-title" style={{ margin: 0 }}>📅 이번 주 절약 Wrapped</h4>
-          <button className="mylog-budget-edit" onClick={handleShareWrapped} disabled={wrappedSharing}>공유</button>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button className="mylog-budget-edit" onClick={handleShareWrapped} disabled={wrappedSharing}>피드 공유</button>
+            <button className="mylog-budget-edit" onClick={() => shareExternal(buildWrappedBragMessage(formatAmount(weekSaved), recordedThisWeek, zeroDays, streak.streak))}>친구 자랑</button>
+          </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
           <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
@@ -959,7 +978,12 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
       <div className="glass-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h4 className="stats-card-title" style={{ margin: 0 }}><CustomIcon emoji="🌡️" /> 절약 온도</h4>
-          <button className="mylog-budget-edit" onClick={() => handleShareToFeed('temp')} disabled={sharing}>피드 자랑</button>
+          <div style={{ display: 'flex', gap: '6px' }}>
+            <button className="mylog-budget-edit" onClick={() => handleShareToFeed('temp')} disabled={sharing}>피드 자랑</button>
+            {isRecordedToday && (
+              <button className="mylog-budget-edit" onClick={() => shareExternal(buildTempBragMessage(temperature))}>친구 자랑</button>
+            )}
+          </div>
         </div>
         {!isRecordedToday ? (
           <div className="savings-temp-unrecorded">

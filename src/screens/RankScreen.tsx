@@ -3,6 +3,7 @@ import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
 import { formatAmount, formatWeekRange, getWeekKey, getTodayStr } from '../lib/utils';
 import { sendCheeringMessage, getNickname, getPersona, getDailyMission } from '../lib/storage';
+import { shareExternal, buildRankBragMessage } from '../lib/share';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 
 interface Props {
@@ -80,18 +81,17 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           <img src="/images/icon_rank.png" className="custom-icon" />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
-        <div style={{
-          display: 'inline-block',
-          background: 'rgba(0, 245, 160, 0.15)',
-          color: 'var(--primary)',
+        <div className="glass-card" style={{
+          background: 'rgba(255,255,255,0.02)',
+          padding: '12px 14px',
           fontSize: '13px',
           fontWeight: 800,
-          padding: '6px 12px',
+          color: 'var(--text-main)',
           borderRadius: '12px',
           marginTop: '8px',
           marginBottom: '16px'
         }}>
-          🏆 소속 리그: {leagueName}
+          <CustomIcon emoji="🏆" /> 소속 리그: {renderTextWithEmoji(leagueName)}
         </div>
         <p className="rank-reset-hint">{renderTextWithEmoji('🔄 매주 월요일 오전 9시 초기화')}</p>
       </div>
@@ -113,7 +113,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
               <CustomIcon emoji={missionEmoji} /> {mission.action}
             </h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 600 }}>🪙 {mission.reward}원 리워드</span>
+              <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 600 }}><CustomIcon emoji="🪙" /> {mission.reward}원 리워드</span>
               {!mission.completed && (
                 <span style={{ fontSize: '11px', color: 'var(--text-mute)' }}>지출 입력 시 자동 판정</span>
               )}
@@ -128,21 +128,35 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
         if (myRankIdx < 0) return null;
         const myRow = weekRank[myRankIdx];
         const myScore = myRow.score ?? (800 * myRow.days + Math.round(Math.max(0, 100000 - myRow.total) / 100000 * 4400));
+        const handleBragRank = () => {
+          const statLine = myRow.total === 0
+            ? `🌿 이번 주 무지출 달성 · ✍️ ${myRow.days}일 기록 · ${myScore}점`
+            : `💸 이번 주 지출 ${formatAmount(myRow.total)} · ✍️ ${myRow.days}일 기록 · ${myScore}점`;
+          shareExternal(buildRankBragMessage(myRankIdx + 1, weekRank.length, statLine));
+        };
         return (
-          <div className="glass-card my-rank-card" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.1) 0%, rgba(0, 245, 160, 0.02) 100%)', border: '1.5px solid rgba(0, 245, 160, 0.3)', marginBottom: '16px' }}>
-            <div className="my-rank-left">
-              <span className="my-rank-pos" style={{ color: 'var(--primary)', fontSize: '20px', fontWeight: 800 }}>{myRankIdx + 1}위</span>
-              <span className="my-rank-label" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>/ {weekRank.length}명</span>
-            </div>
-            <div className="my-rank-right" style={{ textAlign: 'right' }}>
-              <p className="my-rank-amount" style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>
-                {myRow.total === 0 ? '0원 (무지출) 🌿' : formatAmount(myRow.total)}
-              </p>
-              <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '6px' }}>
-                <Badge size="small" color="blue" variant="weak">{myRow.days}일 기록</Badge>
-                <Badge size="small" color="green" variant="weak">{myScore}점</Badge>
+          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.1) 0%, rgba(0, 245, 160, 0.02) 100%)', border: '1.5px solid rgba(0, 245, 160, 0.3)', marginBottom: '16px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="my-rank-left">
+                <span className="my-rank-pos" style={{ color: 'var(--primary)', fontSize: '20px', fontWeight: 800 }}>{myRankIdx + 1}위</span>
+                <span className="my-rank-label" style={{ fontSize: '12px', color: 'var(--text-sub)' }}>/ {weekRank.length}명</span>
+              </div>
+              <div className="my-rank-right" style={{ textAlign: 'right' }}>
+                <p className="my-rank-amount" style={{ fontSize: '18px', fontWeight: 800, margin: 0 }}>
+                  {myRow.total === 0 ? <>0원 (무지출) <CustomIcon emoji="🌿" /></> : formatAmount(myRow.total)}
+                </p>
+                <div style={{ display: 'flex', gap: '6px', justifyContent: 'flex-end', marginTop: '6px' }}>
+                  <Badge size="small" color="blue" variant="weak">{myRow.days}일 기록</Badge>
+                  <Badge size="small" color="green" variant="weak">{myScore}점</Badge>
+                </div>
               </div>
             </div>
+            <button
+              onClick={handleBragRank}
+              style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(0,245,160,0.12)', color: 'var(--primary)', border: '1px solid rgba(0,245,160,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}
+            >
+              <CustomIcon emoji="📣" /> 친구에게 내 순위 자랑하기
+            </button>
           </div>
         );
       })()}
@@ -203,10 +217,10 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
         </div>
         <p className="reward-info-note">모든 리워드는 광고 시청 후 수령</p>
         {prevMyRow && rankRewardAmount === 0 && !isPrevSuspicious && prevMyDays > 0 && prevMyDays < 3 && (
-          <p className="reward-days-hint">📅 지난 주 기록이 3일 미만이라 순위 리워드가 없어요 ({prevMyDays}/3일)</p>
+          <p className="reward-days-hint"><CustomIcon emoji="📅" /> 지난 주 기록이 3일 미만이라 순위 리워드가 없어요 ({prevMyDays}/3일)</p>
         )}
         {prevWeekRank.length === 0 && (
-          <p className="reward-days-hint">📅 순위 리워드는 매주 월요일 오전 9시 이후 지난 주 성적 기준으로 수령 가능해요</p>
+          <p className="reward-days-hint"><CustomIcon emoji="📅" /> 순위 리워드는 매주 월요일 오전 9시 이후 지난 주 성적 기준으로 수령 가능해요</p>
         )}
         {rankRewardAmount > 0 && onClaimRankReward && (
           <button
@@ -214,7 +228,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
             disabled={claimedThisWeek || rankClaiming}
             onClick={() => onClaimRankReward(rankRewardAmount)}
           >
-            {claimedThisWeek ? '✅ 지난 주 리워드 수령 완료' : rankClaiming ? '광고 시청 중...' : `📺 광고 보고 +${rankRewardAmount}원 받기`}
+            {claimedThisWeek ? <><CustomIcon emoji="✅" /> 지난 주 리워드 수령 완료</> : rankClaiming ? '광고 시청 중...' : <><CustomIcon emoji="📺" /> 광고 보고 +{rankRewardAmount}원 받기</>}
           </button>
         )}
         <p className={`reward-note${rankRewardAmount > 0 ? ' reward-note--compact' : ''}`}>* 순위 리워드는 지난 주 성적 기준 · 3일 이상 기록 시 광고 보고 수령</p>
@@ -222,7 +236,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
 
       {/* 💡 하이브리드 절약 점수 안내 카드 */}
       <div className="glass-card" style={{ padding: '16px', background: 'rgba(255, 255, 255, 0.03)', borderRadius: '20px', border: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '20px', textAlign: 'left' }}>
-        <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}>💡 savelog 하이브리드 점수제</h4>
+        <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}><CustomIcon emoji="💡" /> savelog 하이브리드 점수제</h4>
         <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.5', color: 'var(--text-sub)' }}>
           기록 성실도(최대 5,600점)와 주간 예산 절약비율(최대 4,400점)을 합산하여 <strong>10,000점 만점</strong>으로 공정하게 평가합니다. 지출이 있어도 성실하게 기록하면 높은 점수를 얻을 수 있습니다!
         </p>
@@ -258,7 +272,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           )}
 
           <p style={{ fontSize: '11px', color: 'var(--text-mute)', textAlign: 'center', margin: '0 0 8px' }}>
-            🏆 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준
+            <CustomIcon emoji="🏆" /> 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준
           </p>
 
           {weekRank.map((row, i) => {
@@ -277,12 +291,12 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
                     )}
                     {reward && (
                       <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(0,245,160,0.12)', borderRadius: '8px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                        🏆 {reward.label} +{reward.amount}원
+                        <CustomIcon emoji="🏆" /> {reward.label} +{reward.amount}원
                       </span>
                     )}
                   </span>
                   <span className="rank-row-days" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: row.total === 0 ? '#34d399' : '#fbbf24' }}>{row.total === 0 ? '🌿 무지출' : '💸 유지출'}</span>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: row.total === 0 ? '#34d399' : '#fbbf24' }}>{row.total === 0 ? <><CustomIcon emoji="🌿" /> 무지출</> : <><CustomIcon emoji="💸" /> 유지출</>}</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>·</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{row.days}일 기록</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>·</span>
@@ -290,7 +304,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
                   </span>
                 </div>
                 <div className="rank-row-right">
-                  <span className="rank-row-amount">{row.total === 0 ? '무지출 🌿' : formatAmount(row.total)}</span>
+                  <span className="rank-row-amount">{row.total === 0 ? <>무지출 <CustomIcon emoji="🌿" /></> : formatAmount(row.total)}</span>
                   {i === 0 && <span className="rank-crown"><CustomIcon emoji="👑" /></span>}
                 </div>
               </div>
