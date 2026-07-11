@@ -1628,14 +1628,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 value={quickText}
                 onChange={e => setQuickText(e.target.value.slice(0, 60))}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSubmit(); } }}
-                placeholder='한 줄이면 끝 — 예) "커피 4500"'
+                placeholder='오늘 뭐 썼어요? 예) 커피 4500'
                 maxLength={60}
-                style={{ flex: 1, minWidth: 0, padding: '11px 12px', borderRadius: '100px', border: '1px solid var(--divider)', fontSize: '13px', background: 'rgba(255,255,255,0.8)' }}
+                className="quick-input"
               />
               <button
                 onClick={handleQuickSubmit}
                 disabled={!quickText.trim() || submitting}
-                style={{ flexShrink: 0, padding: '10px 14px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px', opacity: !quickText.trim() || submitting ? 0.5 : 1 }}
+                style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !quickText.trim() || submitting ? 0.5 : 1 }}
               >
                 {submitting ? '...' : '기록'}
               </button>

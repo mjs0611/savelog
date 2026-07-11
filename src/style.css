@@ -141,9 +141,9 @@ input { font: inherit; outline: none; border: none; }
   width: 100%;
   max-width: 480px;
   height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
-  background: rgba(253, 252, 247, 0.90);
-  backdrop-filter: blur(15px);
-  -webkit-backdrop-filter: blur(15px);
+  background: rgba(255, 255, 255, 0.72);
+  backdrop-filter: blur(24px) saturate(180%);
+  -webkit-backdrop-filter: blur(24px) saturate(180%);
   border-top: 1.5px solid var(--glass-border);
   display: flex;
   align-items: flex-start;
@@ -226,24 +226,22 @@ input { font: inherit; outline: none; border: none; }
 
 .point-toast {
   position: fixed;
-  top: calc(24px + env(safe-area-inset-top, 0px));
+  bottom: calc(var(--tab-h) + 24px);
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(25, 31, 40, 0.92);
-  color: #ffffff;
-  padding: 12px 20px;
-  border-radius: 14px;
+  max-width: 420px;
+  width: calc(100% - 48px);
+  background: rgba(28, 30, 33, 0.82);
+  backdrop-filter: blur(16px) saturate(160%);
+  -webkit-backdrop-filter: blur(16px) saturate(160%);
+  color: #fff;
   font-size: 13px;
-  font-weight: 600;
-  line-height: 1.4;
-  box-shadow: 0 8px 24px rgba(25, 31, 40, 0.15);
-  z-index: 9999;
-  animation: toastIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-  white-space: normal;
-  max-width: calc(100vw - 40px);
-  width: max-content;
+  font-weight: 700;
+  padding: 13px 16px;
+  border-radius: 14px;
   text-align: center;
-  word-break: keep-all;
+  z-index: 1000;
+  animation: toastIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes toastIn {
@@ -1126,8 +1124,10 @@ input { font: inherit; outline: none; border: none; }
 .modal-sheet {
   width: 100%;
   max-width: 480px;
-  background: var(--bg);
-  border-top: 1px solid var(--divider);
+  background: rgba(255, 255, 255, 0.86);
+  backdrop-filter: blur(28px) saturate(180%);
+  -webkit-backdrop-filter: blur(28px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.6);
   border-radius: var(--radius-lg) var(--radius-lg) 0 0;
   display: flex;
   flex-direction: column;
@@ -2269,25 +2269,24 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* 커뮤니티 서브탭 (짠톡방 / 게시판) */
-.talk-subtab-bar { display: flex; gap: 8px; padding: 12px 16px 4px; }
+.talk-subtab-bar { display: flex; gap: 0; padding: 4px 16px 0; border-bottom: 1px solid #F0F1F3; }
 .talk-subtab-btn {
   flex: 1;
-  padding: 9px 0;
-  border-radius: 100px;
-  border: 1.5px solid var(--glass-border);
-  background: #FFFFFF;
-  color: var(--text-sub);
-  font-size: 13px;
-  font-weight: 800;
+  padding: 12px 0 11px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
 }
 .talk-subtab-btn--active {
-  border: 1.5px solid var(--primary);
-  background: var(--primary);
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px var(--primary-glow);
+  border-bottom: 2px solid var(--text-main);
+  background: transparent;
+  color: var(--text-main);
+  font-weight: 800;
 }
 
 /* 💪 그룹 챌린지 카드 */
@@ -4706,9 +4705,9 @@ input { font: inherit; outline: none; border: none; }
 .mylog-profile-header {
   padding: 16px;
   margin-bottom: 16px;
-  background: linear-gradient(135deg, #FAF8FF 0%, #F3E8FF 100%) !important;
-  border: 1.5px solid rgba(167, 139, 250, 0.25) !important;
-  box-shadow: 0 4px 14px rgba(167, 139, 250, 0.04), var(--shadow-sm) !important;
+  background: #FFFFFF !important;
+  border: 1px solid #F0F1F3 !important;
+  box-shadow: none !important;
 }
 .mylog-header-top {
   margin-bottom: 16px;
@@ -8222,6 +8221,13 @@ input { font: inherit; outline: none; border: none; }
   align-items: center;
   justify-content: space-between;
   padding: 12px 4px 10px;
+  position: sticky;
+  top: 0;
+  z-index: 40;
+  background: rgba(255, 255, 255, 0.78);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  margin: 0 -4px;
 }
 .feed-appbar-logo {
   font-size: 20px;
@@ -8312,3 +8318,19 @@ input { font: inherit; outline: none; border: none; }
   color: var(--text-sub);
   text-align: left;
 }
+
+
+/* 컴포저 filled 인풋 — 흰 배경에서 입력 영역이 또렷하게 (당근 검색창/인스타 댓글바 문법) */
+.quick-input {
+  flex: 1;
+  min-width: 0;
+  padding: 13px 16px;
+  border-radius: 14px;
+  border: none;
+  font-size: 14px;
+  background: #F2F3F5;
+  color: var(--text-main);
+  outline: none;
+}
+.quick-input::placeholder { color: #9AA0A8; }
+.quick-input:focus { background: #ECEEF1; box-shadow: inset 0 0 0 1.5px var(--primary-glow); }

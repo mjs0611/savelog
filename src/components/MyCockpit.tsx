@@ -425,7 +425,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
         const ydStr = `${yd.getFullYear()}-${String(yd.getMonth() + 1).padStart(2, '0')}-${String(yd.getDate()).padStart(2, '0')}`;
         const effStreak = (duo.last_both_date === today || duo.last_both_date === ydStr) ? duo.streak : 0;
         return (
-          <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left', background: 'linear-gradient(135deg, rgba(255,94,98,0.08), rgba(0,245,160,0.06))', border: '1.5px solid rgba(255,94,98,0.2)' }}>
+          <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left', background: '#FFF7F8', border: '1px solid #F0F1F3' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}><CustomIcon emoji="💞" /> 머니 듀오 · {myNick} ＋ {otherNick}</h4>
               <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 800 }}><CustomIcon emoji="🔥" /> 공동 {effStreak}일</span>
@@ -465,7 +465,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
       })() : buddyList.length > 0 ? (() => {
         const duoBuddy = buddyList.find(b => b.id === topRel?.userId) || buddyList[0];
         return (
-          <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'center', background: 'linear-gradient(135deg, rgba(255,94,98,0.07), rgba(0,245,160,0.05))', border: '1.5px solid rgba(255,94,98,0.18)' }}>
+          <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'center', background: '#FFF7F8', border: '1px solid #F0F1F3' }}>
             <div style={{ cursor: 'pointer' }} onClick={handleMakeDuo}>
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}><CustomIcon emoji="💞" /> {duoBuddy.nickname}님과 머니 듀오 맺기</p>
               <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
@@ -479,7 +479,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
           </div>
         );
       })() : (
-        <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: 'linear-gradient(135deg, rgba(255,94,98,0.05), rgba(0,245,160,0.03))', border: '1px solid rgba(255,94,98,0.14)' }}>
+        <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: '#FAFBFC', border: '1px solid #F0F1F3' }}>
           <p style={{ margin: 0, fontSize: '13px', fontWeight: 800 }}><CustomIcon emoji="💞" /> 머니 듀오란?</p>
           <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
             짝꿍과 <strong>목표·스트릭을 함께 키우는</strong> 기능이에요. 아직 짝꿍이 없다면 <strong>친구에게 초대 링크</strong>를 보내 바로 듀오를 맺거나, <strong>피드 → 팔로우 탭</strong>에서 짠친과 맞팔해 짝꿍을 만들어 보세요.

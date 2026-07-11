@@ -869,7 +869,7 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
   return (
     <div className="stats-container">
       {/* 📅 절약 Wrapped — 이번 주 결산 카드 */}
-      <div className="glass-card" style={{ background: 'linear-gradient(135deg, rgba(0,245,160,0.14) 0%, rgba(168,85,247,0.12) 100%)', border: '1.5px solid rgba(0,245,160,0.25)' }}>
+      <div className="glass-card" style={{ background: '#F6FBF8', border: '1px solid #F0F1F3' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 className="stats-card-title" style={{ margin: 0 }}>📅 이번 주 절약 Wrapped</h4>
           <div style={{ display: 'flex', gap: '6px' }}>

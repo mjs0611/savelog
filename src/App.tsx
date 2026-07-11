@@ -720,8 +720,8 @@ export default function App() {
         <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
           {/* 커뮤니티 = 짠톡방(실시간 채팅) + 게시판(주제별) 통합 */}
           <div className="talk-subtab-bar">
-            <button className={`talk-subtab-btn${talkTab === 'chat' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('chat')}>💬 짠톡방</button>
-            <button className={`talk-subtab-btn${talkTab === 'board' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('board')}>📋 게시판</button>
+            <button className={`talk-subtab-btn${talkTab === 'chat' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('chat')}>짠톡방</button>
+            <button className={`talk-subtab-btn${talkTab === 'board' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('board')}>게시판</button>
           </div>
           <div className={talkTab !== 'chat' ? 'tab-panel--hidden' : ''}>
             <ChatScreen
