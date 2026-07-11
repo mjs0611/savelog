@@ -393,9 +393,6 @@ export default function App() {
     const isMigration = !!nickname;
     return (
       <div className="app-root">
-        <div className="bg-glow-orb orb-1"></div>
-        <div className="bg-glow-orb orb-2"></div>
-        <div className="bg-glow-orb orb-3"></div>
         <div className="screen setup-screen">
           <div className="setup-hero">
             <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
@@ -690,9 +687,6 @@ export default function App() {
   // ── 메인 앱 ─────────────────────────────────────────────────────────────────
   return (
     <div className="app-root">
-      <div className="bg-glow-orb orb-1"></div>
-      <div className="bg-glow-orb orb-2"></div>
-      <div className="bg-glow-orb orb-3"></div>
       
       {/* Supabase 미설정 배너 — 개발 환경에서만 표시 */}
       {import.meta.env.DEV && !isSupabaseConfigured && (

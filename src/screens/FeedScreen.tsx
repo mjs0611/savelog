@@ -132,7 +132,7 @@ export function parseQuickRecord(text: string): SpendingItem[] {
 }
 
 
-export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, streakShields, onRecord, onQuickRecord, onQuickZeroSpend, onClaimPending, onNavigateToMyLog, onShareToChat, onShieldEarned }: Props) {
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onQuickZeroSpend, onClaimPending, onNavigateToMyLog, onShareToChat, onShieldEarned }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   // 소비 고민 글 실제 투표 집계 (seed 가짜값 대체)
   const [dilemmaVotes, setDilemmaVotes] = useState<Record<string, { over: number; ok: number; total: number }>>({});
@@ -186,17 +186,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   // ── 충동 대기방 및 소비 칼로리 관련 상태/핸들러 ──
   const [wishlist, setWishlistState] = useState(() => getWishlist());
-  // 오늘의 2스텝 미션 ②반응 — 오늘 짠친 글에 리액션/스탬프/댓글/투표를 했는가
-  const [reactedToday, setReactedToday] = useState(() => {
-    try { return localStorage.getItem('savelog_last_react_date') === getTodayStr(); } catch { return false; }
-  });
-  function markReacted() {
-    try { localStorage.setItem('savelog_last_react_date', getTodayStr()); } catch {}
-    setReactedToday(true);
-  }
 
   // 한 줄 기록 — 파싱 후 즉시 게시 (첫 글 비용: 폼 5탭 → 텍스트 1줄)
   const [quickText, setQuickText] = useState('');
+  // 스토리 레일 시트
+  const [showCircleSheet, setShowCircleSheet] = useState(false);
+  const [showBossSheet, setShowBossSheet] = useState(false);
   async function handleQuickSubmit() {
     const t = quickText.trim();
     if (!t || submitting) return;
@@ -739,7 +734,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       await handleFeedVote(e.id, verdict);
       recordInteraction(e.user_id, e.nickname || undefined);
       setRelTick(t => t + 1);
-      markReacted();
       // 투표 판정 알림 — 리액션(trust/doubt) 알림은 handleReact 안에서 공통 처리
       const verdictLabel = verdict === 'ok' ? '🌱 참아!' : '💸 사도 돼';
       sendCheerNotification(userId, e.user_id, getNickname() || '짠친', `⚖️ 회원님의 기록에 ${verdictLabel} 판정이 도착했어요!`).catch(() => {});
@@ -763,7 +757,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     if (!removing) {
       recordInteraction(entry.user_id, entry.nickname || undefined);
       setRelTick(t => t + 1);
-      markReacted();
       const s = STAMP_BY_KEY[stampKey];
       if (s && !prevKey) {
         sendCheerNotification(userId, entry.user_id, getNickname() || '짠친', `${s.emoji} "${s.label}" 스탬프가 회원님의 기록에 찍혔어요!`).catch(() => {});
@@ -787,7 +780,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     if (entry.my_reaction !== type) {
       recordInteraction(entry.user_id, entry.nickname || undefined);
       setRelTick(t => t + 1);
-      markReacted();
       if (entry.my_reaction === null) {
         const label = type === 'trust' ? '👏 짠내난다' : '🤔 진짜야?';
         sendCheerNotification(userId, entry.user_id, getNickname() || '짠친', `${label} 반응이 회원님의 기록에 도착했어요!`).catch(() => {});
@@ -916,8 +908,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       if (entry && entry.user_id !== userId) {
         recordInteraction(entry.user_id, entry.nickname || undefined);
         setRelTick(t => t + 1);
-        markReacted();
-        sendCheerNotification(userId, entry.user_id, myNick, `💬 회원님의 기록에 댓글이 달렸어요: "${text.slice(0, 40)}"`).catch(() => {});
+          sendCheerNotification(userId, entry.user_id, myNick, `💬 회원님의 기록에 댓글이 달렸어요: "${text.slice(0, 40)}"`).catch(() => {});
       }
     } else {
       // 서버 저장 실패 — optimistic 롤백 후 로컬 저장으로 유실 방지
@@ -1020,6 +1011,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       setPullState({ y: 0, refreshing: false });
     }
   }
+
+  // 오늘 실기록한 유저 셋 — 스토리 레일 링의 데이터
+  const recordedTodaySet = React.useMemo(() => {
+    const today = getTodayStr();
+    return new Set(entries.filter(e => e.date === today && !e.week_key.startsWith('social-') && !e.week_key.startsWith('milestone-')).map(e => e.user_id));
+  }, [entries]);
 
   const displayedEntries = React.useMemo(() => {
     const sorted = entries.slice().sort((a, b) =>
@@ -1550,6 +1547,65 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
 
 
+      {/* 앱바 — 로고 + 포인트 칩. 크롬은 여기까지 */}
+      <div className="feed-appbar">
+        <span className="feed-appbar-logo">savelog</span>
+        {pendingPoints > 0 ? (
+          <button className="feed-point-chip" onClick={onClaimPending} disabled={pendingClaiming} style={{ opacity: pendingClaiming ? 0.6 : 1 }}>
+            {pendingClaiming ? '광고 시청 중...' : `${pendingPoints}원 받기`}
+          </button>
+        ) : (
+          <button onClick={onNavigateToMyLog} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}>마이 ›</button>
+        )}
+      </div>
+
+      {/* 스토리 레일 — 미션·멤버 현황·보스를 아바타 링 하나의 문법으로 (지시문 0줄) */}
+      {(() => {
+        const recordedTodayFlag = daily.recorded && daily.date === getTodayStr();
+        const myPersona = getPersona();
+        const members = (myCircle?.members ?? []).filter(m => m.user_id !== userId);
+        const bossPct = weeklyBoss ? Math.max(0, Math.round((weeklyBoss.hp / weeklyBoss.max_hp) * 100)) : 0;
+        return (
+          <div className="story-rail">
+            {/* 나 — 기록 전: 점선 링(탭=기록) / 후: 채운 링(탭=룰렛) */}
+            <button className="story-item" onClick={() => { if (!recordedTodayFlag) onRecord(); else setShowRoulette(true); }}>
+              <span className={`story-avatar ${recordedTodayFlag ? 'story-ring' : 'story-ring--empty'}`}>
+                {myPersona ? <img src={PERSONAS[myPersona].icon} alt="" /> : <CustomIcon emoji="🐷" />}
+                {streak.streak > 0 && <span className="story-badge">🔥{streak.streak}</span>}
+                {recordedTodayFlag && rouletteSpins > 0 && <span className="story-badge" style={{ left: '-4px', right: 'auto', color: '#b45309' }}>🎰{rouletteSpins}</span>}
+              </span>
+              <span className="story-name">{recordedTodayFlag ? '나' : '기록하기'}</span>
+            </button>
+
+            {/* 서클 멤버 — 오늘 기록 여부가 링으로 */}
+            {members.map(m => (
+              <button key={m.user_id} className="story-item" onClick={() => setQuickMenuFriend({ id: m.user_id, nickname: m.nickname || '짠친', personaIcon: null, personaColor: 'var(--primary)' })}>
+                <span className={`story-avatar ${recordedTodaySet.has(m.user_id) ? 'story-ring' : 'story-ring--empty'}`}>
+                  {(m.nickname || '짠')[0]}
+                </span>
+                <span className="story-name">{m.nickname || '짠친'}</span>
+              </button>
+            ))}
+
+            {/* 서클 보스 or 서클 만들기 */}
+            {myCircle && weeklyBoss ? (
+              <button className="story-item" onClick={() => setShowBossSheet(true)}>
+                <span className="story-avatar story-ring--boss">
+                  <CustomIcon emoji={weeklyBoss.boss_emoji || '🐲'} />
+                  <span className="story-badge" style={{ color: '#a855f7' }}>{weeklyBoss.hp <= 0 ? '처치' : `${bossPct}%`}</span>
+                </span>
+                <span className="story-name">주간 보스</span>
+              </button>
+            ) : !myCircle && circleLoaded ? (
+              <button className="story-item" onClick={() => { userTouchedTabRef.current = true; setFeedTab('circle'); }}>
+                <span className="story-avatar story-ring--empty" style={{ color: 'var(--text-mute)' }}>＋</span>
+                <span className="story-name">서클 만들기</span>
+              </button>
+            ) : null}
+          </div>
+        );
+      })()}
+
       {/* 📝 인라인 포스트 컴포저 (기록 CTA) — 피드 최상단 */}
       <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {daily.recorded && daily.date === getTodayStr() ? (
@@ -1602,131 +1658,42 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         )}
       </div>
 
-      {/* 🔥 오늘의 내 카드 — 최상단은 "오늘 여기서 할 일" 2스텝 미션 (기록 → 반응) */}
-      <div className="glass-card" style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
-        {(() => {
-          const recordedTodayFlag = daily.recorded && daily.date === getTodayStr();
-          const missionChip = (done: boolean) => ({
-            flex: 1,
-            display: 'flex' as const,
-            alignItems: 'center' as const,
-            justifyContent: 'center' as const,
-            gap: '5px',
-            padding: '10px 8px',
-            borderRadius: '12px',
-            fontSize: '12.5px',
-            fontWeight: 800,
-            border: done ? '1px solid var(--divider)' : 'none',
-            background: done ? 'rgba(44,192,105,0.08)' : 'var(--primary)',
-            color: done ? 'var(--success)' : '#fff',
-            cursor: done ? 'default' : 'pointer',
-          });
-          return (
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => { if (!recordedTodayFlag) onRecord(); }} style={missionChip(recordedTodayFlag)}>
-                {recordedTodayFlag ? <><CustomIcon emoji="✅" /> 오늘 기록 완료</> : <><CustomIcon emoji="✍️" /> ① 오늘 기록하기</>}
-              </button>
-              <button
-                onClick={() => { if (!reactedToday) { userTouchedTabRef.current = true; setFeedTab(myCircle ? 'circle' : 'all'); } }}
-                style={missionChip(reactedToday)}
-              >
-                {reactedToday ? <><CustomIcon emoji="✅" /> 반응 완료</> : <><CustomIcon emoji="💬" /> ② 짠친에 반응하기</>}
-              </button>
-            </div>
-          );
-        })()}
-        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-          <div style={{ display: 'flex', gap: '8px', alignItems: 'center', minWidth: 0, flexWrap: 'wrap' }}>
-            <span style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-main)' }}><CustomIcon emoji="🔥" /> {streak.streak}일 연속</span>
-            {(streakShields ?? 0) > 0 && (
-              <span style={{ fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}><CustomIcon emoji="🛡️" /> {streakShields}</span>
-            )}
-            <button
-              onClick={() => setShowRoulette(true)}
-              style={rouletteSpins > 0
-                ? { display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', border: '1.5px solid rgba(245,158,11,0.45)', background: 'rgba(245,158,11,0.12)', color: '#b45309', fontWeight: 800, fontSize: '11.5px', cursor: 'pointer' }
-                : { display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', border: '1px solid var(--divider)', background: 'transparent', color: 'var(--text-mute)', fontWeight: 700, fontSize: '11.5px', cursor: 'pointer' }}
-            >
-              <CustomIcon emoji="🎰" /> 룰렛 {rouletteSpins}
-            </button>
-            {todayBattle ? (
-              <span style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', border: '1px solid rgba(255,94,98,0.35)', background: 'rgba(255,94,98,0.08)', color: '#FF5E62', fontWeight: 800, fontSize: '11.5px' }}>
-                <CustomIcon emoji="⚔️" /> 배틀 중
-              </span>
-            ) : myDuo ? (
-              <button
-                onClick={handleChallengeBattle}
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', border: '1.5px solid rgba(255,94,98,0.4)', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', fontWeight: 800, fontSize: '11.5px', cursor: 'pointer' }}
-              >
-                <CustomIcon emoji="⚔️" /> 오늘 배틀
-              </button>
-            ) : null}
-          </div>
-          {pendingPoints > 0 ? (
-            <button
-              onClick={onClaimPending}
-              disabled={pendingClaiming}
-              style={{ flexShrink: 0, padding: '7px 12px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12px', whiteSpace: 'nowrap', opacity: pendingClaiming ? 0.6 : 1 }}
-            >
-              {pendingClaiming ? '광고 시청 중...' : <><CustomIcon emoji="📺" /> {pendingPoints}원 받기</>}
-            </button>
-          ) : (
-            <button
-              onClick={onNavigateToMyLog}
-              style={{ flexShrink: 0, background: 'none', border: 'none', fontSize: '11.5px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap' }}
-            >
-              내 요정·목표 ›
-            </button>
-          )}
+      {/* 시스템 한 줄 — 넛지·정산·결정은 조용한 회색 행으로 */}
+      {duoPartnerNudge && !(daily.recorded && daily.date === getTodayStr()) && (
+        <div className="system-row">
+          <span><strong>{duoPartnerNudge}</strong>님이 오늘 기록을 마쳤어요 — 공동 불꽃이 기다려요</span>
+          <button onClick={onRecord} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>기록 ›</button>
         </div>
-
-        {/* 서브라인: 듀오 넛지 — 짝꿍은 오늘 기록 완료, 나는 아직 (호혜성 트리거) */}
-        {duoPartnerNudge && !(daily.recorded && daily.date === getTodayStr()) && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--divider)' }}>
-            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, textAlign: 'left' }}>
-              <CustomIcon emoji="💞" /> <strong>{duoPartnerNudge}</strong>님이 오늘 기록 완료 — 공동 불꽃이 기다려요!
-            </p>
-            <button onClick={onRecord} style={{ flexShrink: 0, padding: '6px 11px', borderRadius: '100px', background: '#FF5E62', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px', whiteSpace: 'nowrap' }}>
-              지금 기록
-            </button>
-          </div>
-        )}
-
-        {/* 서브라인: 어제 배틀 정산 결과 */}
-        {battleResult && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--divider)' }}>
-            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: battleResult.outcome === 'win' ? '#b45309' : 'var(--text-main)', lineHeight: 1.45, textAlign: 'left' }}>
-              {battleResult.outcome === 'win' && renderTextWithEmoji(`🏆 어제 배틀 승리! ${battleResult.oppNick}님보다 덜 썼어요 — 젤리 30개 획득`)}
-              {battleResult.outcome === 'lose' && renderTextWithEmoji(`😵 어제 배틀 패배... ${battleResult.oppNick}님이 더 아꼈어요. 오늘 설욕전 어때요?`)}
-              {battleResult.outcome === 'draw' && renderTextWithEmoji(`🤝 어제 배틀 무승부! ${battleResult.oppNick}님과 똑같이 아꼈어요`)}
-              {battleResult.outcome === 'void' && renderTextWithEmoji('💤 어제 배틀은 둘 다 기록이 없어 무효 처리됐어요')}
-            </p>
-            <button onClick={() => setBattleResult(null)} style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '14px', cursor: 'pointer' }}>✕</button>
-          </div>
-        )}
-
-        {/* 서브라인: 충동 대기 결정 — 48시간이 지난 위시만 결정 순간에 올라옴 (담기는 마이로그) */}
-        {readyWish.length > 0 && (
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--divider)' }}>
-            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, textAlign: 'left', minWidth: 0 }}>
-              <CustomIcon emoji="⏰" /> '{readyWish[0].name}' ({formatAmount(readyWish[0].price)}) — 아직도 원해요?
-            </p>
-            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
-              <button onClick={() => handleWishResolve(readyWish[0].id, false)} style={{ padding: '6px 10px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>참았어요</button>
-              <button onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ padding: '6px 10px', borderRadius: '100px', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>샀어요</button>
-            </div>
-          </div>
-        )}
-      </div>
+      )}
+      {battleResult && (
+        <div className="system-row">
+          <span>
+            {battleResult.outcome === 'win' && `어제 배틀 승리 — ${battleResult.oppNick}님보다 덜 썼어요 (젤리 +30)`}
+            {battleResult.outcome === 'lose' && `어제 배틀 패배 — ${battleResult.oppNick}님이 더 아꼈어요`}
+            {battleResult.outcome === 'draw' && `어제 배틀 무승부 — ${battleResult.oppNick}님과 동점`}
+            {battleResult.outcome === 'void' && '어제 배틀은 둘 다 기록이 없어 무효 처리됐어요'}
+          </span>
+          <button onClick={() => setBattleResult(null)} style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '13px', cursor: 'pointer' }}>✕</button>
+        </div>
+      )}
+      {readyWish.length > 0 && (
+        <div className="system-row">
+          <span>'{readyWish[0].name}' ({formatAmount(readyWish[0].price)}) — 아직도 원해요?</span>
+          <span style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
+            <button onClick={() => handleWishResolve(readyWish[0].id, false)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>참았어요</button>
+            <button onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ fontSize: '12px', fontWeight: 700, color: '#FF5E62', background: 'none', border: 'none', cursor: 'pointer' }}>샀어요</button>
+          </span>
+        </div>
+      )}
 
       {/* ⚖️ 오늘의 판정 큐 — 발견 탭 전용 (서클 안에서는 미션·피드가 반응을 유도) */}
       {feedTab === 'all' && (judgeQueue.length > 0 ? (() => {
         const e = judgeQueue[0];
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
-          <div className="glass-card" style={{ padding: '14px 16px', textAlign: 'left', border: '1.5px solid rgba(168,85,247,0.25)', background: 'linear-gradient(135deg, rgba(168,85,247,0.07), rgba(0,245,160,0.04))' }}>
+          <div className="glass-card" style={{ padding: '14px 16px', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 800 }}><CustomIcon emoji="⚖️" /> 오늘의 판정</span>
+              <span style={{ fontSize: '13px', fontWeight: 800 }}>오늘의 판정</span>
               <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>반응 기다리는 기록 {judgeQueue.length}건</span>
             </div>
             <p style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
@@ -1809,94 +1776,15 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
       {feedTab === 'circle' ? (
         myCircle ? (() => {
-          const today = getTodayStr();
-          const recordedToday = new Set(entries.filter(e => e.date === today && !e.week_key.startsWith('social-') && !e.week_key.startsWith('milestone-')).map(e => e.user_id));
-          const rows = weekRank.filter(r => circleMemberIdSet.has(r.user_id));
-          const circleScore = rows.reduce((sum, r) => sum + (r.score ?? 0), 0);
-          const circleDays = rows.reduce((sum, r) => sum + r.days, 0);
-          const circleZero = rows.filter(r => r.total === 0).length;
-          const bossDead = !!weeklyBoss && weeklyBoss.hp <= 0;
-          const bossPct = weeklyBoss ? Math.max(0, Math.round((weeklyBoss.hp / weeklyBoss.max_hp) * 100)) : 0;
           return (
             <>
-              {/* 🔒 서클 헤더 — 우리가 지킨 한 주 */}
-              <div className="glass-card" style={{ padding: '16px', textAlign: 'left', marginBottom: '16px', border: '1.5px solid var(--primary-glow)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
-                  <h3 style={{ margin: 0, fontSize: '16px', fontWeight: 800 }}>
-                    <CustomIcon emoji={myCircle.circle.emoji || '🔒'} /> {myCircle.circle.name}
-                    <span style={{ marginLeft: '6px', fontSize: '11.5px', color: 'var(--text-mute)', fontWeight: 700 }}>{myCircle.members.length}/{CIRCLE_MAX_MEMBERS}</span>
-                  </h3>
-                  <button onClick={handleShareCircleInvite} style={{ flexShrink: 0, padding: '7px 12px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>
-                    {renderTextWithEmoji('💌 초대')}
-                  </button>
-                </div>
-
-                {/* 멤버 칩 — 오늘 기록 여부가 서로에게 보인다 (호혜 압력) */}
-                <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', marginBottom: '12px' }}>
-                  {myCircle.members.map(m => (
-                    <span key={m.user_id} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '4px 10px', borderRadius: '100px', fontSize: '11.5px', fontWeight: 700, background: recordedToday.has(m.user_id) ? 'var(--primary-light)' : 'rgba(0,0,0,0.04)', color: recordedToday.has(m.user_id) ? 'var(--primary)' : 'var(--text-sub)', border: '1px solid var(--divider)' }}>
-                      {recordedToday.has(m.user_id) ? '🟢' : '⚪'} {m.user_id === userId ? '나' : (m.nickname || '짠친')}
-                    </span>
-                  ))}
-                </div>
-
-                {/* 이번 주 우리 지표 */}
-                <div style={{ display: 'flex', gap: '8px' }}>
-                  <div style={{ flex: 1, background: 'var(--primary-light)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
-                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>절약 점수</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>{circleScore.toLocaleString('ko-KR')}</p>
-                  </div>
-                  <div style={{ flex: 1, background: 'rgba(0,0,0,0.03)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
-                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>기록</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800 }}>{circleDays}일</p>
-                  </div>
-                  <div style={{ flex: 1, background: 'rgba(44,192,105,0.08)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
-                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>무지출</p>
-                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--success)' }}>{circleZero}명</p>
-                  </div>
-                </div>
-
-                <p style={{ margin: '10px 0 0', fontSize: '10.5px', color: 'var(--text-mute)' }}>
-                  초대 코드 <strong>{myCircle.circle.invite_code}</strong>
-                  {myCircle.circle.is_open && ' · 이번 주 공개 서클 (시즌제)'}
-                  <button onClick={handleLeaveCircle} style={{ marginLeft: '8px', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '10.5px', textDecoration: 'underline', cursor: 'pointer' }}>나가기</button>
-                </p>
+              {/* 서클 슬림 행 — 상세·초대는 시트로 (레일이 이미 멤버 현황을 말해줌) */}
+              <div className="system-row" style={{ borderTop: '1px solid #F0F1F3' }}>
+                <button onClick={() => setShowCircleSheet(true)} style={{ background: 'none', border: 'none', fontSize: '13px', fontWeight: 800, color: 'var(--text-main)', cursor: 'pointer', padding: 0 }}>
+                  {myCircle.circle.name} <span style={{ color: 'var(--text-mute)', fontWeight: 600 }}>{myCircle.members.length}/{CIRCLE_MAX_MEMBERS} ›</span>
+                </button>
+                <button onClick={handleShareCircleInvite} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>+ 초대</button>
               </div>
-
-              {/* 🐲 서클 주간 보스 */}
-              {weeklyBoss && (
-                <div className="glass-card" style={{ padding: '14px 16px', textAlign: 'left', marginBottom: '16px', border: bossDead ? '1.5px solid rgba(245,158,11,0.4)' : '1.5px solid rgba(168,85,247,0.22)', background: bossDead ? 'linear-gradient(135deg, rgba(245,158,11,0.1), rgba(255,222,104,0.06))' : 'linear-gradient(135deg, rgba(168,85,247,0.06), rgba(0,0,0,0.02))' }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-                    <span style={{ fontSize: '13.5px', fontWeight: 800 }}><CustomIcon emoji={weeklyBoss.boss_emoji || '🐲'} /> {weeklyBoss.boss_name}</span>
-                    <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>우리 서클의 주간 보스</span>
-                  </div>
-                  {bossDead ? (
-                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-                      <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 800, color: '#b45309' }}>{renderTextWithEmoji('🎉 처치 완료! 우리 서클의 절약이 보스를 쓰러뜨렸어요')}</p>
-                      <button
-                        onClick={handleClaimBossReward}
-                        disabled={bossRewardClaimed}
-                        style={{ flexShrink: 0, padding: '7px 12px', borderRadius: '100px', border: 'none', background: bossRewardClaimed ? 'rgba(0,0,0,0.06)' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '11.5px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}
-                      >
-                        {bossRewardClaimed ? '보상 수령 완료 ✓' : renderTextWithEmoji('🐹 젤리 50 받기')}
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '11px', fontWeight: 800, marginBottom: '4px' }}>
-                        <span style={{ color: '#a855f7' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
-                        <span style={{ color: 'var(--text-sub)' }}>{bossPct}%</span>
-                      </div>
-                      <div style={{ height: '10px', borderRadius: '100px', background: 'rgba(0,0,0,0.06)', overflow: 'hidden', marginBottom: '8px' }}>
-                        <div style={{ width: `${bossPct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, #a855f7, #FF5E62)', transition: 'width 0.5s' }} />
-                      </div>
-                      <p style={{ margin: 0, fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                        멤버의 하루 첫 기록이 공격 — {renderTextWithEmoji('🌿')} 무지출 30딜 · {renderTextWithEmoji('🛡️')} 절약 방어 20딜 · {renderTextWithEmoji('✍️')} 기록 10딜. 처치 시 <strong style={{ color: 'var(--primary)' }}>전원 젤리 50</strong>
-                      </p>
-                    </>
-                  )}
-                </div>
-              )}
 
               {/* 서클 피드 */}
               {displayedEntries.length === 0 ? (
@@ -2497,6 +2385,86 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           </div>
         </div>
       )}
+
+      {/* 🔒 서클 시트 — 지표·초대·배틀·나가기 */}
+      {showCircleSheet && myCircle && (() => {
+        const rows = weekRank.filter(r => circleMemberIdSet.has(r.user_id));
+        const circleScore = rows.reduce((sum, r) => sum + (r.score ?? 0), 0);
+        const circleDays = rows.reduce((sum, r) => sum + r.days, 0);
+        const circleZero = rows.filter(r => r.total === 0).length;
+        return (
+          <div className="modal-overlay" onClick={() => setShowCircleSheet(false)}>
+            <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+              <div style={{ padding: '20px 16px', textAlign: 'left' }}>
+                <h3 style={{ margin: '0 0 2px', fontSize: '17px', fontWeight: 800 }}>{myCircle.circle.name}</h3>
+                <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>
+                  멤버 {myCircle.members.length}/{CIRCLE_MAX_MEMBERS} · 초대 코드 <strong>{myCircle.circle.invite_code}</strong>{myCircle.circle.is_open ? ' · 이번 주 공개 서클' : ''}
+                </p>
+                <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
+                  <div style={{ flex: 1, background: '#F7F8FA', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>이번 주 절약 점수</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>{circleScore.toLocaleString('ko-KR')}</p>
+                  </div>
+                  <div style={{ flex: 1, background: '#F7F8FA', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>기록</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800 }}>{circleDays}일</p>
+                  </div>
+                  <div style={{ flex: 1, background: '#F7F8FA', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                    <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>무지출</p>
+                    <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--success)' }}>{circleZero}명</p>
+                  </div>
+                </div>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                  <button onClick={() => { setShowCircleSheet(false); handleShareCircleInvite(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '13px', cursor: 'pointer' }}>친구 초대하기</button>
+                  {todayBattle ? (
+                    <div style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#F7F8FA', color: 'var(--text-sub)', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}>오늘 배틀 진행 중 · 자정 정산</div>
+                  ) : myDuo ? (
+                    <button onClick={() => { setShowCircleSheet(false); handleChallengeBattle(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#F7F8FA', border: 'none', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>듀오 짝꿍에게 오늘 덜 쓰기 배틀 신청</button>
+                  ) : null}
+                  <button onClick={() => { setShowCircleSheet(false); handleLeaveCircle(); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: 'var(--text-mute)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>서클 나가기</button>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* 🐲 보스 시트 — 진행·규칙·보상 */}
+      {showBossSheet && weeklyBoss && (() => {
+        const dead = weeklyBoss.hp <= 0;
+        const pct = Math.max(0, Math.round((weeklyBoss.hp / weeklyBoss.max_hp) * 100));
+        return (
+          <div className="modal-overlay" onClick={() => setShowBossSheet(false)}>
+            <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+              <div style={{ padding: '20px 16px', textAlign: 'left' }}>
+                <h3 style={{ margin: '0 0 2px', fontSize: '17px', fontWeight: 800 }}><CustomIcon emoji={weeklyBoss.boss_emoji || '🐲'} /> {weeklyBoss.boss_name}</h3>
+                <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>우리 서클의 주간 보스</p>
+                {dead ? (
+                  <>
+                    <p style={{ margin: '0 0 14px', fontSize: '13.5px', fontWeight: 800, color: '#b45309' }}>처치 완료! 우리 서클의 절약이 보스를 쓰러뜨렸어요 🎉</p>
+                    <button onClick={handleClaimBossReward} disabled={bossRewardClaimed} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: bossRewardClaimed ? '#F7F8FA' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '13px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}>
+                      {bossRewardClaimed ? '보상 수령 완료 ✓' : '젤리 50개 받기'}
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, marginBottom: '4px' }}>
+                      <span style={{ color: '#a855f7' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
+                      <span style={{ color: 'var(--text-sub)' }}>{pct}%</span>
+                    </div>
+                    <div style={{ height: '10px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden', marginBottom: '12px' }}>
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: '#a855f7', transition: 'width 0.5s' }} />
+                    </div>
+                    <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
+                      멤버의 하루 첫 기록이 공격이 됩니다. 무지출 30 · 절약 방어 20 · 기록 10. 이번 주 안에 처치하면 <strong style={{ color: 'var(--primary)' }}>전원 젤리 50개</strong>.
+                    </p>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* 🎰 지갑 수비 룰렛 모달 */}
       <RouletteModal open={showRoulette} onClose={() => setShowRoulette(false)} onPrize={handleRoulettePrize} />

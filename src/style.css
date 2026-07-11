@@ -42,7 +42,7 @@
 
 body {
   font-family: 'Pretendard Variable', Pretendard, 'Outfit', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  background: #F4EFE6; /* Warm creamy latte outer background */
+  background: #FFFFFF; /* 플랫 화이트 — 크롬은 조용히, 콘텐츠가 주인공 */
   color: var(--text-main);
   min-height: 100dvh;
   line-height: 1.6;
@@ -194,17 +194,14 @@ input { font: inherit; outline: none; border: none; }
 /* ── Cozy White Card ───────────────────────────────────────────────────────── */
 
 .glass-card {
-  background: var(--card-bg);
-  border: 1.5px solid var(--glass-border);
-  border-radius: var(--radius-md);
+  background: #FFFFFF;
+  border: 1px solid #F0F1F3; /* 헤어라인 */
+  border-radius: 16px;
   padding: 10px 12px;
-  box-shadow: var(--shadow-sm);
+  box-shadow: none;
   width: 100%;
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
   position: relative;
   overflow: hidden;
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
 }
 .glass-card:hover {
   transform: translateY(-2px);
@@ -2248,28 +2245,27 @@ input { font: inherit; outline: none; border: none; }
 }
 
 /* 🗓️ 피드 탭 필터바 */
-.feed-tab-bar { display: flex; gap: 8px; margin-bottom: 12px; }
+.feed-tab-bar { display: flex; gap: 0; margin-bottom: 0; border-bottom: 1px solid #F0F1F3; }
 .feed-tab-btn {
-  padding: 6px 16px;
-  border-radius: 100px;
-  border: 1.5px solid var(--glass-border);
-  background: #FFFFFF;
-  color: var(--text-sub);
-  font-size: 12px;
-  font-weight: 800;
+  flex: 1;
+  padding: 12px 0 11px;
+  border: none;
+  border-bottom: 2px solid transparent;
+  border-radius: 0;
+  background: transparent;
+  color: var(--text-mute);
+  font-size: 14px;
+  font-weight: 700;
   cursor: pointer;
-  transition: all 0.2s;
-  box-shadow: var(--shadow-sm);
-}
-.feed-tab-btn:hover {
-  background: #F2F4F7;
-  border-color: var(--text-mute);
+  transition: color 0.15s, border-color 0.15s;
+  box-shadow: none;
 }
 .feed-tab-btn--active {
-  border: 1.5px solid var(--primary) !important;
-  background: var(--primary) !important;
-  color: #FFFFFF !important;
-  box-shadow: 0 4px 12px var(--primary-glow) !important;
+  border-bottom: 2px solid var(--text-main) !important;
+  background: transparent !important;
+  color: var(--text-main) !important;
+  box-shadow: none !important;
+  font-weight: 800;
 }
 
 /* 커뮤니티 서브탭 (짠톡방 / 게시판) */
@@ -4560,12 +4556,13 @@ input { font: inherit; outline: none; border: none; }
 
 /* Feed Composer */
 .feed-composer {
-  background: linear-gradient(135deg, #FFFFFF 0%, rgba(255, 74, 107, 0.04) 100%);
-  border: 1.5px solid rgba(255, 74, 107, 0.15);
-  border-radius: var(--radius-md);
-  padding: 16px;
-  margin-bottom: 24px;
-  box-shadow: 0 8px 24px rgba(255, 74, 107, 0.06);
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #F0F1F3;
+  border-radius: 0;
+  padding: 4px 4px 14px;
+  margin-bottom: 4px;
+  box-shadow: none;
 }
 @keyframes pulse-glow {
   0% { box-shadow: 0 0 0 0 rgba(255, 126, 141, 0.4); border-color: var(--primary); }
@@ -6350,25 +6347,16 @@ input { font: inherit; outline: none; border: none; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 14px 16px;
-  background: var(--card-bg);
-  border: 1.5px solid var(--glass-border);
-  border-radius: var(--radius-md);
-  margin-bottom: 12px;
-  box-shadow: var(--shadow-sm);
-  backdrop-filter: blur(16px) saturate(180%);
-  -webkit-backdrop-filter: blur(16px) saturate(180%);
-  transition: transform 0.22s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.2s, box-shadow 0.2s;
-}
-.feed-card-ig:hover {
-  transform: translateY(-2px);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
+  padding: 16px 4px;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid #F0F1F3; /* 헤어라인 — 포스트는 카드가 아니라 흐름 */
+  border-radius: 0;
+  margin-bottom: 0;
+  box-shadow: none;
 }
 .feed-card-ig--mine {
-  border-color: var(--primary) !important;
-  background: rgba(255, 255, 255, 0.9) !important;
-  box-shadow: 0 8px 24px var(--primary-glow) !important;
+  background: transparent;
 }
 .feed-card-ig-header {
   display: flex;
@@ -8226,3 +8214,101 @@ input { font: inherit; outline: none; border: none; }
 
 
 
+
+
+/* ── 피드 전면 개편: 앱바 + 스토리 레일 (인스타 문법) ───────────────────────── */
+.feed-appbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 4px 10px;
+}
+.feed-appbar-logo {
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.5px;
+  color: var(--text-main);
+}
+.feed-point-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 100px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+  border: none;
+  cursor: pointer;
+}
+.story-rail {
+  display: flex;
+  gap: 14px;
+  overflow-x: auto;
+  padding: 4px 4px 12px;
+  scrollbar-width: none;
+}
+.story-rail::-webkit-scrollbar { display: none; }
+.story-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  width: 58px;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+}
+.story-avatar {
+  width: 54px;
+  height: 54px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-main);
+  background: #F5F6F8;
+  position: relative;
+  box-sizing: border-box;
+}
+.story-avatar img { width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
+.story-ring { border: 2.5px solid var(--primary); }          /* 오늘 기록 완료 */
+.story-ring--empty { border: 2px dashed #D6D9DE; }           /* 아직 기록 전 */
+.story-ring--boss { border: 2.5px solid #a855f7; }
+.story-name {
+  font-size: 10.5px;
+  font-weight: 600;
+  color: var(--text-sub);
+  max-width: 58px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.story-badge {
+  position: absolute;
+  bottom: -2px;
+  right: -4px;
+  background: #fff;
+  border-radius: 100px;
+  font-size: 9.5px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border: 1px solid #F0F1F3;
+  color: #d97706;
+}
+.system-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 4px;
+  border-bottom: 1px solid #F0F1F3;
+  font-size: 12px;
+  color: var(--text-sub);
+  text-align: left;
+}
