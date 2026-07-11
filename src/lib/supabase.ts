@@ -661,19 +661,20 @@ const WEEKLY_BOSSES = [
   { name: '구독료 문어 서브스크립토', emoji: '🐙' },
 ];
 
-export async function fetchOrCreateWeeklyBoss(weekKey: string): Promise<WeeklyBoss | null> {
+// bossKey: 전역이면 weekKey, 서클 단위면 `${weekKey}__c__${circleId}` (같은 테이블 재사용)
+export async function fetchOrCreateWeeklyBoss(bossKey: string, maxHp = 1000): Promise<WeeklyBoss | null> {
   if (!supabase) return null;
   try {
-    const { data } = await supabase.from('weekly_boss').select('*').eq('week_key', weekKey).maybeSingle();
+    const { data } = await supabase.from('weekly_boss').select('*').eq('week_key', bossKey).maybeSingle();
     if (data) return data as WeeklyBoss;
-    // 주차 결정론적 보스 선택 — 어떤 클라이언트가 먼저 만들어도 같은 보스
-    const hash = weekKey.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+    // 키 결정론적 보스 선택 — 어떤 클라이언트가 먼저 만들어도 같은 보스
+    const hash = bossKey.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
     const boss = WEEKLY_BOSSES[Math.abs(hash) % WEEKLY_BOSSES.length];
-    const row = { week_key: weekKey, boss_name: boss.name, boss_emoji: boss.emoji, max_hp: 1000, hp: 1000 };
+    const row = { week_key: bossKey, boss_name: boss.name, boss_emoji: boss.emoji, max_hp: maxHp, hp: maxHp };
     const { data: created, error } = await supabase.from('weekly_boss').insert(row).select('*').single();
     if (error) {
       // 동시 생성 경합(pk 충돌) — 재조회
-      const { data: again } = await supabase.from('weekly_boss').select('*').eq('week_key', weekKey).maybeSingle();
+      const { data: again } = await supabase.from('weekly_boss').select('*').eq('week_key', bossKey).maybeSingle();
       return (again as WeeklyBoss) ?? null;
     }
     return created as WeeklyBoss;
@@ -733,6 +734,124 @@ export async function fetchMyBattle(userId: string, date: string): Promise<Battl
     return (data && data[0]) ? (data[0] as Battle) : null;
   } catch {
     return null;
+  }
+}
+
+// ── 🔒 짠 서클 — 3~8명 초대제 닫힌 방 (제품의 기본 소셜 단위) ─────────────────
+// 서클 = 사람 필터(누구의 글을 보고 누가 판정하는가). 글 자체는 공개(발견 탭) — v1은 주의 배분, 접근 제어 아님.
+export interface Circle {
+  id: string;
+  name: string;
+  emoji: string | null;
+  owner_id: string;
+  invite_code: string;
+  is_open: boolean;
+  season_week: string | null;
+}
+export interface CircleMember {
+  user_id: string;
+  nickname: string | null;
+}
+export interface MyCircle {
+  circle: Circle;
+  members: CircleMember[];
+}
+export const CIRCLE_MAX_MEMBERS = 8;
+export const OPEN_CIRCLE_MAX = 5;
+
+function genInviteCode(): string {
+  const chars = 'ABCDEFGHJKMNPQRSTUVWXYZ23456789'; // 혼동 문자(I/L/O/0/1) 제외
+  let s = '';
+  for (let i = 0; i < 6; i++) s += chars[Math.floor(Math.random() * chars.length)];
+  return s;
+}
+
+export async function fetchMyCircle(userId: string): Promise<MyCircle | null> {
+  if (!supabase || !userId) return null;
+  try {
+    const { data: mem } = await supabase.from('circle_members').select('circle_id').eq('user_id', userId).limit(1);
+    if (!mem || mem.length === 0) return null;
+    const circleId = (mem[0] as { circle_id: string }).circle_id;
+    const [{ data: c }, { data: ms }] = await Promise.all([
+      supabase.from('circles').select('*').eq('id', circleId).maybeSingle(),
+      supabase.from('circle_members').select('user_id, nickname').eq('circle_id', circleId),
+    ]);
+    if (!c) return null;
+    return { circle: c as Circle, members: (ms ?? []) as CircleMember[] };
+  } catch {
+    return null;
+  }
+}
+
+export async function createCircle(userId: string, nickname: string, name: string, emoji: string): Promise<MyCircle | null> {
+  if (!supabase) return null;
+  try {
+    const id = `circle-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    const { data: c, error } = await supabase
+      .from('circles')
+      .insert({ id, name, emoji, owner_id: userId, invite_code: genInviteCode(), is_open: false })
+      .select('*')
+      .single();
+    if (error || !c) return null;
+    await supabase.from('circle_members').insert({ id: `${id}__${userId}`, circle_id: id, user_id: userId, nickname });
+    return { circle: c as Circle, members: [{ user_id: userId, nickname }] };
+  } catch {
+    return null;
+  }
+}
+
+export async function joinCircleByCode(code: string, userId: string, nickname: string): Promise<{ ok: boolean; reason?: string; circle?: Circle }> {
+  if (!supabase) return { ok: false, reason: '서버 미설정' };
+  try {
+    const { data: c } = await supabase.from('circles').select('*').eq('invite_code', code.trim().toUpperCase()).maybeSingle();
+    if (!c) return { ok: false, reason: '초대 코드를 찾을 수 없어요' };
+    const circle = c as Circle;
+    const { data: ms } = await supabase.from('circle_members').select('user_id').eq('circle_id', circle.id);
+    const members = (ms ?? []) as { user_id: string }[];
+    if (members.some(m => m.user_id === userId)) return { ok: true, circle };
+    if (members.length >= CIRCLE_MAX_MEMBERS) return { ok: false, reason: '서클 정원(8명)이 가득 찼어요' };
+    const { error } = await supabase.from('circle_members').insert({ id: `${circle.id}__${userId}`, circle_id: circle.id, user_id: userId, nickname });
+    if (error) return { ok: false, reason: '참여에 실패했어요. 잠시 후 다시 시도해 주세요' };
+    return { ok: true, circle };
+  } catch {
+    return { ok: false, reason: '네트워크 오류' };
+  }
+}
+
+// 공개 서클 — 주 시즌제 랜덤 매칭 (콜드스타트 완화: 모르는 사람이지만 소수·고정 멤버)
+export async function joinOpenCircle(userId: string, nickname: string, weekKey: string): Promise<{ ok: boolean; circle?: Circle }> {
+  if (!supabase) return { ok: false };
+  try {
+    const { data: opens } = await supabase.from('circles').select('*').eq('is_open', true).eq('season_week', weekKey).limit(10);
+    for (const c of (opens ?? []) as Circle[]) {
+      const { data: ms } = await supabase.from('circle_members').select('user_id').eq('circle_id', c.id);
+      const members = (ms ?? []) as { user_id: string }[];
+      if (members.length < OPEN_CIRCLE_MAX && !members.some(m => m.user_id === userId)) {
+        const { error } = await supabase.from('circle_members').insert({ id: `${c.id}__${userId}`, circle_id: c.id, user_id: userId, nickname });
+        if (!error) return { ok: true, circle: c };
+      }
+    }
+    const id = `circle-open-${weekKey}-${Math.random().toString(36).slice(2, 7)}`;
+    const { data: c, error } = await supabase
+      .from('circles')
+      .insert({ id, name: '이번 주 공개 서클', emoji: '🎲', owner_id: userId, invite_code: genInviteCode(), is_open: true, season_week: weekKey })
+      .select('*')
+      .single();
+    if (error || !c) return { ok: false };
+    await supabase.from('circle_members').insert({ id: `${id}__${userId}`, circle_id: id, user_id: userId, nickname });
+    return { ok: true, circle: c as Circle };
+  } catch {
+    return { ok: false };
+  }
+}
+
+export async function leaveCircle(circleId: string, userId: string): Promise<boolean> {
+  if (!supabase) return false;
+  try {
+    const { error } = await supabase.from('circle_members').delete().eq('circle_id', circleId).eq('user_id', userId);
+    return !error;
+  } catch {
+    return false;
   }
 }
 

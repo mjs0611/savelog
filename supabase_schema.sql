@@ -283,3 +283,39 @@ create index if not exists idx_battles_date on battles (date);
 alter table battles enable row level security;
 create policy "Anyone can read battles"   on battles for select using (true);
 create policy "Anyone can insert battles" on battles for insert with check (true);
+
+-- ── circles / circle_members (짠 서클: 3~8명 초대제 닫힌 방 — 제품 기본 소셜 단위) ──
+create table if not exists circles (
+  id          text primary key,
+  name        text not null,
+  emoji       text,
+  owner_id    text not null,
+  invite_code text unique not null,
+  is_open     boolean default false, -- 공개 서클(주 시즌제 랜덤 매칭)
+  season_week text,
+  created_at  timestamptz default now()
+);
+create index if not exists idx_circles_invite on circles (invite_code);
+create index if not exists idx_circles_open on circles (is_open, season_week);
+alter table circles enable row level security;
+drop policy if exists "Anyone can read circles" on circles;
+create policy "Anyone can read circles"   on circles for select using (true);
+drop policy if exists "Anyone can insert circles" on circles;
+create policy "Anyone can insert circles" on circles for insert with check (true);
+
+create table if not exists circle_members (
+  id        text primary key, -- '{circle_id}__{user_id}'
+  circle_id text not null,
+  user_id   text not null,
+  nickname  text,
+  joined_at timestamptz default now()
+);
+create index if not exists idx_circle_members_circle on circle_members (circle_id);
+create index if not exists idx_circle_members_user on circle_members (user_id);
+alter table circle_members enable row level security;
+drop policy if exists "Anyone can read circle_members" on circle_members;
+create policy "Anyone can read circle_members"   on circle_members for select using (true);
+drop policy if exists "Anyone can insert circle_members" on circle_members;
+create policy "Anyone can insert circle_members" on circle_members for insert with check (true);
+drop policy if exists "Anyone can delete circle_members" on circle_members;
+create policy "Anyone can delete circle_members" on circle_members for delete using (true);

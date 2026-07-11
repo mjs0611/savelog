@@ -74,6 +74,15 @@ export function buildRoomInviteMessage(roomName: string, code: string): string {
   ].join('\n');
 }
 
+export function buildCircleInviteMessage(myNickname: string, circleName: string, code: string): string {
+  return [
+    `🔒 ${myNickname}님이 짠 서클 「${circleName}」에 초대했어요!`,
+    `우리끼리만 보는 소비 기록 방 — 광장 말고, 거지방처럼 솔직하게 💸`,
+    `초대 코드: ${code}`,
+    `아래 링크로 바로 합류 👇`,
+  ].join('\n');
+}
+
 export function buildDuoInviteMessage(myNickname: string): string {
   return [
     `💞 ${myNickname}님이 머니 듀오를 신청했어요!`,

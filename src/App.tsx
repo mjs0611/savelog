@@ -41,11 +41,10 @@ import {
   resolveSkeleton,
   getZeigarnikSkeletons,
   reduceBudgetEntropy,
-  getBudgetEntropy,
 } from './lib/storage';
 import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
-import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, type SpendingItem, type WeekRankRow } from './lib/supabase';
+import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
@@ -68,9 +67,13 @@ try {
   const bootParams = new URLSearchParams(window.location.search);
   const bootRoom = bootParams.get('room');
   const bootDuo = bootParams.get('duo');
-  const bootInviter = bootParams.get('by'); // 톡방 초대자 — 자동 맞팔(짝꿍) 대상
+  const bootCircle = bootParams.get('circle'); // 짠 서클 초대 코드
+  const bootInviter = bootParams.get('by'); // 초대자 — 자동 맞팔(짝꿍) 대상
   if (bootRoom) {
     localStorage.setItem('savelog_pending_room', JSON.stringify({ code: bootRoom, name: bootParams.get('rn') || '' }));
+  }
+  if (bootCircle) {
+    localStorage.setItem('savelog_pending_circle', bootCircle);
   }
   if (bootDuo) {
     localStorage.setItem('savelog_pending_duo', JSON.stringify({ id: bootDuo, nick: bootParams.get('dn') || '' }));
@@ -78,7 +81,7 @@ try {
     // 초대 링크로 들어온 유저는 초대자와 자동 맞팔 (그래프 시딩) — duo는 수락 플로우에서 함께 처리
     localStorage.setItem('savelog_pending_mutual', JSON.stringify({ id: bootInviter, nick: bootParams.get('bn') || '' }));
   }
-  if (bootRoom || bootDuo) {
+  if (bootRoom || bootDuo || bootCircle) {
     // 재실행 시 중복 트리거 방지를 위해 주소에서 파라미터 제거
     window.history.replaceState(null, '', window.location.pathname);
   }
@@ -264,6 +267,23 @@ export default function App() {
       const { id, nick } = JSON.parse(raw);
       applyMutualFollow(id, nick, true);
     } catch { /* 파싱 실패 무시 */ }
+  }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
+
+  // 서클 초대 링크(?circle=코드) — 온보딩 완료 후 자동 합류
+  useEffect(() => {
+    if (!nickname || !intentTrigger) return;
+    if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
+    const code = localStorage.getItem('savelog_pending_circle');
+    if (!code) return;
+    localStorage.removeItem('savelog_pending_circle');
+    joinCircleByCode(code, userId, nickname).then(res => {
+      if (res.ok && res.circle) {
+        showToast(`🔒 서클 「${res.circle.name}」에 합류했어요!`);
+        setFeedRefreshToken(t => t + 1);
+      } else if (res.reason) {
+        showToast(`서클 합류 실패: ${res.reason}`);
+      }
+    }).catch(() => {});
   }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
 
   function navigateTo(next: Tab) {
@@ -635,20 +655,14 @@ export default function App() {
         let jellyReward = 10;
         if (total === 0) jellyReward += 10;
         if (missionCleared) jellyReward += 15;
-        
-        const currentEntropy = getBudgetEntropy();
-        const entropyDecay = currentEntropy > 70;
-        if (entropyDecay) {
-          jellyReward = Math.round(jellyReward * 0.5);
-        }
         addJelly(jellyReward);
 
-        // 안 쓴 돈(잠재에너지)을 목표 게이지로 충전 — 하루 예산 대비 아낀 만큼 + 명시적 절약 방어액
+        // 안 쓴 돈을 목표 게이지로 충전 — 하루 예산 대비 아낀 만큼 + 명시적 절약 방어액
+        // (구 엔트로피 50% 감쇄 페널티는 제거 — 보이지 않는 메커니즘으로 벌주지 않는다. 개념 다이어트)
         const dailyBudget = Math.round(getWeeklyBudget() / 7);
         const savedFromBudget = Math.max(0, dailyBudget - total);
         const savedFromDefense = items.reduce((s, it) => s + (it.saved_amount ?? 0), 0);
-        const finalChargeInput = entropyDecay ? Math.round((savedFromBudget + savedFromDefense) * 0.5) : (savedFromBudget + savedFromDefense);
-        const chargedToGoal = addToGoal(finalChargeInput);
+        const chargedToGoal = addToGoal(savedFromBudget + savedFromDefense);
 
         // 머니 듀오 공동 목표에도 기여 + 공동 스트릭 갱신 (활성 듀오가 있을 때만)
         contributeToDuo(userId, savedFromBudget + savedFromDefense, today).catch(() => {});
@@ -657,15 +671,18 @@ export default function App() {
         const spinsEarned = total === 0 ? 2 : 1;
         addRouletteSpins(spinsEarned);
 
-        // 🐲 주간 공동 보스 공격 — 하루 첫 기록만 유효 (도배 방지). 무지출 30 / 절약방어 20 / 기록 10
-        const bossDamage = total === 0 ? 30 : items.some(it => it.category === '절약 방어') ? 20 : 10;
-        attackWeeklyBoss(weekKey, bossDamage).catch(() => {});
+        // 🐲 서클 주간 보스 공격 — 하루 첫 기록만 유효 (도배 방지). 무지출 30 / 절약방어 20 / 기록 10
+        // 보스는 서클 단위 이벤트 (FeedScreen이 서클 로드 시 circle_id를 localStorage에 동기화)
+        const bossCircleId = localStorage.getItem('savelog_circle_id');
+        if (bossCircleId) {
+          const bossDamage = total === 0 ? 30 : items.some(it => it.category === '절약 방어') ? 20 : 10;
+          attackWeeklyBoss(`${weekKey}__c__${bossCircleId}`, bossDamage).catch(() => {});
+        }
 
         const goalMsg = chargedToGoal > 0 ? ` · 🎯 목표에 ${formatAmount(chargedToGoal)} 충전` : '';
-        const decayAlert = entropyDecay ? ' (⚠️엔트로피 50% 감쇄)' : '';
         const toastMsg = actualEarned > 0
-          ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기) · +${jellyReward} 젤리${decayAlert} · 🎰 룰렛권 +${spinsEarned}${goalMsg}`
-          : `✅ 기록 완료! · +${jellyReward} 젤리${decayAlert} · 🎰 룰렛권 +${spinsEarned}${goalMsg}`;
+          ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기) · +${jellyReward} 젤리 · 🎰 룰렛권 +${spinsEarned}${goalMsg}`
+          : `✅ 기록 완료! · +${jellyReward} 젤리 · 🎰 룰렛권 +${spinsEarned}${goalMsg}`;
         showToast(toastMsg);
       } else {
         showToast('✅ 추가 기록 완료!');
