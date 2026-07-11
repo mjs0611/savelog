@@ -26,6 +26,12 @@ import {
   getRestoringAdjustment,
   getFollowedUsers,
   getNickname,
+  getWishlist,
+  addWishlistItem,
+  resolveWishlistItem,
+  isWishlistItemReady,
+  addToGoal,
+  addJelly,
   type DailyState,
   type StreakData,
 } from '../lib/storage';
@@ -108,6 +114,26 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
   const [duoGoalTarget, setDuoGoalTarget] = useState('');
   // ❓ 사용법 가이드 — 첫 실행 자동 안내는 App.tsx에서 처리 (숨겨진 탭 패널 안에서 열리면 안 보이므로)
   const [showGuide, setShowGuide] = useState(false);
+  // 🛒 충동 대기방 — 담기·대기 목록은 마이로그가 집 (피드는 48h 결정 순간만 노출)
+  const [wishlist, setWishlist] = useState(() => getWishlist());
+  const [wishName, setWishName] = useState('');
+  const [wishPrice, setWishPrice] = useState('');
+  const handleAddWish = () => {
+    const price = parseInt(wishPrice.replace(/[^0-9]/g, ''), 10);
+    if (!wishName.trim() || !price || price <= 0) return;
+    setWishlist(addWishlistItem(wishName.trim(), price));
+    setWishName(''); setWishPrice('');
+    showToast('🛒 48시간 뒤 다시 물어볼게요. 그때도 원하면 그때 사요!');
+  };
+  const handleWishResolve = (id: string, bought: boolean) => {
+    const item = wishlist.find(w => w.id === id);
+    setWishlist(resolveWishlistItem(id, bought));
+    if (!bought && item) {
+      addToGoal(item.price);
+      addJelly(15);
+      showToast(`👏 충동을 이겨냈어요! 목표에 ${formatAmount(item.price)} 충전 · +15 젤리`);
+    }
+  };
   const [toast, setToast] = useState<string | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const showToast = (msg: string) => {
@@ -339,6 +365,33 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
           <button className="pet-shop-btn" style={{ background: 'var(--primary)', border: 'none', borderRadius: '12px', color: '#ffffff', padding: '7px 14px', fontSize: '12px', fontWeight: 800, cursor: 'pointer', zIndex: 20, boxShadow: '0 2px 8px var(--primary-glow)' }} onClick={(e) => { e.stopPropagation(); setShowShopModal(true); }}>
             꾸미기 <CustomIcon emoji="🎩" />
           </button>
+        </div>
+      </div>
+
+      {/* 🛒 충동 대기방 — 사고 싶은 걸 담아두면 48시간 뒤 피드에서 다시 물어봐요 */}
+      <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+          <span style={{ fontSize: '13px', fontWeight: 800 }}><CustomIcon emoji="🛒" /> 충동 대기방</span>
+          <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>48시간 참으면 목표 충전 +15젤리</span>
+        </div>
+        {wishlist.filter(isWishlistItemReady).map(it => (
+          <div key={it.id} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(245,158,11,0.08)' }}>
+            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, minWidth: 0 }}><CustomIcon emoji="⏰" /> '{it.name}' — 아직도 원해요?</p>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <button onClick={() => handleWishResolve(it.id, false)} style={{ padding: '5px 9px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11px' }}>참았어요</button>
+              <button onClick={() => handleWishResolve(it.id, true)} style={{ padding: '5px 9px', borderRadius: '100px', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '11px' }}>샀어요</button>
+            </div>
+          </div>
+        ))}
+        {wishlist.filter(w => !isWishlistItemReady(w)).length > 0 && (
+          <p style={{ margin: '0 0 8px', fontSize: '11.5px', color: 'var(--text-sub)' }}>
+            <CustomIcon emoji="⏳" /> 대기 중 {wishlist.filter(w => !isWishlistItemReady(w)).length}건 — 시간이 되면 피드에서 물어볼게요
+          </p>
+        )}
+        <div style={{ display: 'flex', gap: '6px' }}>
+          <input value={wishName} onChange={e => setWishName(e.target.value)} maxLength={20} placeholder="사고 싶은 것" style={{ flex: 2, minWidth: 0, padding: '9px 10px', borderRadius: '10px', border: '1px solid var(--divider)', fontSize: '12px', background: 'rgba(255,255,255,0.7)' }} />
+          <input value={wishPrice} onChange={e => setWishPrice(e.target.value)} inputMode="numeric" placeholder="가격" style={{ flex: 1, minWidth: 0, padding: '9px 10px', borderRadius: '10px', border: '1px solid var(--divider)', fontSize: '12px', background: 'rgba(255,255,255,0.7)' }} />
+          <button onClick={handleAddWish} style={{ flexShrink: 0, padding: '8px 14px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12px' }}>담기</button>
         </div>
       </div>
 

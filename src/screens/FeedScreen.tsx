@@ -22,7 +22,6 @@ import {
   addToGoal,
   addJelly,
   getWishlist,
-  addWishlistItem,
   resolveWishlistItem,
   isWishlistItemReady,
   getRouletteSpins
@@ -131,7 +130,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
   // 팔로우 / 탭 필터
-  const [feedTab, setFeedTab] = useState<'circle' | 'all' | 'follow'>('all');
+  const [feedTab, setFeedTab] = useState<'circle' | 'all' | 'follow'>('circle'); // 서클이 홈 — 없어도 온보딩이 첫 화면
   const [followedUsers, setFollowedUsers] = useState<Record<string, string>>(() => getFollowedUsers());
   // 절약 짝꿍 = 상호 팔로우(내가 팔로우 ∩ 나를 팔로우). 관계 moat 핵심
   const [mutualSet, setMutualSet] = useState<Set<string>>(new Set());
@@ -158,8 +157,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   // ── 충동 대기방 및 소비 칼로리 관련 상태/핸들러 ──
   const [wishlist, setWishlistState] = useState(() => getWishlist());
-  const [wishName, setWishName] = useState('');
-  const [wishPrice, setWishPrice] = useState('');
+  // 오늘의 2스텝 미션 ②반응 — 오늘 짠친 글에 리액션/스탬프/댓글/투표를 했는가
+  const [reactedToday, setReactedToday] = useState(() => {
+    try { return localStorage.getItem('savelog_last_react_date') === getTodayStr(); } catch { return false; }
+  });
+  function markReacted() {
+    try { localStorage.setItem('savelog_last_react_date', getTodayStr()); } catch {}
+    setReactedToday(true);
+  }
   // ── 팔로우/소셜 고도화 관련 상태 ──
   const [followedPersonas, setFollowedPersonas] = useState<Record<string, string>>({});
   const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
@@ -181,6 +186,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     }
   }, [followedUsers]);
 
+  useEffect(() => { setWishlistState(getWishlist()); }, [refreshToken]);
   const readyWish = wishlist.filter(isWishlistItemReady);
   const handleWishResolve = (id: string, bought: boolean) => {
     const item = wishlist.find(w => w.id === id);
@@ -193,14 +199,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         : '👏 충동을 이겨냈어요! +15 젤리');
     }
   };
-  const handleAddWish = () => {
-    const p = parseInt(wishPrice.replace(/[^0-9]/g, ''), 10);
-    if (!wishName.trim() || !p || p <= 0) return;
-    setWishlistState(addWishlistItem(wishName.trim(), p));
-    setWishName(''); setWishPrice('');
-    showFeedToast('🛒 48시간 뒤 다시 물어볼게요. 그때도 원하면 그때 사요!');
-  };
-
   // 검색
   const [searchQuery, setSearchQuery] = useState('');
   const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
@@ -490,7 +488,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [circleNameInput, setCircleNameInput] = useState('');
   const [circleJoinInput, setCircleJoinInput] = useState('');
   const [circleBusy, setCircleBusy] = useState(false);
-  const circleAutoSwitchedRef = React.useRef(false);
   const userTouchedTabRef = React.useRef(false);
 
   useEffect(() => {
@@ -499,11 +496,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       setCircleLoaded(true);
       // App.tsx의 보스 공격 훅이 참조 (서클 단위 보스)
       try { localStorage.setItem('savelog_circle_id', res ? res.circle.id : ''); } catch {}
-      // 서클 보유자는 서클 탭이 기본 — 유저가 탭을 만지기 전 1회만 자동 전환
-      if (res && !circleAutoSwitchedRef.current && !userTouchedTabRef.current) {
-        circleAutoSwitchedRef.current = true;
-        setFeedTab('circle');
-      }
     }).catch(() => setCircleLoaded(true));
   }, [userId, refreshToken]);
 
@@ -708,6 +700,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       await handleFeedVote(e.id, verdict);
       recordInteraction(e.user_id, e.nickname || undefined);
       setRelTick(t => t + 1);
+      markReacted();
       // 투표 판정 알림 — 리액션(trust/doubt) 알림은 handleReact 안에서 공통 처리
       const verdictLabel = verdict === 'ok' ? '🌱 참아!' : '💸 사도 돼';
       sendCheerNotification(userId, e.user_id, getNickname() || '짠친', `⚖️ 회원님의 기록에 ${verdictLabel} 판정이 도착했어요!`).catch(() => {});
@@ -731,6 +724,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     if (!removing) {
       recordInteraction(entry.user_id, entry.nickname || undefined);
       setRelTick(t => t + 1);
+      markReacted();
       const s = STAMP_BY_KEY[stampKey];
       if (s && !prevKey) {
         sendCheerNotification(userId, entry.user_id, getNickname() || '짠친', `${s.emoji} "${s.label}" 스탬프가 회원님의 기록에 찍혔어요!`).catch(() => {});
@@ -754,6 +748,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     if (entry.my_reaction !== type) {
       recordInteraction(entry.user_id, entry.nickname || undefined);
       setRelTick(t => t + 1);
+      markReacted();
       if (entry.my_reaction === null) {
         const label = type === 'trust' ? '👏 짠내난다' : '🤔 진짜야?';
         sendCheerNotification(userId, entry.user_id, getNickname() || '짠친', `${label} 반응이 회원님의 기록에 도착했어요!`).catch(() => {});
@@ -882,6 +877,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       if (entry && entry.user_id !== userId) {
         recordInteraction(entry.user_id, entry.nickname || undefined);
         setRelTick(t => t + 1);
+        markReacted();
         sendCheerNotification(userId, entry.user_id, myNick, `💬 회원님의 기록에 댓글이 달렸어요: "${text.slice(0, 40)}"`).catch(() => {});
       }
     } else {
@@ -1552,8 +1548,39 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         )}
       </div>
 
-      {/* 🔥 오늘의 내 카드 — 스트릭·룰렛·배틀·듀오·포인트를 한 장으로 (상단 위계 단일화) */}
-      <div className="glass-card" style={{ padding: '10px 14px', display: 'flex', flexDirection: 'column', gap: '8px' }}>
+      {/* 🔥 오늘의 내 카드 — 최상단은 "오늘 여기서 할 일" 2스텝 미션 (기록 → 반응) */}
+      <div className="glass-card" style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column', gap: '9px' }}>
+        {(() => {
+          const recordedTodayFlag = daily.recorded && daily.date === getTodayStr();
+          const missionChip = (done: boolean) => ({
+            flex: 1,
+            display: 'flex' as const,
+            alignItems: 'center' as const,
+            justifyContent: 'center' as const,
+            gap: '5px',
+            padding: '10px 8px',
+            borderRadius: '12px',
+            fontSize: '12.5px',
+            fontWeight: 800,
+            border: done ? '1px solid var(--divider)' : 'none',
+            background: done ? 'rgba(44,192,105,0.08)' : 'var(--primary)',
+            color: done ? 'var(--success)' : '#fff',
+            cursor: done ? 'default' : 'pointer',
+          });
+          return (
+            <div style={{ display: 'flex', gap: '8px' }}>
+              <button onClick={() => { if (!recordedTodayFlag) onRecord(); }} style={missionChip(recordedTodayFlag)}>
+                {recordedTodayFlag ? <><CustomIcon emoji="✅" /> 오늘 기록 완료</> : <><CustomIcon emoji="✍️" /> ① 오늘 기록하기</>}
+              </button>
+              <button
+                onClick={() => { if (!reactedToday) { userTouchedTabRef.current = true; setFeedTab(myCircle ? 'circle' : 'all'); } }}
+                style={missionChip(reactedToday)}
+              >
+                {reactedToday ? <><CustomIcon emoji="✅" /> 반응 완료</> : <><CustomIcon emoji="💬" /> ② 짠친에 반응하기</>}
+              </button>
+            </div>
+          );
+        })()}
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
           <div style={{ display: 'flex', gap: '8px', alignItems: 'center', minWidth: 0, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '12.5px', fontWeight: 800, color: 'var(--text-main)' }}><CustomIcon emoji="🔥" /> {streak.streak}일 연속</span>
@@ -1623,10 +1650,23 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             <button onClick={() => setBattleResult(null)} style={{ flexShrink: 0, background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '14px', cursor: 'pointer' }}>✕</button>
           </div>
         )}
+
+        {/* 서브라인: 충동 대기 결정 — 48시간이 지난 위시만 결정 순간에 올라옴 (담기는 마이로그) */}
+        {readyWish.length > 0 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', paddingTop: '8px', borderTop: '1px solid var(--divider)' }}>
+            <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, textAlign: 'left', minWidth: 0 }}>
+              <CustomIcon emoji="⏰" /> '{readyWish[0].name}' ({formatAmount(readyWish[0].price)}) — 아직도 원해요?
+            </p>
+            <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
+              <button onClick={() => handleWishResolve(readyWish[0].id, false)} style={{ padding: '6px 10px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>참았어요</button>
+              <button onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ padding: '6px 10px', borderRadius: '100px', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>샀어요</button>
+            </div>
+          </div>
+        )}
       </div>
 
-      {/* ⚖️ 오늘의 판정 큐 — 아직 반응 없는 짠친 기록에 원탭 판정 (반응 보장 루프) */}
-      {judgeQueue.length > 0 ? (() => {
+      {/* ⚖️ 오늘의 판정 큐 — 발견 탭 전용 (서클 안에서는 미션·피드가 반응을 유도) */}
+      {feedTab === 'all' && (judgeQueue.length > 0 ? (() => {
         const e = judgeQueue[0];
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
@@ -1658,36 +1698,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         <div className="glass-card" style={{ padding: '12px 16px', textAlign: 'left' }}>
           <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 800, color: 'var(--primary)' }}><CustomIcon emoji="🎉" /> 오늘의 판정 완료! 짠친 {judgedCount}명에게 반응이 전달됐어요</p>
         </div>
-      ) : null}
-
-      {/* 🛒 충동 대기방 — 담아두면 48시간 뒤 다시 물어봐요. 참으면 목표 충전 (지킨 돈과 직결) */}
-      <div className="glass-card" style={{ padding: '14px 16px', textAlign: 'left' }}>
-        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-          <span style={{ fontSize: '13px', fontWeight: 800 }}><CustomIcon emoji="🛒" /> 충동 대기방</span>
-          <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>48시간 참으면 목표 충전</span>
-        </div>
-        {readyWish.map(it => (
-          <div key={it.id} style={{ marginBottom: '10px', padding: '10px', borderRadius: '12px', background: 'rgba(245,158,11,0.08)', border: '1px solid rgba(245,158,11,0.25)' }}>
-            <p style={{ margin: '0 0 8px', fontSize: '12.5px', fontWeight: 800 }}><CustomIcon emoji="⏰" /> '{it.name}' ({formatAmount(it.price)}) — 아직도 원해요?</p>
-            <div style={{ display: 'flex', gap: '8px' }}>
-              <button onClick={() => handleWishResolve(it.id, false)} style={{ flex: 1, padding: '8px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>{renderTextWithEmoji('👏 참았어요')}</button>
-              <button onClick={() => handleWishResolve(it.id, true)} style={{ flex: 1, padding: '8px', borderRadius: '10px', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '11.5px' }}>{renderTextWithEmoji('💸 샀어요')}</button>
-            </div>
-          </div>
-        ))}
-        {wishlist.filter(w => !isWishlistItemReady(w)).length > 0 && (
-          <p style={{ margin: '0 0 8px', fontSize: '11.5px', color: 'var(--text-sub)' }}>
-            <CustomIcon emoji="⏳" /> 대기 중 {wishlist.filter(w => !isWishlistItemReady(w)).length}건 — 시간이 되면 다시 물어볼게요
-          </p>
-        )}
-        <div style={{ display: 'flex', gap: '6px' }}>
-          <input value={wishName} onChange={e => setWishName(e.target.value)} maxLength={20} placeholder="사고 싶은 것" style={{ flex: 2, minWidth: 0, padding: '9px 10px', borderRadius: '10px', border: '1px solid var(--divider)', fontSize: '12px', background: 'rgba(255,255,255,0.7)' }} />
-          <input value={wishPrice} onChange={e => setWishPrice(e.target.value)} inputMode="numeric" placeholder="가격" style={{ flex: 1, minWidth: 0, padding: '9px 10px', borderRadius: '10px', border: '1px solid var(--divider)', fontSize: '12px', background: 'rgba(255,255,255,0.7)' }} />
-          <button onClick={handleAddWish} style={{ flexShrink: 0, padding: '8px 14px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12px' }}>담기</button>
-        </div>
-      </div>
-
-      {/* 컴포저·코쿼핏은 상단(대시보드 위)으로 이동했습니다 */}
+      ) : null)}
 
       {/* 탭 필터: 전체 / 팔로우 / 절약 그룹 */}
       <div className="feed-tab-bar">
@@ -1852,7 +1863,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             </>
           );
         })() : (
-          /* 서클 없음 — 온보딩 (콜드스타트: 만들기 / 코드 참여 / 공개 서클 랜덤 매칭) */
+          /* 서클 없음 — 온보딩 (콜드스타트: 만들기 / 코드 참여 / 공개 서클 랜덤 매칭) + 발견 미리보기 */
+          <>
           <div className="glass-card" style={{ padding: '18px 16px', textAlign: 'left', marginBottom: '16px' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800 }}>{renderTextWithEmoji('🔒 짠 서클')}</h3>
             <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.55 }}>
@@ -1883,6 +1895,25 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </div>
             )}
           </div>
+
+          {/* 발견 미리보기 — 서클 만들기 전에도 화면이 비지 않게 */}
+          {entries.length > 0 && (
+            <>
+              <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', textAlign: 'left' }}><CustomIcon emoji="🌍" /> 지금 발견에서는</p>
+              <div className="feed-list">
+                {entries.slice(0, 3).map(entry => (
+                  <React.Fragment key={entry.id}>{renderFeedCard(entry)}</React.Fragment>
+                ))}
+              </div>
+              <button
+                onClick={() => { userTouchedTabRef.current = true; setFeedTab('all'); }}
+                style={{ width: '100%', padding: '11px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer', fontSize: '12.5px', marginBottom: '16px' }}
+              >
+                발견 피드 더 보기 ›
+              </button>
+            </>
+          )}
+          </>
         )
       ) : (
         /* 일반 피드 (전체 & 팔로우 탭) */
