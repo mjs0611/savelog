@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, submitEntry, fetchBalanceGameEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, type BalanceEntry, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, submitEntry, fetchBalanceGameEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, type BalanceEntry, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
 import { shareExternal, buildCircleInviteMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
@@ -84,6 +84,7 @@ interface Props {
   pendingClaiming?: boolean;
   streakShields?: number;
   onRecord: () => void;
+  onQuickRecord: (items: SpendingItem[]) => Promise<void>;
   onQuickZeroSpend: () => void;
   onClaimPending: () => void;
   onNavigateToMyLog?: () => void;
@@ -92,18 +93,46 @@ interface Props {
 }
 
 
-// 매일 바뀌는 컴포저 프롬프트 — 글 쓸 계기를 다양화 (같은 질문 반복 → 무감각 방지)
-const DAILY_PROMPTS = [
-  '오늘 어떤 하루였어요?',
-  '오늘 참은 소비가 하나 있다면? 🌱',
-  '오늘 가장 만족스러운 지출은? ✨',
-  '충동구매 위기는 없었어요? ⚡',
-  '오늘 지갑 수비, 성공했어요? 🛡️',
-  '안 사길 잘했다 싶은 게 있어요? 😌',
-  '오늘 아낀 돈으로 뭘 하고 싶어요? 🎯',
+// ── 한 줄 기록 파서 — 거지방식 "커피 4500" 입력을 기록으로 (진입 마찰 최소화) ──
+const QUICK_CATEGORY_RULES: { re: RegExp; category: string; emoji: string }[] = [
+  { re: /커피|카페|라떼|스벅|스타벅스|아메리카노|음료|버블티|주스/, category: '카페', emoji: '☕' },
+  { re: /밥|점심|저녁|아침|식사|국밥|치킨|피자|버거|배달|야식|간식|빵|편의점|김밥|라면|샐러드|도시락/, category: '식비', emoji: '🍚' },
+  { re: /버스|지하철|택시|기차|주유|교통|톨비|주차/, category: '교통', emoji: '🚇' },
+  { re: /쇼핑|옷|신발|쿠팡|무신사|화장품|올리브영|악세|가방/, category: '쇼핑', emoji: '🛍️' },
 ];
 
-export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, pendingClaiming, streakShields, onRecord, onQuickZeroSpend, onClaimPending, onNavigateToMyLog, onShareToChat, onShieldEarned }: Props) {
+export function parseQuickRecord(text: string): SpendingItem[] {
+  const t = text.trim();
+  // 마지막 금액 토큰 추출 (4500 / 4,500 / 4500원 / 1만원 / 3천원)
+  const matches = [...t.matchAll(/([0-9][\d,\.]*)\s*(만원|천원|원)?/g)].filter(m => m[1]);
+  let amount = 0;
+  let amountToken = '';
+  if (matches.length > 0) {
+    const m = matches[matches.length - 1];
+    const num = parseFloat(m[1].replace(/,/g, ''));
+    const unit = m[2] === '만원' ? 10000 : m[2] === '천원' ? 1000 : 1;
+    if (!isNaN(num) && num > 0) {
+      amount = Math.round(num * unit);
+      amountToken = m[0];
+    }
+  }
+  const comment = (amountToken ? t.replace(amountToken, '') : t).replace(/\s+/g, ' ').trim();
+
+  if (amount <= 0) {
+    // 금액 없는 한 줄 = 오늘의 무지출 한마디
+    return [{ category: '한마디', emoji: '💬', amount: 0, comment: comment || '오늘도 지갑 수비 성공' }];
+  }
+  const rule = QUICK_CATEGORY_RULES.find(r => r.re.test(comment || t));
+  return [{
+    category: rule?.category ?? '기타',
+    emoji: rule?.emoji ?? '📦',
+    amount,
+    comment: comment || (rule?.category ?? '오늘의 지출'),
+  }];
+}
+
+
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, streakShields, onRecord, onQuickRecord, onQuickZeroSpend, onClaimPending, onNavigateToMyLog, onShareToChat, onShieldEarned }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   // 소비 고민 글 실제 투표 집계 (seed 가짜값 대체)
   const [dilemmaVotes, setDilemmaVotes] = useState<Record<string, { over: number; ok: number; total: number }>>({});
@@ -164,6 +193,16 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   function markReacted() {
     try { localStorage.setItem('savelog_last_react_date', getTodayStr()); } catch {}
     setReactedToday(true);
+  }
+
+  // 한 줄 기록 — 파싱 후 즉시 게시 (첫 글 비용: 폼 5탭 → 텍스트 1줄)
+  const [quickText, setQuickText] = useState('');
+  async function handleQuickSubmit() {
+    const t = quickText.trim();
+    if (!t || submitting) return;
+    const items = parseQuickRecord(t);
+    setQuickText('');
+    await onQuickRecord(items);
   }
   // ── 팔로우/소셜 고도화 관련 상태 ──
   const [followedPersonas, setFollowedPersonas] = useState<Record<string, string>>({});
@@ -1524,15 +1563,30 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           </div>
         ) : (
           <>
-            <div className="feed-composer-prompt" onClick={onRecord}>
-              <span className="feed-composer-avatar">
+            {/* 거지방식 한 줄 기록 — "커피 4500" 치면 끝. 폼은 '자세히'로 강등 */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <span className="feed-composer-avatar" style={{ flexShrink: 0 }}>
                 {(() => { const p = getPersona(); return p ? <img src={PERSONAS[p].icon} alt="" className="custom-icon" /> : <CustomIcon emoji="🐷" className="custom-icon" />; })()}
               </span>
-              <span className="feed-composer-placeholder">{DAILY_PROMPTS[Math.floor(new Date(getTodayStr() + 'T00:00:00').getTime() / 86400000) % DAILY_PROMPTS.length]}</span>
+              <input
+                value={quickText}
+                onChange={e => setQuickText(e.target.value.slice(0, 60))}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSubmit(); } }}
+                placeholder='한 줄이면 끝 — 예) "커피 4500"'
+                maxLength={60}
+                style={{ flex: 1, minWidth: 0, padding: '11px 12px', borderRadius: '100px', border: '1px solid var(--divider)', fontSize: '13px', background: 'rgba(255,255,255,0.8)' }}
+              />
+              <button
+                onClick={handleQuickSubmit}
+                disabled={!quickText.trim() || submitting}
+                style={{ flexShrink: 0, padding: '10px 14px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px', opacity: !quickText.trim() || submitting ? 0.5 : 1 }}
+              >
+                {submitting ? '...' : '기록'}
+              </button>
             </div>
             <div className="feed-composer-actions">
               <button className="feed-composer-action-btn" onClick={onRecord}>
-                <CustomIcon emoji="📝" /> <span>오늘 기록</span>
+                <CustomIcon emoji="📝" /> <span>자세히 기록</span>
               </button>
               <button className="feed-composer-action-btn" onClick={onQuickZeroSpend}>
                 <CustomIcon emoji="🌿" /> <span>지갑 쉬는 날</span>
@@ -1541,9 +1595,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <CustomIcon emoji="⚖️" /> <span>살까 고민</span>
               </button>
             </div>
-            {!daily.recorded && streak.totalDays === 0 && (
-              <p className="feed-composer-onboarding-hint"><CustomIcon emoji="✨" /> 첫 지출을 기록해보세요!</p>
-            )}
+            <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
+              <CustomIcon emoji="🔐" /> 닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요
+            </p>
           </>
         )}
       </div>

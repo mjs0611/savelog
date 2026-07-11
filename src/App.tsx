@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { Button, TextField } from '@toss/tds-mobile';
+import { Button } from '@toss/tds-mobile';
 import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
 import {
   getUserId,
@@ -7,6 +7,7 @@ import {
   setUserKey as setUserKeyStorage,
   getNickname,
   setNickname,
+  generateNickname,
   loadDailyState,
   saveDailyState,
   getEffectiveStreak,
@@ -104,9 +105,14 @@ export default function App() {
 
   const userId = anonymousKey ?? fallbackId;
 
-  const [nickname, setNicknameState] = useState<string | null>(() => getNickname());
-  const [nicknameInput, setNicknameInput] = useState('');
-  const [intentTrigger, setIntentTriggerState] = useState<string | null>(() => getIntentTrigger());
+  // 닉네임 관문 제거 — 없으면 임의 짠네임 자동 생성 (마이로그 설정에서 변경 가능)
+  const [nickname, setNicknameState] = useState<string>(() => {
+    const existing = getNickname();
+    if (existing) return existing;
+    const generated = generateNickname();
+    setNickname(generated);
+    return generated;
+  });
   const [tab, setTab]           = useState<Tab>(() => {
     // 톡방 초대 링크로 진입 → 커뮤니티(짠톡방) 탭에서 시작
     if (localStorage.getItem('savelog_pending_room')) return 'community';
@@ -135,6 +141,8 @@ export default function App() {
   const [rankClaiming, setRankClaiming] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
+  // 인텐트 트리거 — 온보딩 관문에서 빼서 첫 기록 완료 후 1회 모달로 (습관 장치는 유지, 장벽은 제거)
+  const [showTriggerPicker, setShowTriggerPicker] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
@@ -218,7 +226,7 @@ export default function App() {
 
   // 듀오 초대 링크(?duo=) 수락 — 온보딩(로그인·닉네임·트리거) 완료 후 1회 처리
   useEffect(() => {
-    if (!nickname || !intentTrigger) return;
+    if (!nickname) return;
     if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
     const raw = localStorage.getItem('savelog_pending_duo');
     if (!raw) return;
@@ -240,7 +248,7 @@ export default function App() {
         }
       } catch { /* 초대 수락 실패는 조용히 무시 */ }
     })();
-  }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
+  }, [nickname, anonymousKey, tossLinked, userId]);
 
   // 초대자와 자동 맞팔 처리 (서버 양방향 + 로컬 팔로잉 목록 반영)
   function applyMutualFollow(otherId: string, otherNick: string, withToast: boolean) {
@@ -258,7 +266,7 @@ export default function App() {
 
   // 톡방 초대 링크(?room=&by=)로 들어온 경우 — 초대자와 자동 맞팔 (그래프 시딩)
   useEffect(() => {
-    if (!nickname || !intentTrigger) return;
+    if (!nickname) return;
     if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
     const raw = localStorage.getItem('savelog_pending_mutual');
     if (!raw) return;
@@ -267,11 +275,11 @@ export default function App() {
       const { id, nick } = JSON.parse(raw);
       applyMutualFollow(id, nick, true);
     } catch { /* 파싱 실패 무시 */ }
-  }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
+  }, [nickname, anonymousKey, tossLinked, userId]);
 
   // 서클 초대 링크(?circle=코드) — 온보딩 완료 후 자동 합류
   useEffect(() => {
-    if (!nickname || !intentTrigger) return;
+    if (!nickname) return;
     if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
     const code = localStorage.getItem('savelog_pending_circle');
     if (!code) return;
@@ -284,7 +292,7 @@ export default function App() {
         showToast(`서클 합류 실패: ${res.reason}`);
       }
     }).catch(() => {});
-  }, [nickname, intentTrigger, anonymousKey, tossLinked, userId]);
+  }, [nickname, anonymousKey, tossLinked, userId]);
 
   function navigateTo(next: Tab) {
     setTab(next);
@@ -381,14 +389,6 @@ export default function App() {
     }
   }
 
-  // ── 닉네임 설정 화면 ────────────────────────────────────────────────────────
-  function handleSetNickname() {
-    const name = nicknameInput.trim();
-    if (!name) return;
-    setNickname(name);
-    setNicknameState(name);
-  }
-
   if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) {
     const isMigration = !!nickname;
     return (
@@ -410,96 +410,6 @@ export default function App() {
             {loginLoading ? '연동 중...' : isMigration ? '토스 계정 연동하기' : '토스로 시작하기'}
           </Button>
           {loginError && <p className="login-error-msg">{loginError}</p>}
-        </div>
-      </div>
-    );
-  }
-
-  if (!nickname) {
-    return (
-      <div className="app-root">
-        <div className="bg-glow-orb orb-1"></div>
-        <div className="bg-glow-orb orb-2"></div>
-        <div className="bg-glow-orb orb-3"></div>
-        <div className="screen setup-screen">
-          <div className="setup-hero">
-            <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
-            <h1 className="setup-title">savelog</h1>
-            <p className="setup-desc">매일 소비를 기록하고<br />절약 스토리를 함께 나눠요</p>
-          </div>
-
-          <div className="setup-textfield-wrap">
-            <TextField
-              variant="box"
-              label="닉네임을 설정해 주세요"
-              placeholder="예: 절약왕민지"
-              value={nicknameInput}
-              maxLength={12}
-              help="최대 12자 · 나중에 변경 가능해요"
-              onChange={(e: any) => setNicknameInput(e.target.value)}
-              onKeyDown={(e: any) => e.key === 'Enter' && handleSetNickname()}
-              autoFocus
-            />
-          </div>
-
-          <Button
-            size="xlarge"
-            display="full"
-            color="primary"
-            variant="fill"
-            onClick={handleSetNickname}
-            disabled={!nicknameInput.trim()}
-          >
-            시작하기
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  if (!intentTrigger) {
-    const triggers = [
-      { key: 'lunch', label: '🍚 점심 식사 마치고', desc: '낮 시간에 밀리지 않고 가볍게 기록해요' },
-      { key: 'cafe', label: '☕ 카페 갈 때', desc: '커피 값이나 간식 비용을 잊지 않고 적어요' },
-      { key: 'commute', label: '🚌 퇴근길 버스/지하철에서', desc: '하루의 소비를 돌아보기 좋은 이동 시간이에요' },
-      { key: 'bed', label: '🛌 자기 전 침대에서', desc: '오늘 하루 지갑 수비 결과를 정돈하고 자요' }
-    ];
-    return (
-      <div className="app-root">
-        <div className="bg-glow-orb orb-1"></div>
-        <div className="bg-glow-orb orb-2"></div>
-        <div className="bg-glow-orb orb-3"></div>
-        <div className="screen setup-screen">
-          <div className="setup-hero" style={{ paddingBottom: '16px' }}>
-            <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
-            <h2 className="setup-title" style={{ fontSize: '20px', lineHeight: '1.4', margin: '16px 0 8px 0' }}>언제 지갑 수비를 기록할까요?</h2>
-            <p className="setup-desc">구체적인 순간을 약속하면<br />습관 유지 확률이 91%까지 올라갑니다.</p>
-          </div>
-
-          <div style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '12px', padding: '0 24px', boxSizing: 'border-box', marginBottom: '32px' }}>
-            {triggers.map(t => (
-              <div
-                key={t.key}
-                className="onboarding-trigger-card"
-                onClick={() => {
-                  setIntentTrigger(t.label);
-                  setIntentTriggerState(t.label);
-                }}
-                style={{
-                  background: 'rgba(255, 255, 255, 0.65)',
-                  border: '1px solid rgba(120, 100, 80, 0.08)',
-                  borderRadius: '16px',
-                  padding: '16px 20px',
-                  cursor: 'pointer',
-                  textAlign: 'left',
-                  boxShadow: 'var(--shadow-sm)',
-                }}
-              >
-                <h4 style={{ margin: '0 0 6px 0', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}>{t.label}</h4>
-                <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: '1.4' }}>{t.desc}</p>
-              </div>
-            ))}
-          </div>
         </div>
       </div>
     );
@@ -684,6 +594,9 @@ export default function App() {
           ? `✅ 기록 완료! +${actualEarned}원 대기 중 (광고 보고 받기) · +${jellyReward} 젤리 · 🎰 룰렛권 +${spinsEarned}${goalMsg}`
           : `✅ 기록 완료! · +${jellyReward} 젤리 · 🎰 룰렛권 +${spinsEarned}${goalMsg}`;
         showToast(toastMsg);
+
+        // 습관 트리거 — 관문 대신 첫 기록의 성공 직후에 1회 제안 (거절 가능)
+        if (!getIntentTrigger()) setShowTriggerPicker(true);
       } else {
         showToast('✅ 추가 기록 완료!');
       }
@@ -802,6 +715,7 @@ export default function App() {
             pendingClaiming={pendingClaiming}
             streakShields={streakShields}
             onRecord={() => setShowRecord(true)}
+            onQuickRecord={handleSubmitRecord}
             onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
             onClaimPending={handleClaimPending}
             onNavigateToMyLog={() => navigateTo('mylog')}
@@ -942,6 +856,34 @@ export default function App() {
             }
           }}
         />
+      )}
+
+      {/* 습관 트리거 픽커 — 첫 기록 후 1회 (선택 사항) */}
+      {showTriggerPicker && (
+        <div className="modal-overlay" onClick={() => setShowTriggerPicker(false)}>
+          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div style={{ padding: '20px 16px', textAlign: 'left' }}>
+              <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>🎉 첫 기록 완료! 언제 또 올까요?</h3>
+              <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>구체적인 순간을 정해두면 습관 유지 확률이 크게 올라가요.</p>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+                {['🍚 점심 식사 마치고', '☕ 카페 갈 때', '🚌 퇴근길 버스/지하철에서', '🛌 자기 전 침대에서'].map(label => (
+                  <button
+                    key={label}
+                    onClick={() => {
+                      setIntentTrigger(label);
+                      setShowTriggerPicker(false);
+                      showToast(`⏰ 좋아요! "${label}" 마다 만나요`);
+                    }}
+                    style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.65)', border: '1px solid var(--divider)', fontWeight: 700, fontSize: '13.5px', cursor: 'pointer', textAlign: 'left' }}
+                  >
+                    {label}
+                  </button>
+                ))}
+              </div>
+              <button onClick={() => setShowTriggerPicker(false)} style={{ marginTop: '10px', width: '100%', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>나중에 정할게요</button>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* 첫 실행 사용법 안내 */}

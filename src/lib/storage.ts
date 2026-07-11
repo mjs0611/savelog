@@ -26,6 +26,15 @@ export function getNickname(): string | null {
   return localStorage.getItem(NICKNAME_KEY);
 }
 
+// 온보딩 관문 제거용 — 임의 짠네임 생성 (마이로그 설정에서 언제든 변경 가능)
+const NICK_ADJECTIVES = ['알뜰한', '야무진', '단단한', '차곡찬', '짠짠한', '든든한', '슬기로운', '무던한', '지혜로운', '옹골찬'];
+const NICK_ANIMALS = ['수달', '다람쥐', '햄스터', '고슴도치', '펭귄', '두더지', '청설모', '알파카', '너구리', '물범'];
+export function generateNickname(): string {
+  const adj = NICK_ADJECTIVES[Math.floor(Math.random() * NICK_ADJECTIVES.length)];
+  const animal = NICK_ANIMALS[Math.floor(Math.random() * NICK_ANIMALS.length)];
+  return `${adj} ${animal}`;
+}
+
 export function setNickname(name: string): void {
   localStorage.setItem(NICKNAME_KEY, name.trim());
 }
