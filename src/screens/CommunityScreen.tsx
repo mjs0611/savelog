@@ -21,36 +21,75 @@ interface Props {
   userId: string;
 }
 
+// 광장 주제 — 거지방 정체성의 실전 주제 (DB 키는 기존 6종 재사용, 라벨만 재정의)
 const CATEGORIES: { key: CommunityCategory | 'all'; label: string; emoji: string }[] = [
   { key: 'all',      label: '전체',       emoji: '🌿' },
-  { key: 'together', label: '같이 놀기',  emoji: '🤝' },
-  { key: 'tip',      label: '플러스 꿀팁', emoji: '💡' },
-  { key: 'recipe',   label: '웰빙 레시피', emoji: '🍳' },
-  { key: 'daily',    label: '소소한 성취', emoji: '☀️' },
-  { key: 'question', label: '짠친 고민',  emoji: '❓' },
-  { key: 'free',     label: '자유 톡',    emoji: '💬' },
+  { key: 'daily',    label: '아낀 자랑',  emoji: '💸' },
+  { key: 'question', label: '살까 말까',  emoji: '⚖️' },
+  { key: 'together', label: '텅장 실화',  emoji: '😭' },
+  { key: 'tip',      label: '꿀팁·핫딜',  emoji: '💡' },
+  { key: 'recipe',   label: '짠밥 레시피', emoji: '🍳' },
+  { key: 'free',     label: '잡담',       emoji: '💬' },
 ];
 
 const POST_CATEGORIES: { key: CommunityCategory; label: string; emoji: string }[] = [
-  { key: 'together', label: '같이 놀기',  emoji: '🤝' },
-  { key: 'tip',      label: '플러스 꿀팁', emoji: '💡' },
-  { key: 'recipe',   label: '웰빙 레시피', emoji: '🍳' },
-  { key: 'daily',    label: '소소한 성취', emoji: '☀️' },
-  { key: 'question', label: '짠친 고민',  emoji: '❓' },
-  { key: 'free',     label: '자유 톡',    emoji: '💬' },
+  { key: 'daily',    label: '아낀 자랑',  emoji: '💸' },
+  { key: 'question', label: '살까 말까',  emoji: '⚖️' },
+  { key: 'together', label: '텅장 실화',  emoji: '😭' },
+  { key: 'tip',      label: '꿀팁·핫딜',  emoji: '💡' },
+  { key: 'recipe',   label: '짠밥 레시피', emoji: '🍳' },
+  { key: 'free',     label: '잡담',       emoji: '💬' },
 ];
 
 const COMPOSE_PLACEHOLDER: Record<CommunityCategory, { title: string; content: string }> = {
-  together: {
-    title: '예) 점심 먹고 산책하면서 10분 걷기 놀이 🏃',
-    content: '우리 어떤 놀이를 같이 해볼까요? 친구들과 부담 없이 함께할 챌린지 규칙을 정해주세요!',
-  },
-  tip: { title: '예) 안 쓰면 100% 할인! 나만의 해피 머니 세이빙 꿀팁 ☕', content: '일상에서 소소하지만 확실하게 \'플러스\'가 되었던 꿀팁이나 습관을 공유해주세요!' },
-  recipe: { title: '예) 냉장고 털이용 초간단 5천원 마라샹궈 🍳', content: '건강도 챙기고 지갑도 지키는 나만의 \'가성비 웰빙 레시피\'가 있다면 레시피와 예상 비용을 알려주세요!' },
-  daily: { title: '예) 오늘 소비 안 하고 도서관에서 책 빌렸어요 📚', content: '오늘 나를 기분 좋게 만든 작고 확실한 절약 성취나, 짠친들과 나누고 싶은 소소한 일상을 남겨주세요.' },
-  question: { title: '예) 다들 배달 앱 대신 포장 주문 자주 하시나요? 🤔', content: '합리적인 소비 생활을 하면서 궁금했던 점을 짠친들에게 물어보고 서로의 아이디어를 나눠요.' },
-  free: { title: '제목을 입력해주세요', content: '자유롭게 이야기 나눠보세요.' },
+  daily: { title: '예) 배달 참고 집밥 — 오늘 18,000원 지켰다', content: '오늘 뭘 참았고 얼마를 지켰는지 자랑해 주세요. 짠친들이 👏를 보냅니다.' },
+  question: { title: '예) 에어팟 4세대, 지금 사도 될까요?', content: '뭘 살지 말지 고민되면 올려주세요. 짠친들이 말리거나 등을 밀어줍니다.' },
+  together: { title: '예) 충동구매한 무드등, 3일째 박스째 있음', content: '지출 실패담을 고백하는 곳. 웃으면서 배웁니다. 어림도 없지!' },
+  tip: { title: '예) 통신비 1만원대로 줄인 방법 / 지금 반값 핫딜', content: '실제로 돈이 굳는 꿀팁이나 핫딜 정보를 공유해 주세요.' },
+  recipe: { title: '예) 5천원으로 4끼 — 냉털 카레', content: '가성비 최고의 레시피와 예상 비용을 알려주세요.' },
+  free: { title: '제목을 입력해주세요', content: '돈 얘기든 아니든, 자유롭게.' },
 };
+
+// 오늘의 질문 — 날짜 해시로 매일 1개 고정 (빈 광장 콜드스타트용 대화 씨앗)
+const DAILY_QUESTIONS: { q: string; category: CommunityCategory }[] = [
+  { q: '이번 주 최고의 "안 사길 잘했다"는?', category: 'daily' },
+  { q: '지금 장바구니에 며칠째 잠들어 있는 물건은?', category: 'question' },
+  { q: '인생 최악의 충동구매를 고백한다면?', category: 'together' },
+  { q: '요즘 제일 아까운 고정지출은?', category: 'free' },
+  { q: '만원으로 하루 세 끼, 가능하다 vs 불가능하다?', category: 'recipe' },
+  { q: '구독 서비스 중 하나만 남긴다면 뭘 남길래요?', category: 'question' },
+  { q: '배달 끊기 도전, 최고 기록 며칠까지 가봤어요?', category: 'daily' },
+  { q: '돈 굳는 나만의 이상한 습관 하나 공개!', category: 'tip' },
+  { q: '월급날 제일 먼저 하는 일은?', category: 'free' },
+  { q: '"이건 사치가 아니라 투자"라고 우기는 지출은?', category: 'together' },
+  { q: '편의점에서 제일 가성비 좋은 조합은?', category: 'recipe' },
+  { q: '올해 산 것 중 최고의 가성비 아이템은?', category: 'tip' },
+  { q: '커피값 아끼는 본인만의 방법 있어요?', category: 'tip' },
+  { q: '무지출 데이 성공하면 뭐가 제일 뿌듯해요?', category: 'daily' },
+  { q: '친구가 "야 그돈씨"라고 말려준 적 있나요?', category: 'together' },
+  { q: '요즘 눈독 들이는 물건, 짠친들이 판정해 드림', category: 'question' },
+  { q: '집밥 vs 외식 — 진짜 아끼는 건 어느 쪽?', category: 'recipe' },
+  { q: '텅장 직전에 겨우 참은 소비가 있다면?', category: 'daily' },
+  { q: '중고로 사서 대성공한 물건은?', category: 'tip' },
+  { q: '돈 안 쓰고 노는 최고의 주말 코스는?', category: 'free' },
+  { q: '할부의 유혹, 어디까지 참아봤어요?', category: 'together' },
+  { q: '냉장고 털어서 만든 인생 요리 있어요?', category: 'recipe' },
+  { q: '"무료배송 채우려고 더 샀다" — 유죄 vs 무죄?', category: 'question' },
+  { q: '지금 통장에 제일 미안한 지출은?', category: 'together' },
+  { q: '앱테크/포인트 모으기, 실제로 얼마나 벌었어요?', category: 'tip' },
+  { q: '경조사비, 다들 얼마가 적당하다고 생각해요?', category: 'free' },
+  { q: '세일이라서 산 것 중 후회 1위는?', category: 'together' },
+  { q: '한 달 식비, 다들 얼마나 써요?', category: 'free' },
+  { q: '올해 가장 잘한 소비 하나만 자랑해 주세요', category: 'daily' },
+  { q: '지갑 지키는 최후의 주문 한마디는?', category: 'tip' },
+];
+
+function todayQuestion(): { q: string; category: CommunityCategory } {
+  const d = new Date();
+  const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+  const hash = key.split('').reduce((h, c) => (h * 31 + c.charCodeAt(0)) | 0, 0);
+  return DAILY_QUESTIONS[Math.abs(hash) % DAILY_QUESTIONS.length];
+}
 
 function categoryMeta(key: CommunityCategory) {
   return POST_CATEGORIES.find(c => c.key === key) ?? POST_CATEGORIES[POST_CATEGORIES.length - 1];
@@ -301,6 +340,28 @@ export default function CommunityScreen({ userId }: Props) {
     <div className="screen screen-community">
       {/* 🏆 금주의 짠테크 꿀팁 베스트 (피드에서 이동) */}
       <TopTipsWidget userId={userId} />
+
+      {/* 오늘의 질문 — 매일 바뀌는 대화 씨앗, 답하기 원탭 */}
+      {(() => {
+        const tq = todayQuestion();
+        return (
+          <div className="glass-card" style={{ padding: '14px 16px', margin: '12px 16px 0', textAlign: 'left' }}>
+            <p style={{ margin: 0, fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.3px' }}>오늘의 질문</p>
+            <p style={{ margin: '4px 0 10px', fontSize: '14.5px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.45 }}>{tq.q}</p>
+            <button
+              onClick={() => {
+                setComposeCategory(tq.category);
+                setComposeTitle(tq.q);
+                setComposeContent('');
+                setComposeOpen(true);
+              }}
+              style={{ padding: '9px 16px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}
+            >
+              답하기
+            </button>
+          </div>
+        );
+      })()}
 
       {/* 카테고리 탭바 */}
       <div className="community-cat-bar">

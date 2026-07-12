@@ -29,7 +29,6 @@ import {
   type StreakData,
   type DailyState,
   updateJellyPocketSpent,
-  updateGroupRaidAction,
   addJelly,
   getIntentTrigger,
   setIntentTrigger,
@@ -52,14 +51,11 @@ import RankScreen from './screens/RankScreen';
 import ProfileScreen from './screens/ProfileScreen';
 import RecordScreen from './screens/RecordScreen';
 import PersonaTest from './screens/PersonaTest';
-import ChatScreen from './screens/ChatScreen';
 import CommunityScreen from './screens/CommunityScreen';
 import CustomIcon from './components/CustomIcon';
 import GuideModal from './components/GuideModal';
-import { sendChatMessage } from './lib/chat';
 
 type Tab = 'feed' | 'community' | 'mylog';
-type TalkTab = 'chat' | 'board';
 
 // ── 딥링크 초대 파라미터 파싱 (모듈 로드 시 1회) ──────────────────────────────
 // 공유 링크(intoss://savelog?room=… / ?duo=…)로 진입한 경우 pending으로 저장해 두고,
@@ -90,7 +86,7 @@ try {
 
 const TABS: { key: Tab; icon: string; label: string }[] = [
   { key: 'feed',      icon: '/images/icon_feed.png', label: '피드' },
-  { key: 'community', icon: '/images/icon_mail.png', label: '커뮤니티' },
+  { key: 'community', icon: '/images/icon_mail.png', label: '광장' },
   { key: 'mylog',     icon: '/images/icon_profile.png', label: '마이로그'  },
 ];
 
@@ -114,18 +110,10 @@ export default function App() {
     return generated;
   });
   const [tab, setTab]           = useState<Tab>(() => {
-    // 톡방 초대 링크로 진입 → 커뮤니티(짠톡방) 탭에서 시작
-    if (localStorage.getItem('savelog_pending_room')) return 'community';
     const path = window.location.pathname.replace(/^\//, '').split('/')[0];
     if (path === 'chat' || path === 'community') return 'community';
     if (path === 'mylog' || path === 'profile') return 'mylog';
     return 'feed';
-  });
-  // 커뮤니티 탭 내부: 짠톡방(실시간 채팅) / 게시판(주제별) 서브탭
-  const [talkTab, setTalkTab] = useState<TalkTab>(() => {
-    if (localStorage.getItem('savelog_pending_room')) return 'chat';
-    const path = window.location.pathname.replace(/^\//, '').split('/')[0];
-    return path === 'community' ? 'board' : 'chat';
   });
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
   const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
@@ -147,7 +135,6 @@ export default function App() {
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
-  const [sharedEntryToPost, setSharedEntryToPost] = useState<any>(null);
   const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
   // 첫 실행 사용법 안내 — 온보딩 완료 후 메인 화면에서 1회 표시
   const [showFirstGuide, setShowFirstGuide] = useState<boolean>(() => {
@@ -162,12 +149,6 @@ export default function App() {
   const pendingClaimingRef = useRef(false);
   const rankClaimingRef = useRef(false);
   const rankLoadIdRef = useRef(0);
-
-  function handleShareToChat(entry: any) {
-    setSharedEntryToPost(entry);
-    setTab('community');
-    setTalkTab('chat');
-  }
 
   useEffect(() => {
     checkAndResetDailyPhysics(getTodayStr());
@@ -453,7 +434,6 @@ export default function App() {
           updateJellyPocketSpent(item.category, item.amount);
         });
 
-        const hasSpend = items.some(it => it.category !== '절약 방어' && it.amount > 0);
         const hasZero = items.some(it => it.amount === 0 && it.category !== '마일스톤');
         const hasSave = items.some(it => it.category === '절약 방어');
 
@@ -475,32 +455,6 @@ export default function App() {
           reduceBudgetEntropy(15);
         } else if (hasSave) {
           reduceBudgetEntropy(10);
-        }
-
-        const handleRaidAction = (type: 'zero' | 'save' | 'spend', category: string, amount: number) => {
-          const result = updateGroupRaidAction(type, category, amount, nickname || '짠친');
-          if (result && result.logMessage) {
-            const savedPot = localStorage.getItem('savelog_pot_group');
-            if (savedPot) {
-              const potGroup = JSON.parse(savedPot);
-              const roomId = `CHAT-${potGroup.id}`;
-              sendChatMessage('system', '시스템', 'system', 'text', result.logMessage, undefined, roomId)
-                .catch(err => console.error('Failed to send raid message:', err));
-            }
-          }
-        };
-
-        if (hasZero) {
-          handleRaidAction('zero', '', 0);
-        } else if (hasSave) {
-          const savedAmt = items.find(it => it.category === '절약 방어')?.saved_amount || 0;
-          handleRaidAction('save', '절약 방어', savedAmt);
-        } else if (hasSpend) {
-          items.forEach(it => {
-            if (it.amount > 0) {
-              handleRaidAction('spend', it.category, it.amount);
-            }
-          });
         }
       }
 
@@ -713,28 +667,12 @@ export default function App() {
             onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
             onClaimPending={handleClaimPending}
             onNavigateToMyLog={() => navigateTo('mylog')}
-            onShareToChat={handleShareToChat}
             onShieldEarned={handleFriendsInvited}
           />
         </div>
         <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
-          {/* 커뮤니티 = 짠톡방(실시간 채팅) + 게시판(주제별) 통합 */}
-          <div className="talk-subtab-bar">
-            <button className={`talk-subtab-btn${talkTab === 'chat' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('chat')}>짠톡방</button>
-            <button className={`talk-subtab-btn${talkTab === 'board' ? ' talk-subtab-btn--active' : ''}`} onClick={() => setTalkTab('board')}>게시판</button>
-          </div>
-          <div className={talkTab !== 'chat' ? 'tab-panel--hidden' : ''}>
-            <ChatScreen
-              userId={userId}
-              nickname={nickname || '절약가'}
-              sharedEntryToPost={sharedEntryToPost}
-              clearSharedEntry={() => setSharedEntryToPost(null)}
-              activeTab={tab === 'community' && talkTab === 'chat' ? 'chat' : ''}
-            />
-          </div>
-          <div className={talkTab !== 'board' ? 'tab-panel--hidden' : ''}>
-            <CommunityScreen userId={userId} />
-          </div>
+          {/* 광장 — 주제별 게시판 (짠톡방은 사용량 0으로 폐기, 친밀 공간은 서클이 담당) */}
+          <CommunityScreen userId={userId} />
         </div>
         <div className={tab !== 'mylog' ? 'tab-panel--hidden' : ''}>
           <ProfileScreen
@@ -750,7 +688,6 @@ export default function App() {
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
             onShieldEarned={handleFriendsInvited}
-            onShareToChat={handleShareToChat}
             onOpenRanking={() => { loadRank(); setShowRankingModal(true); }}
           />
         </div>
