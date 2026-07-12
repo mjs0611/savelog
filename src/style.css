@@ -178,7 +178,7 @@ input { font: inherit; outline: none; border: none; }
 /* ── Screen base ────────────────────────────────────────────────────────────── */
 
 .screen {
-  padding: 12px 10px;
+  padding: 12px 16px; /* 수평 거터는 화면 컨테이너가 단독 소유 — 컴포넌트는 수평 마진 금지 */
   display: flex;
   flex-direction: column;
   gap: 8px;
@@ -4700,7 +4700,7 @@ input { font: inherit; outline: none; border: none; }
 
 /* MyLog Header */
 .screen-mylog {
-  padding: 16px 20px;
+  padding: 16px;
 }
 .mylog-profile-header {
   padding: 16px;
@@ -5453,19 +5453,19 @@ input { font: inherit; outline: none; border: none; }
  *  16. Top Tips UI (Feed)
  * ───────────────────────────────────────────────────────────────────────────*/
 .top-tips-container {
-  margin: 12px 16px 20px;
-  padding: 18px 0;
-  background: linear-gradient(135deg, rgba(255, 74, 107, 0.06) 0%, rgba(255, 204, 213, 0.04) 50%, rgba(208, 244, 222, 0.04) 100%);
-  border: 1px dashed rgba(255, 74, 107, 0.25);
-  border-radius: var(--radius-md);
-  box-shadow: var(--shadow-sm);
+  margin: 0 0 4px;
+  padding: 16px 0;
+  background: #FFFFFF;
+  border: 1px solid #F0F1F3;
+  border-radius: 16px;
+  box-shadow: none;
 }
 
 .top-tips-title {
   font-size: 15px;
   font-weight: 800;
   color: var(--text-main);
-  margin: 0 0 12px 16px;
+  margin: 0 16px 12px;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -6861,7 +6861,7 @@ input { font: inherit; outline: none; border: none; }
 .community-cat-bar {
   display: flex;
   gap: 6px;
-  padding: 12px 14px;
+  padding: 12px 0;
   overflow-x: auto;
   scrollbar-width: none;
   border-bottom: 1.5px solid var(--glass-border);
@@ -6897,7 +6897,7 @@ input { font: inherit; outline: none; border: none; }
   display: flex;
   flex-direction: column;
   gap: 10px;
-  padding: 14px;
+  padding: 14px 0;
 }
 .community-post-card {
   width: 100%;

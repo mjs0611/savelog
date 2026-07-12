@@ -668,7 +668,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                     className="timeline-share-btn" 
                     title="짠톡방에 공유하기" 
                     onClick={() => onShareToChat(entryForDate)}
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
+                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #F0F1F3', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
                   >
                     <CustomIcon emoji="👥" /> 공유
                   </button>
@@ -878,19 +878,19 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>이번 주 지킨 돈</p>
             <p style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800, color: 'var(--primary)' }}>{formatAmount(weekSaved)}</p>
           </div>
-          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>기록 · 무지출</p>
             <p style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800 }}>{recordedThisWeek}일 · {zeroDays}일</p>
           </div>
-          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>최다 지출</p>
             <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800 }}>{topCat ? <><CustomIcon emoji={topCat.emoji} /> {topCat.name}</> : '없음 🎉'}</p>
           </div>
-          <div style={{ background: 'rgba(0,0,0,0.18)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>나의 소비 페르소나</p>
             <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800, color: p?.color }}>{p?.name || '짠친'}</p>
           </div>
@@ -1020,11 +1020,11 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
         </div>
         <div className="radar-chart-svg-wrap">
           <svg width="200" height="184" className="radar-svg">
-            {gridPoints.map((pts, idx) => <polygon key={idx} points={pts} fill="none" stroke="rgba(255,255,255,0.05)" strokeWidth="0.8" />)}
+            {gridPoints.map((pts, idx) => <polygon key={idx} points={pts} fill="none" stroke="#E9EBEE" strokeWidth="0.8" />)}
             {[0.2, 0.4, 0.6, 0.8, 1.0].map((ratio, idx) => {
               const pt = getPoint(100 * ratio, 0);
               const [x, y] = pt.split(',').map(Number);
-              return <text key={idx} x={x + 4} y={y + 3} fill="rgba(255,255,255,0.18)" fontSize="7" fontWeight="900">{ratio * 100}</text>;
+              return <text key={idx} x={x + 4} y={y + 3} fill="#B9BEC6" fontSize="7" fontWeight="900">{ratio * 100}</text>;
             })}
             {[0, 1, 2, 3, 4].map((i) => {
               const pt = getPoint(100, i);
