@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, submitEntry, fetchBalanceGameEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, type BalanceEntry, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
 import { shareExternal, buildCircleInviteMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
@@ -259,26 +259,20 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     feedVotingRef.current.add(entryId);
     // optimistic UI update — functional update로 동시 투표 충돌 방지
     setFeedVotes(prev => ({ ...prev, [entryId]: vote }));
-    // 이 항목이 상단 밸런스게임 섹션에 현재 표시 중이면 balanceVoted도 optimistic 동기화
-    // (인라인 투표 후 상단 섹션에 투표 버튼이 다시 노출되는 UX 버그 방지)
-    const isCurrentBalanceEntry = typeof balanceEntry === 'object' && balanceEntry !== null && balanceEntry.id === entryId;
-    if (isCurrentBalanceEntry) setBalanceVoted(vote);
     // 인라인 고민글 실제 집계 낙관적 증가 (즉시 반영)
     setDilemmaVotes(prev => {
       const cur = prev[entryId] ?? { over: 0, ok: 0, total: 0 };
       return { ...prev, [entryId]: { over: cur.over + (vote === 'over' ? 1 : 0), ok: cur.ok + (vote === 'ok' ? 1 : 0), total: cur.total + 1 } };
     });
     try {
-      const stats = await submitBalanceVote(entryId, userId, vote);
+      await submitBalanceVote(entryId, userId, vote);
       showFeedToast('⚖️ 투표 완료!');
-      if (isCurrentBalanceEntry) setBalanceStats(stats);
     } catch {
       // 실패한 엔트리만 롤백 — 동시 진행 중인 다른 투표에 영향 없도록 functional update 사용
       setFeedVotes(prev => {
         const { [entryId]: _, ...rest } = prev;
         return rest;
       });
-      if (isCurrentBalanceEntry) setBalanceVoted(null);
       showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
     } finally {
       feedVotingRef.current.delete(entryId);
@@ -325,10 +319,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
 
   // 밸런스 게임 상태
-  const [balanceEntry, setBalanceEntry] = useState<BalanceEntry | null | 'loading' | 'empty'>('loading');
-  const [balanceVoted, setBalanceVoted] = useState<'over' | 'ok' | null>(null);
-  const [balanceStats, setBalanceStats] = useState<{ over: number; ok: number } | null>(null);
-  const balanceVotingRef = React.useRef(false);
   const feedVotingRef = React.useRef<Set<string>>(new Set());
 
   const myPersonaKey = getPersona();
@@ -350,11 +340,16 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     return Object.values(uniqueUsers).slice(0, 5);
   }, [entries, userId, followedUsers]);
 
-  const totalVotes = React.useMemo(() => {
-    if (typeof balanceEntry !== 'object' || !balanceEntry) return 0;
-    const seed = balanceEntry.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-    return (seed % 80) + 45 + (balanceVoted ? 1 : 0);
-  }, [balanceEntry, balanceVoted]);
+  // 팔로우 목록 동기화 — 피드 진입 / 새로고침 시마다 원격 truth 가져오기
+  // (다른 탭에서 unfollow 한 결과 반영)
+  useEffect(() => {
+    fetchFollows(userId).then((remote) => {
+      if (remote) {
+        saveFollowedUsers(remote);
+        setFollowedUsers(remote);
+      }
+    }).catch(() => {});
+  }, [userId, refreshToken]);
 
   useEffect(() => {
     // 최초 로드는 스켈레톤 표시, 이후 refreshToken/userId 변경은 현재 로드 상태에 따라 갱신
@@ -383,35 +378,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   useEffect(() => {
     localStorage.setItem('savelog_feed_votes', JSON.stringify(feedVotes));
   }, [feedVotes]);
-
-  useEffect(() => {
-    // 밸런스 게임은 userId 변경 시에만 리셋 (피드 새로고침마다 리셋되지 않도록)
-    loadBalanceEntry();
-  }, [userId]);
-
-  // 팔로우 목록 동기화 — 피드 진입 / 새로고침 시마다 원격 truth 가져오기
-  // (다른 탭에서 unfollow 한 결과 반영)
-  useEffect(() => {
-    fetchFollows(userId).then((remote) => {
-      if (remote) {
-        saveFollowedUsers(remote);
-        setFollowedUsers(remote);
-      }
-    }).catch(() => {});
-  }, [userId, refreshToken]);
-
-  async function loadBalanceEntry() {
-    setBalanceEntry('loading');
-    setBalanceVoted(null);
-    setBalanceStats(null);
-    balanceVotingRef.current = false;
-    try {
-      const entry = await fetchBalanceGameEntry(userId);
-      setBalanceEntry(entry ?? 'empty');
-    } catch {
-      setBalanceEntry('empty');
-    }
-  }
 
   async function load(silent = false) {
     const loadId = ++loadIdRef.current;
@@ -1272,7 +1238,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 const outcome = getDilemmaOutcome(entry.id);
                 if (outcome) {
                   return (
-                    <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '12px', background: outcome === 'resisted' ? 'rgba(0,245,160,0.1)' : 'rgba(255,255,255,0.05)', fontSize: '12.5px', fontWeight: 800, color: outcome === 'resisted' ? 'var(--primary)' : 'var(--text-sub)', textAlign: 'center' }}>
+                    <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '12px', background: outcome === 'resisted' ? 'var(--primary-light)' : '#F7F8FA', fontSize: '12.5px', fontWeight: 800, color: outcome === 'resisted' ? 'var(--primary)' : 'var(--text-sub)', textAlign: 'center' }}>
                       {outcome === 'resisted'
                         ? `🌱 짠친들과 함께 참았어요! ${formatAmount(amount)}을 목표에 충전`
                         : '🔥 질렀어요! 행복했길 바라요 — 다음엔 또 막아줄게요'}
@@ -1286,7 +1252,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       <button onClick={() => handleResolveDilemma(entry.id, amount, false)}
                         style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🌱 참았어요</button>
                       <button onClick={() => handleResolveDilemma(entry.id, amount, true)}
-                        style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid rgba(255,255,255,0.12)', background: 'rgba(255,255,255,0.06)', color: 'var(--text-main)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🔥 질렀어요</button>
+                        style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid #E4E6EA', background: '#F7F8FA', color: 'var(--text-main)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🔥 질렀어요</button>
                     </div>
                   </div>
                 );
@@ -1860,149 +1826,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       ) : (
         /* 일반 피드 (전체 & 팔로우 탭) */
         <>
-          {/* ⚖️ 밸런스 게임 — 실제 유저 기록 기반 */}
-          {balanceEntry !== 'empty' && (
-            <div className="glass-card balance-game-card-glow">
-              <div className="balance-card-header">
-                <span className="balance-card-title"><CustomIcon emoji="⚖️" /> 실시간 짠물 배틀</span>
-                {balanceEntry !== 'loading' && typeof balanceEntry === 'object' && (
-                  <span className="balance-card-status">판정 진행 중</span>
-                )}
-              </div>
-
-              {balanceEntry === 'loading' ? (
-                <div className="balance-loading-lg" />
-              ) : typeof balanceEntry === 'object' && balanceEntry !== null ? (() => {
-                const entry = balanceEntry;
-                const spendItems = entry.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤');
-                const noteItem = entry.items.find(it => it.category === '한마디');
-                return (
-                  <div className="balance-receipt-wrap">
-                    {/* 닉네임 */}
-                    <p className="balance-receipt-author">{entry.nickname}님의 지출</p>
-
-                    {/* 지출 항목 영수증 컨테이너 */}
-                    <div className="balance-receipt-box">
-                      <div className="balance-receipt-items">
-                        {spendItems.map((item, i) => (
-                          <div key={i} className="balance-receipt-item">
-                            <span className="balance-receipt-item-label"><CustomIcon emoji={item.emoji} /> {item.comment || item.category}</span>
-                            <span className="balance-receipt-item-amount">{item.amount.toLocaleString('ko-KR')}원</span>
-                          </div>
-                        ))}
-                        <div className="balance-receipt-total">
-                          <span className="balance-receipt-total-label">합계</span>
-                          <span className="balance-receipt-total-amount">{entry.total_amount.toLocaleString('ko-KR')}원</span>
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* 한마디 */}
-                    {noteItem && (
-                      <p className="balance-note"><CustomIcon emoji="💬" /> {noteItem.comment}</p>
-                    )}
-
-                    {balanceVoted ? (
-                      /* 투표 후 결과 */
-                      balanceStats ? (
-                        <div className="balance-results">
-                          <div className="balance-result-row">
-                            <span className="balance-result-over">
-                              과소비 {balanceStats.over}%
-                              {balanceVoted === 'over' && <span className="balance-result-badge balance-result-badge--over">내 판정 <CustomIcon emoji="💸" /></span>}
-                            </span>
-                            <span className="balance-result-total">총 {totalVotes}명 참여</span>
-                            <span className="balance-result-ok">
-                              {balanceVoted === 'ok' && <span className="balance-result-badge balance-result-badge--ok">내 판정 <CustomIcon emoji="🌿" /></span>}
-                              합리적 {balanceStats.ok}%
-                            </span>
-                          </div>
-
-                          <div className="balance-bar-container">
-                            <div
-                              className="balance-bar-fill balance-bar-fill--over"
-                              style={{ width: `${balanceStats.over}%` }}
-                            />
-                            <div
-                              className="balance-bar-fill balance-bar-fill--ok"
-                              style={{ width: `${balanceStats.ok}%` }}
-                            />
-                          </div>
-                          
-                          <button
-                            onClick={loadBalanceEntry}
-                            className="next-battle-btn"
-                          >
-                            다음 지출 판정하기 →
-                          </button>
-                        </div>
-                      ) : (
-                        /* 집계 중 스켈레톤 */
-                        <div className="balance-loading-sm" />
-                      )
-                    ) : (
-                      /* 투표 전 버튼 */
-                      <div className="balance-vote-buttons">
-                        <button
-                          onClick={async () => {
-                            if (balanceVotingRef.current) return;
-                            balanceVotingRef.current = true;
-                            setBalanceVoted('over');
-                            // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
-                            setFeedVotes(prev => ({ ...prev, [entry.id]: 'over' }));
-                            try {
-                              const stats = await submitBalanceVote(entry.id, userId, 'over');
-                              setBalanceStats(stats);
-                              showFeedToast('⚖️ 투표 완료!');
-                            } catch {
-                              setBalanceStats(null);
-                              setBalanceVoted(null);
-                              setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
-                              showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
-                            } finally {
-                              balanceVotingRef.current = false;
-                            }
-                          }}
-                          className="balance-vote-card balance-vote-card--over"
-                        >
-                          <span className="vote-emoji"><CustomIcon emoji="💸" /></span>
-                          <span className="vote-title">과소비</span>
-                          <span className="vote-desc">참을 수 없던 사치</span>
-                        </button>
-                        <button
-                          onClick={async () => {
-                            if (balanceVotingRef.current) return;
-                            balanceVotingRef.current = true;
-                            setBalanceVoted('ok');
-                            // 피드 인라인 디일레마 카드와 투표 상태 동기화 (이중 투표/리워드 방지)
-                            setFeedVotes(prev => ({ ...prev, [entry.id]: 'ok' }));
-                            try {
-                              const stats = await submitBalanceVote(entry.id, userId, 'ok');
-                              setBalanceStats(stats);
-                              showFeedToast('⚖️ 투표 완료!');
-                            } catch {
-                              setBalanceStats(null);
-                              setBalanceVoted(null);
-                              setFeedVotes(prev => { const { [entry.id]: _, ...rest } = prev; return rest; });
-                              showFeedToast('투표 중 오류가 발생했어요. 다시 시도해 주세요.');
-                            } finally {
-                              balanceVotingRef.current = false;
-                            }
-                          }}
-                          className="balance-vote-card balance-vote-card--ok"
-                        >
-                          <span className="vote-emoji"><CustomIcon emoji="🌿" /></span>
-                          <span className="vote-title">합리적</span>
-                          <span className="vote-desc">생존형 필수 소비</span>
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                );
-              })() : null}
-            </div>
-          )}
-
           {entries.length === 0 ? (
             <>
               <div className="empty-state">
@@ -2035,7 +1858,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 const followBack = followers.filter(f => !followedUsers[f.id]);
                 if (followBack.length === 0) return null;
                 return (
-                  <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: 'linear-gradient(135deg, rgba(0,245,160,0.08), rgba(255,255,255,0.02))', border: '1.5px solid rgba(0,245,160,0.2)' }}>
+                  <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: 'var(--primary-light)', border: '1px solid #F0F1F3' }}>
                     <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 800 }}>🤝 나를 팔로우한 짠친 {followBack.length}명</p>
                     <p style={{ margin: '0 0 10px', fontSize: '11.5px', color: 'var(--text-sub)' }}>맞팔하면 바로 <strong style={{ color: 'var(--primary)' }}>절약 짝꿍</strong>이 돼요. (+20 젤리)</p>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -2075,10 +1898,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
               {feedTab === 'follow' && (
                 <div className="followed-friends-strip" style={{
-                  background: 'rgba(255, 255, 255, 0.02)',
+                  background: '#FFFFFF',
                   padding: '16px 16px 12px',
                   borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.05)',
+                  border: '1px solid #F0F1F3',
                   marginBottom: '16px',
                   textAlign: 'left'
                 }}>
@@ -2119,7 +1942,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        background: 'rgba(255,255,255,0.02)'
+                        background: '#F7F8FA'
                       }}>
                         <CustomIcon emoji="➕" />
                       </div>

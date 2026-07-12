@@ -62,13 +62,9 @@ type Tab = 'feed' | 'community' | 'mylog';
 // 로그인·닉네임 설정이 끝난 뒤 자동 입장/듀오 수락 플로우가 소비한다.
 try {
   const bootParams = new URLSearchParams(window.location.search);
-  const bootRoom = bootParams.get('room');
   const bootDuo = bootParams.get('duo');
   const bootCircle = bootParams.get('circle'); // 짠 서클 초대 코드
   const bootInviter = bootParams.get('by'); // 초대자 — 자동 맞팔(짝꿍) 대상
-  if (bootRoom) {
-    localStorage.setItem('savelog_pending_room', JSON.stringify({ code: bootRoom, name: bootParams.get('rn') || '' }));
-  }
   if (bootCircle) {
     localStorage.setItem('savelog_pending_circle', bootCircle);
   }
@@ -78,7 +74,7 @@ try {
     // 초대 링크로 들어온 유저는 초대자와 자동 맞팔 (그래프 시딩) — duo는 수락 플로우에서 함께 처리
     localStorage.setItem('savelog_pending_mutual', JSON.stringify({ id: bootInviter, nick: bootParams.get('bn') || '' }));
   }
-  if (bootRoom || bootDuo || bootCircle) {
+  if (bootDuo || bootCircle) {
     // 재실행 시 중복 트리거 방지를 위해 주소에서 파라미터 제거
     window.history.replaceState(null, '', window.location.pathname);
   }

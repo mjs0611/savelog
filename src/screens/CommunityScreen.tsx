@@ -353,6 +353,8 @@ export default function CommunityScreen({ userId }: Props) {
                 setComposeCategory(tq.category);
                 setComposeTitle(tq.q);
                 setComposeContent('');
+                setComposeImage(null);
+                setComposeImageError(null);
                 setComposeOpen(true);
               }}
               style={{ padding: '9px 16px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}

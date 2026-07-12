@@ -65,15 +65,6 @@ export function openContactsInvite(onInvited?: (count: number) => void): void {
 
 // ── 메시지 빌더 ──────────────────────────────────────────────────────────────
 
-export function buildRoomInviteMessage(roomName: string, code: string): string {
-  return [
-    `💬 savelog 짠톡방 「${roomName}」에 초대할게!`,
-    `같이 소비 기록하고 절약 인증하면서 서로 감시(?)해 주자 👀`,
-    `초대 코드: ${code}`,
-    `아래 링크로 바로 들어와 👇`,
-  ].join('\n');
-}
-
 export function buildCircleInviteMessage(myNickname: string, circleName: string, code: string): string {
   return [
     `🔒 ${myNickname}님이 짠 서클 「${circleName}」에 초대했어요!`,
