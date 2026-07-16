@@ -132,7 +132,7 @@ export function parseQuickRecord(text: string): SpendingItem[] {
 }
 
 
-export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onQuickZeroSpend, onClaimPending, onNavigateToMyLog, onShareToChat, onShieldEarned }: Props) {
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onClaimPending, onNavigateToMyLog, onShieldEarned }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   // 소비 고민 글 실제 투표 집계 (seed 가짜값 대체)
   const [dilemmaVotes, setDilemmaVotes] = useState<Record<string, { over: number; ok: number; total: number }>>({});
@@ -189,6 +189,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   // 한 줄 기록 — 파싱 후 즉시 게시 (첫 글 비용: 폼 5탭 → 텍스트 1줄)
   const [quickText, setQuickText] = useState('');
+  // 스탬프 피커 (카드당 온디맨드)
+  const [stampPickerFor, setStampPickerFor] = useState<string | null>(null);
   // 스토리 레일 시트
   const [showCircleSheet, setShowCircleSheet] = useState(false);
   const [showBossSheet, setShowBossSheet] = useState(false);
@@ -1002,16 +1004,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     return sorted;
   }, [entries, userId, followedUsers, feedTab, selectedFriendId, circleMemberIdSet]);
 
-  // 📣 짠친 소식 — 팔로우한 사람의 주요 활동(무지출/고민)을 띄워 원탭 상호작용 유도 (살아있는 그래프)
-  const graphHighlights = React.useMemo(() => {
-    return entries.filter(e => {
-      if (e.user_id === userId || !followedUsers[e.user_id]) return false;
-      const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
-      const isZero = e.total_amount === 0 && !e.items.some(it => it.category === '마일스톤' || it.category === '꿀팁' || it.category === '소비 고민' || it.category === '한마디');
-      return isDilemma || isZero;
-    }).slice(0, 3);
-  }, [entries, userId, followedUsers]);
-
   const renderFeedCard = (entry: EntryWithReactions) => {
     const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
     const p = personaKey ? PERSONAS[personaKey] : null;
@@ -1026,7 +1018,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       ...(localComments[entry.id] || []),
     ];
     const isExpanded = !!commentExpanded[entry.id];
-    const visibleComments = isExpanded ? comments : comments.slice(0, 2);
 
     const likeCount = entry.trust_count + entry.doubt_count;
     const liked = entry.my_reaction !== null;
@@ -1083,19 +1074,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   {p.emoji && <CustomIcon emoji={p.emoji} />} {p.name}
                 </span>
               )}
-              {entry.user_id !== userId && mutualSet.has(entry.user_id) && (
-                <span style={{ fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '20px', background: 'rgba(0,245,160,0.14)', color: 'var(--primary)' }}><CustomIcon emoji="🤝" /> 짝꿍</span>
-              )}
-              {entry.user_id !== userId && (() => {
-                void relTick; // 관계 자본 갱신 반영
-                // 서버(양방향, 상대도 같은 숫자를 봄) 우선, 없으면 로컬 폴백
-                const sRel = serverRelations[entry.user_id];
-                const local = getRelation(entry.user_id);
-                const s = sRel ? effectiveServerStreak(sRel) : (local ? getEffectiveStreak(local) : 0);
-                return s > 0 ? (
-                  <span style={{ fontSize: '10px', fontWeight: 800, padding: '1px 7px', borderRadius: '20px', background: 'rgba(251,191,36,0.15)', color: '#d97706' }}><CustomIcon emoji="🔥" /> {s}일째 교류</span>
-                ) : null;
-              })()}
+              {/* 짝꿍·교류 스트릭 뱃지는 미니 프로필로 이동 (카드 헤더 다이어트) */}
             </div>
             <span className="feed-card-ig-time">{timeAgo(entry.created_at)}</span>
           </div>
@@ -1122,16 +1101,15 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 </span>
               ) : null;
             })()}
-            {entry.user_id !== userId ? (
+            {/* 이미 팔로우 중이면 버튼 숨김 — 누를 게 없는 상태가 정상 상태 */}
+            {entry.user_id !== userId && !followedUsers[entry.user_id] && (
               <button
                 onClick={() => handleToggleFollow(entry.user_id, entry.nickname || '')}
-                className={`feed-card-ig-follow ${followedUsers[entry.user_id] ? 'following' : ''}`}
+                className="feed-card-ig-follow"
                 style={{ marginLeft: '4px' }}
               >
-                {followedUsers[entry.user_id] ? '팔로잉' : '팔로우'}
+                팔로우
               </button>
-            ) : (
-              <span className="feed-badge feed-badge--blue" style={{ marginLeft: '4px' }}>나</span>
             )}
           </div>
         </div>
@@ -1325,144 +1303,114 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           );
         })()}
 
-        {/* 액션 바 (인스타그램 스타일: 아이콘 + 카운트) */}
-        <div className="feed-ig-actions">
-          {entry.user_id !== userId ? (
-            <button
-              className={`ig-action-btn ${liked ? 'ig-action-btn--liked' : ''}`}
-              onClick={(e) => handleReact(entry, 'trust', e)}
-              disabled={toggling.has(entry.id)}
-              aria-label="응원하기"
-            >
-              <span className="ig-action-icon"><CustomIcon emoji={liked ? '💖' : '🤍'} /></span>
-              <span className="ig-action-count" style={{ fontSize: '11px', fontWeight: 800 }}>
-                {likeCount > 0 ? `${likeCount}명의 응원` : '응원하기'}
-              </span>
-            </button>
-          ) : (
-            <div className="ig-action-btn ig-action-btn--readonly" aria-label="응원받음">
-              <span className="ig-action-icon"><CustomIcon emoji="💖" /></span>
-              <span className="ig-action-count" style={{ fontSize: '11px', fontWeight: 800 }}>
-                {likeCount > 0 ? `${likeCount}명의 응원` : '응원 0'}
-              </span>
-            </div>
-          )}
-          <button
-            className="ig-action-btn"
-            onClick={() => {
-              const el = document.getElementById(`comment-input-${entry.id}`);
-              if (el) (el as HTMLInputElement).focus();
-            }}
-            aria-label="댓글"
-          >
-            <span className="ig-action-icon"><CustomIcon emoji="💬" /></span>
-            {comments.length > 0 && <span className="ig-action-count">{comments.length}</span>}
-          </button>
-          {entry.user_id !== userId && (
-            <button
-              className="ig-action-btn"
-              onClick={() => { setMessageRecipientEntry(entry); setMessageText(''); }}
-              aria-label="메시지"
-            >
-              <span className="ig-action-icon"><CustomIcon emoji="✈️" /></span>
-            </button>
-          )}
-          {onShareToChat && (
-            <button
-              className="ig-action-btn"
-              onClick={() => onShareToChat(entry)}
-              aria-label="짠톡 공유"
-            >
-              <span className="ig-action-icon"><CustomIcon emoji="👥" /></span>
-            </button>
-          )}
-        </div>
-
-        {/* 🎯 거지방 스탬프 행 — 밈 판정 도장 (1인 1개, 다시 누르면 취소) */}
+        {/* 액션 바 — X 문법: 아이콘 3개(댓글·스탬프·응원), 카운트만 회색으로 */}
         {!isMilestone && (
-          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '2px 0 6px', scrollbarWidth: 'none' }} className="no-scrollbar">
-            {STAMPS.map(s => {
-              const count = entry.stamp_counts?.[s.key] ?? 0;
-              const mine = entry.my_stamp === s.key;
-              const canStamp = entry.user_id !== userId;
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
+            <button
+              onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: !prev[entry.id] }))}
+              aria-label="댓글"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px 6px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+            >
+              <CustomIcon emoji="💬" />{comments.length > 0 ? ` ${comments.length}` : ''}
+            </button>
+            {entry.user_id !== userId && (
+              <button
+                onClick={() => setStampPickerFor(prev => (prev === entry.id ? null : entry.id))}
+                aria-label="스탬프"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+              >
+                <CustomIcon emoji="🙅" />{Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0) > 0 ? ` ${Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0)}` : ''}
+              </button>
+            )}
+            {entry.user_id !== userId ? (
+              <button
+                onClick={(e) => handleReact(entry, 'trust', e)}
+                disabled={toggling.has(entry.id)}
+                aria-label="응원하기"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', color: liked ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+              >
+                <CustomIcon emoji={liked ? '💖' : '🤍'} />{likeCount > 0 ? ` ${likeCount}` : ''}
+              </button>
+            ) : (
+              likeCount > 0 && (
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
+                  <CustomIcon emoji="💖" /> {likeCount}
+                </span>
+              )
+            )}
+            {/* 받은 스탬프 요약 — 있는 것만, 읽기 전용 느낌의 작은 칩 */}
+            {(() => {
+              const received = STAMPS.filter(st => (entry.stamp_counts?.[st.key] ?? 0) > 0);
+              if (received.length === 0) return null;
+              return (
+                <span style={{ display: 'inline-flex', gap: '4px', marginLeft: 'auto', overflow: 'hidden' }}>
+                  {received.slice(0, 3).map(st => (
+                    <span key={st.key} title={st.label} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', padding: '3px 8px', borderRadius: '100px', fontSize: '10.5px', fontWeight: 800, background: '#F7F8FA', color: 'var(--text-sub)' }}>
+                      <CustomIcon emoji={st.emoji} /> {entry.stamp_counts[st.key]}
+                    </span>
+                  ))}
+                </span>
+              );
+            })()}
+          </div>
+        )}
+
+        {/* 스탬프 피커 — 아이콘 탭 시에만 6종 가로 스트립 */}
+        {stampPickerFor === entry.id && entry.user_id !== userId && (
+          <div style={{ display: 'flex', gap: '6px', overflowX: 'auto', padding: '4px 0 6px', scrollbarWidth: 'none' }} className="no-scrollbar">
+            {STAMPS.map(st => {
+              const mine = entry.my_stamp === st.key;
               return (
                 <button
-                  key={s.key}
-                  onClick={() => { if (canStamp) handleStamp(entry, s.key); }}
-                  title={s.label}
-                  style={{
-                    flexShrink: 0,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: '4px',
-                    padding: '4px 9px',
-                    borderRadius: '100px',
-                    fontSize: '11px',
-                    fontWeight: 800,
-                    cursor: canStamp ? 'pointer' : 'default',
-                    border: mine ? '1.5px solid var(--primary)' : '1px solid var(--divider)',
-                    background: mine ? 'var(--primary-light)' : count > 0 ? 'rgba(0,0,0,0.03)' : 'transparent',
-                    color: mine ? 'var(--primary)' : 'var(--text-sub)',
-                    opacity: canStamp || count > 0 ? 1 : 0.55,
-                  }}
+                  key={st.key}
+                  onClick={() => { handleStamp(entry, st.key); setStampPickerFor(null); }}
+                  title={st.label}
+                  style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 11px', borderRadius: '100px', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', border: mine ? '1.5px solid var(--primary)' : '1px solid var(--divider)', background: mine ? 'var(--primary-light)' : '#F7F8FA', color: mine ? 'var(--primary)' : 'var(--text-sub)' }}
                 >
-                  <CustomIcon emoji={s.emoji} /> {s.label}{count > 0 ? ` ${count}` : ''}
+                  <CustomIcon emoji={st.emoji} /> {st.label}
                 </button>
               );
             })}
           </div>
         )}
 
-        {/* 댓글 스레드 — SNS 스타일 (내 글에도 표시: 작성자가 답글을 읽을 수 있어야 대화가 성립) */}
-        {!isMilestone && (() => {
-          return (
-            <div className="feed-thread-section">
-              {/* 댓글 목록 */}
-              {comments.length > 0 && (
-                <div className="feed-thread-list">
-                  {visibleComments.map((c, i) => (
-                    <div key={i} className="feed-thread-row">
-                      <div className="feed-thread-avatar">{c.sender[0] ?? '나'}</div>
-                      <div className="feed-thread-content">
-                        <span className="feed-thread-name">{c.sender}</span>
-                        <span className="feed-thread-text">{renderTextWithEmoji(c.text)}</span>
-                      </div>
+        {/* 댓글 스레드 — 온디맨드 (💬 탭 시에만 목록+입력 확장) */}
+        {!isMilestone && isExpanded && (
+          <div className="feed-thread-section">
+            {comments.length > 0 && (
+              <div className="feed-thread-list">
+                {comments.map((c, i) => (
+                  <div key={i} className="feed-thread-row">
+                    <div className="feed-thread-avatar">{c.sender[0] ?? '나'}</div>
+                    <div className="feed-thread-content">
+                      <span className="feed-thread-name">{c.sender}</span>
+                      <span className="feed-thread-text">{renderTextWithEmoji(c.text)}</span>
                     </div>
-                  ))}
-                  {comments.length > 2 && !isExpanded && (
-                    <button
-                      className="feed-thread-more"
-                      onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: true }))}
-                    >
-                      댓글 {comments.length - 2}개 더 보기
-                    </button>
-                  )}
-                </div>
-              )}
-
-              {/* 댓글 직접 입력 */}
-              <div className="feed-thread-input-row">
-                <input
-                  id={`comment-input-${entry.id}`}
-                  type="text"
-                  value={commentInputs[entry.id] || ''}
-                  onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
-                  onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
-                  placeholder="댓글 달기..."
-                  maxLength={60}
-                  className="feed-thread-input"
-                />
-                <button
-                  onClick={() => submitCommentInput(entry.id)}
-                  disabled={!(commentInputs[entry.id] || '').trim()}
-                  className="feed-thread-submit"
-                >
-                  게시
-                </button>
+                  </div>
+                ))}
               </div>
+            )}
+            <div className="feed-thread-input-row">
+              <input
+                id={`comment-input-${entry.id}`}
+                type="text"
+                value={commentInputs[entry.id] || ''}
+                onChange={e => setCommentInputs(prev => ({ ...prev, [entry.id]: e.target.value.slice(0, 60) }))}
+                onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); submitCommentInput(entry.id); } }}
+                placeholder="댓글 달기..."
+                maxLength={60}
+                className="feed-thread-input"
+              />
+              <button
+                onClick={() => submitCommentInput(entry.id)}
+                disabled={!(commentInputs[entry.id] || '').trim()}
+                className="feed-thread-submit"
+              >
+                게시
+              </button>
             </div>
-          );
-        })()}
+          </div>
+        )}
       </div>
     );
   };
@@ -1590,6 +1538,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <span className="feed-composer-avatar" style={{ flexShrink: 0 }}>
                 {(() => { const p = getPersona(); return p ? <img src={PERSONAS[p].icon} alt="" className="custom-icon" /> : <CustomIcon emoji="🐷" className="custom-icon" />; })()}
               </span>
+              <button onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--divider)', background: '#F7F8FA', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
               <input
                 value={quickText}
                 onChange={e => setQuickText(e.target.value.slice(0, 60))}
@@ -1606,20 +1555,11 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 {submitting ? '...' : '기록'}
               </button>
             </div>
-            <div className="feed-composer-actions">
-              <button className="feed-composer-action-btn" onClick={onRecord}>
-                <CustomIcon emoji="📝" /> <span>자세히 기록</span>
-              </button>
-              <button className="feed-composer-action-btn" onClick={onQuickZeroSpend}>
-                <CustomIcon emoji="🌿" /> <span>지갑 쉬는 날</span>
-              </button>
-              <button className="feed-composer-action-btn" onClick={onRecord}>
-                <CustomIcon emoji="⚖️" /> <span>살까 고민</span>
-              </button>
-            </div>
-            <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
-              <CustomIcon emoji="🔐" /> 닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요
-            </p>
+            {streak.totalDays === 0 && (
+              <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
+                <CustomIcon emoji="🔐" /> 닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요 · 금액 없이 글만 써도 무지출 기록이 돼요
+              </p>
+            )}
           </>
         )}
       </div>
@@ -1711,32 +1651,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             <CustomIcon emoji="🔒" /> 지출 이야기는 광장보다 <strong>우리끼리</strong> — 3~8명 짠 서클에서 솔직하게
           </p>
           <span style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)' }}>시작하기 ›</span>
-        </div>
-      )}
-
-      {/* 📣 짠친 소식 — 팔로우한 짠친의 활동 + 원탭 상호작용 (살아있는 그래프) */}
-      {feedTab !== 'circle' && graphHighlights.length > 0 && (
-        <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
-          <p style={{ margin: '0 0 10px', fontSize: '13px', fontWeight: 800 }}>📣 짠친 소식</p>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-            {graphHighlights.map(e => {
-              const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
-              return (
-                <div key={e.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                  <span style={{ fontSize: '13px', minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                    <strong>{e.nickname}</strong>{isDilemma ? '님이 살까 말까 고민 중 🤔' : '님이 무지출 달성 🌿'}
-                  </span>
-                  {isDilemma ? (
-                    <button onClick={() => { handleFeedVote(e.id, 'ok'); recordInteraction(e.user_id, e.nickname || undefined); setRelTick(t => t + 1); }}
-                      style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, padding: '6px 12px', borderRadius: '100px', border: '1.5px solid var(--primary)', background: 'rgba(0,245,160,0.1)', color: 'var(--primary)', cursor: 'pointer' }}>{renderTextWithEmoji('🌱 참아!')}</button>
-                  ) : (
-                    <button onClick={(ev) => handleReact(e, 'trust', ev)}
-                      style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, padding: '6px 12px', borderRadius: '100px', border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer' }}>{renderTextWithEmoji('👏 짠내난다')}</button>
-                  )}
-                </div>
-              );
-            })}
-          </div>
         </div>
       )}
 

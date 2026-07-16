@@ -45,8 +45,8 @@ body {
   background: #FFFFFF; /* 플랫 화이트 — 크롬은 조용히, 콘텐츠가 주인공 */
   color: var(--text-main);
   min-height: 100dvh;
-  line-height: 1.6;
-  letter-spacing: -0.3px;
+  line-height: 1.55;
+  letter-spacing: -0.015em; /* 본문은 0 근처 — 트래킹은 크기별 (§타이포) */
   -webkit-font-smoothing: antialiased;
   word-break: keep-all;
   overflow-wrap: break-word;
@@ -55,7 +55,8 @@ body {
 #root { min-height: 100dvh; }
 .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
-button { cursor: pointer; border: none; background: none; font: inherit; transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1); }
+button { cursor: pointer; border: none; background: none; font: inherit; transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; -webkit-tap-highlight-color: transparent; }
+button:active { transform: scale(0.97); transition-duration: 0.06s; } /* §1 press-down 즉각 반응 — 릴리즈가 아니라 누르는 순간 */
 button:active:not(:disabled) { transform: scale(0.94); }
 button:disabled { cursor: default; }
 input { font: inherit; outline: none; border: none; }
@@ -144,6 +145,7 @@ input { font: inherit; outline: none; border: none; }
   background: rgba(255, 255, 255, 0.72);
   backdrop-filter: blur(24px) saturate(180%);
   -webkit-backdrop-filter: blur(24px) saturate(180%);
+  border-top: 1px solid rgba(255, 255, 255, 0.65); /* 유리 상단에 빛이 걸리는 엣지 */
   border-top: 1.5px solid var(--glass-border);
   display: flex;
   align-items: flex-start;
@@ -8334,3 +8336,50 @@ input { font: inherit; outline: none; border: none; }
 }
 .quick-input::placeholder { color: #9AA0A8; }
 .quick-input:focus { background: #ECEEF1; box-shadow: inset 0 0 0 1.5px var(--primary-glow); }
+
+
+/* ── Apple 디자인 패스 (2026-07-16) ─────────────────────────────────────────── */
+
+/* 큰 제목은 타이트한 트래킹·리딩 (§타이포 — 크기별 분리) */
+h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
+  letter-spacing: -0.02em;
+  line-height: 1.25;
+}
+
+/* 스토리 레일 — 프레스 피드백 + 링 상태 전환을 부드럽게 */
+.story-avatar { transition: border-color 0.25s ease, transform 0.15s ease; }
+.story-item:active .story-avatar { transform: scale(0.93); transition-duration: 0.06s; }
+.story-item:active { transform: none; } /* 아바타만 눌리게 — 라벨은 고정 */
+
+/* 시트 — 컴포지터 힌트 */
+.modal-sheet { will-change: transform; }
+
+/* 앱바 스크롤 엣지 — 하드 보더 대신 은은한 그라데이션 (콘텐츠와 겹칠 때만 의미) */
+.feed-appbar::after {
+  content: '';
+  position: absolute;
+  left: 0; right: 0; bottom: -8px;
+  height: 8px;
+  background: linear-gradient(to bottom, rgba(0,0,0,0.035), transparent);
+  pointer-events: none;
+}
+.feed-appbar { position: sticky; }
+
+/* 접근성 — 모션 민감 사용자: 슬라이드·스프링 → 크로스페이드 (§reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* 접근성 — 투명도 축소: 유리를 서리로 (§reduced-transparency) */
+@media (prefers-reduced-transparency: reduce) {
+  .bottom-nav, .modal-sheet, .feed-appbar, .point-toast {
+    background: #FFFFFF !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+  .point-toast { background: #1C1E21 !important; }
+}
