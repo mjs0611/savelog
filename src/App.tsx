@@ -44,7 +44,7 @@ import {
 } from './lib/storage';
 import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
-import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, type SpendingItem, type WeekRankRow } from './lib/supabase';
+import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, fetchGlobalStats, type GlobalStats, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
@@ -140,6 +140,7 @@ export default function App() {
     try { localStorage.setItem('savelog_seen_guide', '1'); } catch {}
     setShowFirstGuide(false);
   }
+  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
   const pendingClaimingRef = useRef(false);
@@ -166,6 +167,7 @@ export default function App() {
 
   useEffect(() => {
     checkAndResetDailyPhysics(getTodayStr());
+    fetchGlobalStats(getWeekKey()).then(setGlobalStats).catch(() => {});
     initAit();
     initBannerAds();
     preloadReward(); // 항상 리워드 광고 미리 로드
@@ -396,6 +398,9 @@ export default function App() {
               <p className="setup-desc">더 안전한 서비스 이용을 위해<br />토스 계정 연동이 필요해요</p>
             ) : (
               <p className="setup-desc">커피 한 잔 참은 것도<br />자랑이 되는 곳</p>
+            )}
+            {!isMigration && globalStats !== null && globalStats.totalRecords >= 30 && (
+              <p className="setup-proof">지금까지 쌓인 짠 기록 {globalStats.totalRecords.toLocaleString('ko-KR')}개</p>
             )}
           </div>
           <Button size="xlarge" display="full" color="primary" variant="fill" onClick={handleTossLogin} disabled={loginLoading}>

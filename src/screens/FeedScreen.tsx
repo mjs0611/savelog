@@ -2,9 +2,9 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, type GlobalStats, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
-import { shareExternal, buildCircleInviteMessage } from '../lib/share';
+import { shareExternal, buildCircleInviteMessage, buildRecordBragMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
 import { recordInteraction, getRelation, getEffectiveStreak } from '../lib/relations';
 import { formatAmount, timeAgo, getWeekKey, getTodayStr } from '../lib/utils';
@@ -174,6 +174,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     if (ids.length === 0) { setFofList([]); return; }
     fetchFriendsOfFriends(userId, ids).then(setFofList).catch(() => {});
   }, [userId, followedUsers]);
+
+  useEffect(() => {
+    fetchGlobalStats(getWeekKey()).then(setGlobalStats).catch(() => {});
+  }, []);
   useEffect(() => {
     fetchFollowersWithNickname(userId).then(list => {
       setFollowers(list);
@@ -191,6 +195,16 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [quickText, setQuickText] = useState('');
   // 스탬프 피커 (카드당 온디맨드)
   const [stampPickerFor, setStampPickerFor] = useState<string | null>(null);
+  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
+
+  // 내 기록 외부 자랑 — 성취 피크 순간에 바이럴 접점 (딥링크 by/bn = 수신자 자동 맞팔)
+  async function handleBragShare(entry: EntryWithReactions) {
+    const note = entry.items.find(it => it.category === '한마디')?.comment || entry.items[0]?.comment || '';
+    const isZero = (entry.total_amount ?? 0) === 0;
+    const me = getNickname() || '짠친';
+    const msg = buildRecordBragMessage(me, note, isZero, isZero ? undefined : formatAmount(entry.total_amount));
+    await shareExternal(msg, `by=${encodeURIComponent(userId)}&bn=${encodeURIComponent(me)}`);
+  }
   // 스토리 레일 시트
   const [showCircleSheet, setShowCircleSheet] = useState(false);
   const [showBossSheet, setShowBossSheet] = useState(false);
@@ -1332,11 +1346,20 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <CustomIcon emoji={liked ? '💖' : '🤍'} />{likeCount > 0 ? ` ${likeCount}` : ''}
               </button>
             ) : (
-              likeCount > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
-                  <CustomIcon emoji="💖" /> {likeCount}
-                </span>
-              )
+              <>
+                {likeCount > 0 && (
+                  <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
+                    <CustomIcon emoji="💖" /> {likeCount}
+                  </span>
+                )}
+                <button
+                  onClick={() => handleBragShare(entry)}
+                  aria-label="자랑하기"
+                  style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+                >
+                  <CustomIcon emoji="📤" />
+                </button>
+              </>
             )}
             {/* 받은 스탬프 요약 — 있는 것만, 읽기 전용 느낌의 작은 칩 */}
             {(() => {
@@ -1519,6 +1542,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           </div>
         );
       })()}
+
+      {globalStats !== null && globalStats.weekRecords >= 10 && (
+        <p className="social-pulse">이번 주 짠친들이 남긴 기록 {globalStats.weekRecords.toLocaleString('ko-KR')}개</p>
+      )}
 
       {/* 📝 인라인 포스트 컴포저 (기록 CTA) — 피드 최상단 */}
       <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>

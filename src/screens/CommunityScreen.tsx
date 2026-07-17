@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import {
   fetchCommunityPosts,
+  fetchQuestionAnswerCount,
   createCommunityPost,
   toggleCommunityLike,
   fetchCommunityComments,
@@ -97,10 +98,14 @@ function categoryMeta(key: CommunityCategory) {
 
 export default function CommunityScreen({ userId }: Props) {
   const [category, setCategory] = useState<CommunityCategory | 'all'>('all');
+  const [questionAnswers, setQuestionAnswers] = useState(0);
   const [posts, setPosts] = useState<CommunityPostWithMyLike[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadFailed, setLoadFailed] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
+  useEffect(() => {
+    fetchQuestionAnswerCount(todayQuestion().q).then(setQuestionAnswers).catch(() => {});
+  }, [refreshKey]);
 
   const [composeOpen, setComposeOpen] = useState(false);
   const [composeCategory, setComposeCategory] = useState<CommunityCategory>('together');
@@ -346,7 +351,9 @@ export default function CommunityScreen({ userId }: Props) {
         const tq = todayQuestion();
         return (
           <div className="glass-card" style={{ padding: '14px 16px', margin: '4px 0 0', textAlign: 'left' }}>
-            <p style={{ margin: 0, fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.3px' }}>오늘의 질문</p>
+            <p style={{ margin: 0, fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.3px' }}>
+              오늘의 질문{questionAnswers >= 1 ? ` · ${questionAnswers}명이 답했어요` : ''}
+            </p>
             <p style={{ margin: '4px 0 10px', fontSize: '14.5px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.45 }}>{tq.q}</p>
             <button
               onClick={() => {

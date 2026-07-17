@@ -113,3 +113,11 @@ export function buildTempBragMessage(temperature: number): string {
     `안 쓴 만큼 뜨거워지는 지갑 수비력, 너도 재 볼래? 👇`,
   ].join('\n');
 }
+
+export function buildRecordBragMessage(myNickname: string, noteText: string, isZero: boolean, amountText?: string): string {
+  return [
+    isZero ? `${myNickname}: 오늘 무지출 성공 🌿` : `${myNickname}: 오늘 ${amountText} 쓰고 자백했다 💸`,
+    noteText ? `"${noteText}"` : '',
+    `savelog에서 짠친들 판정 기다리는 중. 너도 와서 한 줄 남겨봐`,
+  ].filter(Boolean).join('\n');
+}

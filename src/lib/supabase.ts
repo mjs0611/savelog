@@ -1353,3 +1353,30 @@ export async function verifyUserLinked(userKey: string): Promise<boolean> {
     .maybeSingle();
   return data !== null;
 }
+
+// ── 소셜 프루프: 전체/주간 기록 수 (head+count, 실패 시 null 폴백 → UI 숨김) ──
+export interface GlobalStats { totalRecords: number; weekRecords: number; }
+export async function fetchGlobalStats(weekKey: string): Promise<GlobalStats | null> {
+  if (!supabase) return null;
+  try {
+    const [t, w] = await Promise.all([
+      supabase.from('entries').select('*', { count: 'exact', head: true }),
+      supabase.from('entries').select('*', { count: 'exact', head: true }).eq('week_key', weekKey),
+    ]);
+    if (t.error || w.error) return null;
+    return { totalRecords: t.count ?? 0, weekRecords: w.count ?? 0 };
+  } catch { return null; }
+}
+
+// 오늘의 질문에 달린 답 수 (질문 프리필 제목 매칭)
+export async function fetchQuestionAnswerCount(title: string): Promise<number> {
+  if (!supabase) return 0;
+  try {
+    const { count, error } = await supabase
+      .from('community_posts')
+      .select('*', { count: 'exact', head: true })
+      .eq('title', title);
+    if (error) return 0;
+    return count ?? 0;
+  } catch { return 0; }
+}

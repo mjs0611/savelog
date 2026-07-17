@@ -258,10 +258,27 @@ input { font: inherit; outline: none; border: none; }
   align-items: center;
   min-height: 100dvh;
   gap: 28px;
-  background: transparent;
+  background: radial-gradient(120% 55% at 50% 0%, rgba(11, 169, 122, 0.07), transparent 60%);
 }
 
 .setup-hero { text-align: center; }
+.setup-proof {
+  display: inline-block;
+  margin-top: 14px;
+  padding: 7px 16px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--primary);
+  background: rgba(11, 169, 122, 0.08);
+}
+.social-pulse {
+  margin: 2px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mute);
+  text-align: left;
+}
 .setup-emoji { font-size: 72px; margin-bottom: 16px; animation: bounce 2s infinite; }
 .setup-title { font-size: 34px; font-weight: 900; color: var(--text-main); margin-bottom: 8px; letter-spacing: -1px; }
 .setup-desc  { font-size: 16px; color: var(--text-sub); line-height: 1.6; }
