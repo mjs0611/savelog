@@ -146,6 +146,24 @@ export default function App() {
   const rankClaimingRef = useRef(false);
   const rankLoadIdRef = useRef(0);
 
+  // 키보드가 바텀시트/입력을 가리지 않도록 visualViewport 높이 차를 --kb로 노출.
+  // iOS 웹뷰는 키보드가 레이아웃 뷰포트를 줄이지 않아 fixed 시트 하단이 가려진다.
+  useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+    const update = () => {
+      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
+      document.documentElement.style.setProperty('--kb', `${Math.round(kb)}px`);
+    };
+    vv.addEventListener('resize', update);
+    vv.addEventListener('scroll', update);
+    update();
+    return () => {
+      vv.removeEventListener('resize', update);
+      vv.removeEventListener('scroll', update);
+    };
+  }, []);
+
   useEffect(() => {
     checkAndResetDailyPhysics(getTodayStr());
     initAit();
@@ -389,11 +407,11 @@ export default function App() {
     );
   }
 
-  function handleSubmitRecord(items: SpendingItem[], image?: string, isBalanceGame?: boolean): Promise<void> {
-    return handleCloseAdAndSubmit(items, image, isBalanceGame);
+  function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
+    return handleCloseAdAndSubmit(items, image);
   }
 
-  async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string, isBalanceGame?: boolean) {
+  async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
     const today = getTodayStr();
     if (submittingRef.current) return;
     submittingRef.current = true;
@@ -416,7 +434,6 @@ export default function App() {
         total_amount: total,
         persona: currentPersona,
         image,
-        ...(isBalanceGame ? { is_balance_game: true } : {}),
       });
 
       if (!entryId && isSupabaseConfigured) {

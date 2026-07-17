@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import type { SpendingItem } from '../lib/supabase';
 import { formatAmount, getTodayStr } from '../lib/utils';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
-import { getWeeklyBudget, setLastEmotion } from '../lib/storage';
+import { setLastEmotion } from '../lib/storage';
 
 const UNIFIED_CATEGORIES = [
   { label: '식비/식품', emoji: '🍚' },
@@ -18,7 +18,7 @@ const UNIFIED_CATEGORIES = [
 ];
 
 interface Props {
-  onSubmit: (items: SpendingItem[], image?: string, isBalanceGame?: boolean) => Promise<void>;
+  onSubmit: (items: SpendingItem[], image?: string) => Promise<void>;
   onClose: () => void;
   submitting: boolean;
   isAdditional?: boolean;
@@ -30,9 +30,6 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   const [dailyNote, setDailyNote] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-  const [activeSubmitType, setActiveSubmitType] = useState<'spend' | 'save' | 'dilemma' | 'zero' | 'tip' | null>(null);
-  const [dopamineDelayMode, setDopamineDelayMode] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(600);
   // 💭 소비 감정 태그 (돈 멘탈 케어)
   const [emotion, setEmotion] = useState<string | null>(null);
   const EMOTIONS = ['😌 필요했어', '😅 충동이었어', '😤 홧김에', '🙂 후회없어'];
@@ -105,143 +102,26 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
     });
   }
 
-  async function handleSubmit(type: 'spend' | 'save' | 'dilemma' | 'zero' | 'tip') {
+  async function handleSubmit() {
     if (!isNoteValid) return;
-    if (type !== 'zero' && type !== 'tip' && amount <= 0) return;
+    if (isAdditional && amount <= 0) return;
 
-    setActiveSubmitType(type);
     try {
       let finalItems: SpendingItem[] = [];
-      let isBalanceGame = false;
-
-      if (type === 'spend') {
+      if (amount > 0) {
         if (emotion) setLastEmotion(getTodayStr(), emotion);
         const item: SpendingItem = { category: selCat.label, emoji: selCat.emoji, amount, ...(emotion ? { comment: `[${emotion}]` } : {}) };
         finalItems = isAdditional
           ? [item]
           : [{ category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }, item];
-      } else if (type === 'save') {
-        finalItems = [
-          { category: '절약 방어', emoji: '🛡️', amount: 0, saved_amount: amount, comment: dailyNote.trim() }
-        ];
-      } else if (type === 'dilemma') {
-        finalItems = [
-          { category: '소비 고민', emoji: '⚖️', amount, comment: dailyNote.trim() }
-        ];
-        isBalanceGame = true;
-      } else if (type === 'zero') {
-        finalItems = [
-          { category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }
-        ];
-      } else if (type === 'tip') {
-        finalItems = [
-          { category: '꿀팁', emoji: '💡', amount: 0, comment: dailyNote.trim() }
-        ];
+      } else {
+        // 금액 없음 = 무지출 기록
+        finalItems = [{ category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() }];
       }
-
-      await onSubmit(finalItems, image || undefined, isBalanceGame);
+      await onSubmit(finalItems, image || undefined);
     } catch (e) {
       console.error(e);
-    } finally {
-      setActiveSubmitType(null);
     }
-  }
-
-  useEffect(() => {
-    if (!dopamineDelayMode) return;
-    if (timeLeft <= 0) {
-      handleSubmit('save');
-      return;
-    }
-    const timer = setInterval(() => {
-      setTimeLeft(prev => prev - 1);
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [dopamineDelayMode, timeLeft]);
-
-  if (dopamineDelayMode) {
-    const minutes = Math.floor(timeLeft / 60);
-    const seconds = timeLeft % 60;
-    const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
-    
-    return (
-      <div className="modal-overlay">
-        <div className="modal-sheet" style={{ textAlign: 'center', padding: '24px' }}>
-          <div className="modal-header" style={{ justifyContent: 'center' }}>
-            <h2 className="modal-title"><CustomIcon emoji="👾" /> 지름신 쫓아내는 중...</h2>
-          </div>
-          
-          <div className="modal-body" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '40px 0', gap: '20px' }}>
-            <div className="dopamine-timer-circle" style={{
-              width: '160px',
-              height: '160px',
-              borderRadius: '50%',
-              border: '8px solid var(--primary-light)',
-              borderTopColor: 'var(--primary)',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: 'var(--shadow-md)',
-              background: 'rgba(255,255,255,0.7)'
-            }}>
-              <span style={{ fontSize: '32px', fontWeight: 900, color: 'var(--text-main)' }}>{timeStr}</span>
-              <span style={{ fontSize: '11px', color: 'var(--text-sub)', marginTop: '4px' }}>남은 시간</span>
-            </div>
-            
-            <div style={{ padding: '0 20px' }}>
-              <p style={{ fontSize: '14px', fontWeight: 800, color: 'var(--text-main)', marginBottom: '8px' }}>
-                충동구매 욕구는 평균 10분 뒤에 사라집니다
-              </p>
-              <p style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5, margin: 0 }}>
-                현재 지각적 도파민 딜레이가 가동되었습니다. 10분을 버텨내면 <strong>절약 방어 성공 뱃지</strong>와 함께 <strong>젤리 리워드</strong>를 받게 됩니다!
-              </p>
-            </div>
-            
-            <div style={{ display: 'flex', gap: '10px', width: '100%', marginTop: '20px' }}>
-              <button 
-                className="fast-forward-btn" 
-                onClick={() => handleSubmit('save')}
-                style={{
-                  flex: 1,
-                  background: 'var(--primary)',
-                  color: '#fff',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  fontWeight: 800,
-                  fontSize: '13px',
-                  cursor: 'pointer',
-                  boxShadow: 'var(--shadow-sm)'
-                }}
-              >
-                <CustomIcon emoji="💪" /> 참아냈어요! (즉시 성공)
-              </button>
-              
-              <button 
-                onClick={() => {
-                  setDopamineDelayMode(false);
-                  setTimeLeft(600);
-                }}
-                style={{
-                  flex: 1,
-                  background: '#F2F4F7',
-                  color: 'var(--text-sub)',
-                  border: 'none',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  fontWeight: 800,
-                  fontSize: '13px',
-                  cursor: 'pointer'
-                }}
-              >
-                <CustomIcon emoji="💸" /> 그냥 살래요 (포기)
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
   }
 
   return (
@@ -262,7 +142,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           {!isAdditional && (
             <div className="daily-note-section">
               <p className="form-label">오늘 어땠어요?</p>
-              <p className="daily-note-desc">한 줄이면 충분해요. 카테고리나 금액은 아래에서 선택해도 좋아요.</p>
+              <p className="daily-note-desc">한 줄이면 충분해요. 금액은 아래에 적어도 돼요.</p>
               <textarea
                 className={`daily-note-textarea${isNoteValid ? ' daily-note-textarea--valid' : ''}`}
                 value={dailyNote}
@@ -312,14 +192,41 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
             </div>
           </div>
 
-          {/* 4. 인증 사진 첨부 (선택) */}
+          {/* 4. 소비 감정 태그 (돈 멘탈 케어) */}
+          {amount > 0 && (
+            <div style={{ marginTop: '16px' }}>
+              <p className="form-label" style={{ marginBottom: '8px' }}>이 소비, 지금 마음은? <span className="daily-note-desc" style={{ display: 'inline', marginLeft: 4 }}>(선택)</span></p>
+              <div className="emotion-select-container">
+                {EMOTIONS.map(e => {
+                  let btnClass = '';
+                  if (e.includes('필요')) btnClass = 'emotion-btn--need';
+                  else if (e.includes('충동')) btnClass = 'emotion-btn--impulse';
+                  else if (e.includes('홧김')) btnClass = 'emotion-btn--stress';
+                  else if (e.includes('후회')) btnClass = 'emotion-btn--no-regret';
+
+                  return (
+                    <button
+                      key={e}
+                      type="button"
+                      onClick={() => setEmotion(prev => prev === e ? null : e)}
+                      className={`emotion-select-btn ${btnClass} ${emotion === e ? 'active' : ''}`}
+                    >
+                      {renderTextWithEmoji(e)}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+          )}
+
+          {/* 5. 인증 사진 첨부 (선택) */}
           <div className="image-upload-section">
             <p className="form-label">사진 첨부 (선택)</p>
             {isFoodCategory && !image && (
               <div className="food-photo-notice">
                 <span className="food-photo-notice-icon"><CustomIcon emoji="🍔" /></span>
                 <span className="food-photo-notice-text">
-                  맛있는 음식 인증샷이나, 영수증, 혹은 빈 그릇/물잔 사진을 올리면 짠친구들이 더 좋아해요!
+                  영수증이나 빈 그릇 사진을 올리면 짠친들이 더 잘 믿어줘요
                 </span>
               </div>
             )}
@@ -350,149 +257,29 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 />
               </label>
             )}
-          {amount > 0 && (
-            <div className="utility-deflector-card glass-card" style={{
-              marginTop: '16px',
-              padding: '16px',
-              borderRadius: '16px',
-              border: '1px solid rgba(255, 74, 107, 0.15)',
-              background: 'rgba(255, 74, 107, 0.03)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '10px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                <CustomIcon emoji="💡" />
-                <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>한계 효용 디플렉터 (소비 시간 변환)</span>
-              </div>
-              <div style={{ fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
-                이 소비 금액은 최저임금 기준(시급 9,860원)으로 <strong>{(amount / 9860).toFixed(1)}시간</strong> 동안 일한 노동력과 같으며, 하루 평균 예산의 <strong>{(amount / (getWeeklyBudget() / 7)).toFixed(1)}일 치</strong>에 해당합니다.
-              </div>
-              <button
-                onClick={() => setDopamineDelayMode(true)}
-                style={{
-                  background: 'var(--primary-light)',
-                  color: 'var(--primary)',
-                  border: 'none',
-                  borderRadius: '10px',
-                  padding: '10px',
-                  fontWeight: 800,
-                  fontSize: '12px',
-                  cursor: 'pointer',
-                  textAlign: 'center',
-                  transition: 'background 0.2s'
-                }}
-              >
-                ⏱️ 10분 참기 타이머 가동 (도파민 디플렉터)
-              </button>
-            </div>
-          )}
           </div>
         </div>
 
-        {/* 4.5 소비 감정 태그 (돈 멘탈 케어) */}
-        {amount > 0 && (
-          <div style={{ marginBottom: '4px' }}>
-            <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}><CustomIcon emoji="💭" /> 이 소비, 지금 마음은 어때요? <span style={{ fontWeight: 500, color: 'var(--text-mute)' }}>(선택)</span></p>
-            <div className="emotion-select-container">
-              {EMOTIONS.map(e => {
-                let btnClass = '';
-                if (e.includes('필요')) btnClass = 'emotion-btn--need';
-                else if (e.includes('충동')) btnClass = 'emotion-btn--impulse';
-                else if (e.includes('홧김')) btnClass = 'emotion-btn--stress';
-                else if (e.includes('후회')) btnClass = 'emotion-btn--no-regret';
-                
-                return (
-                  <button
-                    key={e}
-                    type="button"
-                    onClick={() => setEmotion(prev => prev === e ? null : e)}
-                    className={`emotion-select-btn ${btnClass} ${emotion === e ? 'active' : ''}`}
-                  >
-                    {renderTextWithEmoji(e)}
-                  </button>
-                );
-              })}
-            </div>
-          </div>
-        )}
-
-        {/* 5. 동적 제출 버튼 그룹 */}
+        {/* 6. 제출 — 화면당 primary CTA 하나 */}
         <div className="modal-footer" style={{ flexDirection: 'column', gap: '8px' }}>
           {!isNoteValid && !isAdditional && (
             <p className="submit-hint submit-hint--mb">기록 내용을 5자 이상 입력해 주세요</p>
           )}
-
-          {isAdditional ? (
-            <Button
-              size="xlarge"
-              display="full"
-              color="primary"
-              variant="fill"
-              onClick={() => handleSubmit('spend')}
-              loading={submitting}
-              disabled={amount <= 0}
-              style={{ background: 'linear-gradient(135deg, #FF4A6B 0%, #E22D50 100%)', border: 'none' }}
-            >
-              <CustomIcon emoji="💸" /> 추가 소비 기록하기
-            </Button>
-          ) : amount > 0 ? (
-            <div className="submit-btn-group-vertical" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <Button
-                size="xlarge"
-                display="full"
-                color="primary"
-                variant="fill"
-                onClick={() => handleSubmit('spend')}
-                loading={submitting && activeSubmitType === 'spend'}
-                disabled={!isNoteValid || submitting}
-                style={{ background: 'linear-gradient(135deg, #FF4A6B 0%, #E22D50 100%)', border: 'none' }}
-              >
-                <CustomIcon emoji="💸" /> 나의 가치 소비 기록 ({formatAmount(amount)})
-              </Button>
-
-              <Button
-                size="xlarge"
-                display="full"
-                color="primary"
-                variant="fill"
-                onClick={() => handleSubmit('dilemma')}
-                loading={submitting && activeSubmitType === 'dilemma'}
-                disabled={!isNoteValid || submitting}
-                style={{ background: 'linear-gradient(135deg, #8B5CF6 0%, #7C3AED 100%)', border: 'none' }}
-              >
-                <CustomIcon emoji="⚖️" /> 플러스 소비 밸런스 게임 올리기
-              </Button>
-            </div>
-          ) : (
-            <div className="submit-btn-group-vertical" style={{ width: '100%', display: 'flex', flexDirection: 'column', gap: '8px' }}>
-              <Button
-                size="xlarge"
-                display="full"
-                color="primary"
-                variant="fill"
-                onClick={() => handleSubmit('zero')}
-                loading={submitting && activeSubmitType === 'zero'}
-                disabled={!isNoteValid || submitting}
-                style={{ background: 'linear-gradient(135deg, #0EA5E9 0%, #0284C7 100%)', border: 'none' }}
-              >
-                <CustomIcon emoji="🌿" /> 오늘 지갑 충전 힐링 데이 인증
-              </Button>
-
-              <Button
-                size="xlarge"
-                display="full"
-                color="primary"
-                variant="fill"
-                onClick={() => handleSubmit('tip')}
-                loading={submitting && activeSubmitType === 'tip'}
-                disabled={!isNoteValid || submitting}
-                style={{ background: 'linear-gradient(135deg, #F59E0B 0%, #D97706 100%)', border: 'none' }}
-              >
-                <CustomIcon emoji="💡" /> 나만의 힙한 플러스 꿀팁 공유
-              </Button>
-            </div>
-          )}
+          <Button
+            size="xlarge"
+            display="full"
+            color="primary"
+            variant="fill"
+            onClick={handleSubmit}
+            loading={submitting}
+            disabled={!isNoteValid || submitting || (isAdditional && amount <= 0)}
+          >
+            {isAdditional
+              ? '추가 지출 기록하기'
+              : amount > 0
+                ? `기록하기 (${formatAmount(amount)})`
+                : '무지출로 기록하기 🌿'}
+          </Button>
         </div>
       </div>
     </div>

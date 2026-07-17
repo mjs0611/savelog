@@ -135,7 +135,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           shareExternal(buildRankBragMessage(myRankIdx + 1, weekRank.length, statLine));
         };
         return (
-          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(0, 245, 160, 0.1) 0%, rgba(0, 245, 160, 0.02) 100%)', border: '1.5px solid rgba(0, 245, 160, 0.3)', marginBottom: '16px' }}>
+          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(11, 169, 122, 0.08) 0%, rgba(11, 169, 122, 0.02) 100%)', border: '1.5px solid rgba(11, 169, 122, 0.3)', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="my-rank-left">
                 <span className="my-rank-pos" style={{ color: 'var(--primary)', fontSize: '20px', fontWeight: 800 }}>{myRankIdx + 1}위</span>
