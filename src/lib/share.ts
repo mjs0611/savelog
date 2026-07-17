@@ -67,19 +67,17 @@ export function openContactsInvite(onInvited?: (count: number) => void): void {
 
 export function buildCircleInviteMessage(myNickname: string, circleName: string, code: string): string {
   return [
-    `🔒 ${myNickname}님이 짠 서클 「${circleName}」에 초대했어요!`,
-    `우리끼리만 보는 소비 기록 방 — 광장 말고, 거지방처럼 솔직하게 💸`,
+    `${myNickname}: 우리 거지방 팠다 💸`,
+    `「${circleName}」 서로 오늘 얼마 썼는지 보고 판정하는 방. 들어와서 쓴 거 자백해`,
     `초대 코드: ${code}`,
-    `아래 링크로 바로 합류 👇`,
   ].join('\n');
 }
 
 export function buildDuoInviteMessage(myNickname: string): string {
   return [
-    `💞 ${myNickname}님이 머니 듀오를 신청했어요!`,
-    `둘이 함께 절약 목표를 채우고, 매일 둘 다 기록하면 공동 불꽃🔥이 자라요.`,
-    `한 명이 빠지면 불꽃이 꺼지니까... 책임감 필수 😎`,
-    `아래 링크로 수락하기 👇`,
+    `${myNickname}님이 머니 듀오를 신청했어요 💞`,
+    `둘 다 매일 기록하면 공동 불꽃🔥이 자라고, 한 명이 빼먹으면 꺼져요.`,
+    `자신 있으면 수락 👇`,
   ].join('\n');
 }
 

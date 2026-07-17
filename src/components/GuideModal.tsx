@@ -4,15 +4,15 @@ import { renderTextWithEmoji } from './CustomIcon';
 // savelog 사용법 — 개념이 많아 3그룹으로 위계화 (기본 루프 → 오늘의 재미 → 짠친과 함께)
 const GROUPS: { title: string; items: { emoji: string; title: string; desc: string }[] }[] = [
   {
-    title: '💰 기본 — 하루 한 줄이면 됩니다',
+    title: '기본 · 하루 한 줄이면 됩니다',
     items: [
-      { emoji: '✍️', title: '매일 한 줄 기록', desc: '오늘 쓴 돈(또는 무지출)을 한 줄로 남겨요. 모든 보상과 활동의 시작이에요.' },
+      { emoji: '✍️', title: '매일 한 줄 기록', desc: '오늘 쓴 돈을 한 줄로 남겨요. 안 썼으면 그냥 무지출이라고 쓰면 돼요.' },
       { emoji: '💰', title: '토스포인트 (진짜 현금)', desc: '기록하면 쌓여요. "광고 보고 받기"를 누르면 실제 토스포인트로 받아요.' },
       { emoji: '🪙', title: '젤리 (앱 안 재화)', desc: '기록·룰렛·배틀로 모이는 가상 재화. 절약 요정을 꾸미는 데 써요.' },
     ],
   },
   {
-    title: '🎲 오늘의 재미',
+    title: '오늘의 재미',
     items: [
       { emoji: '🎰', title: '지갑 수비 룰렛', desc: '기록 1번 = 룰렛권 1장(무지출은 2장). 돌리면 젤리 5~150개가 랜덤으로!' },
       { emoji: '🐹', title: '절약 요정 (펫)', desc: '기록하면 자라고, 방치하면 어수선해져요. 마이로그에서 젤리로 꾸며요.' },
@@ -21,13 +21,13 @@ const GROUPS: { title: string; items: { emoji: string; title: string; desc: stri
     ],
   },
   {
-    title: '🤝 짠친과 함께',
+    title: '짠친과 함께',
     items: [
-      { emoji: '🔒', title: '짠 서클 (기본 공간)', desc: '3~8명 닫힌 방에서 우리끼리 기록을 나눠요. 초대 코드 또는 공개 서클(랜덤 매칭)로 시작하고, 서클의 기록이 모여 주간 보스를 잡아요.' },
-      { emoji: '⚖️', title: '판정과 스탬프', desc: '짠친 기록에 응원·판정을 보내고, 거지방 스탬프(어림도 없지·그돈씨…)를 찍어요. 2표 모이면 그 글의 판결!' },
+      { emoji: '🔒', title: '짠 서클 (기본 공간)', desc: '3~8명이 우리끼리 기록을 보는 방이에요. 초대 코드나 랜덤 매칭으로 들어가고, 다 같이 주간 보스를 잡아요.' },
+      { emoji: '⚖️', title: '판정과 스탬프', desc: '짠친 기록에 응원이나 스탬프(어림도 없지, 그돈씨…)를 찍어요. 같은 스탬프 2표면 판결 확정!' },
       { emoji: '🤔', title: '살까 고민', desc: '살까 말까 망설일 때 올리면 짠친들이 투표로 말려줘요. 보고 최종 결정해요.' },
       { emoji: '💞', title: '짝꿍 · 머니 듀오 · 배틀', desc: '서로 맞팔하면 짝꿍. 듀오를 맺으면 목표·스트릭을 함께 키우고, "오늘 하루 덜 쓰기 배틀"도 걸 수 있어요.' },
-      { emoji: '🗣️', title: '광장', desc: '주제별 이야기판 — 아낀 자랑, 살까 말까, 텅장 실화, 꿀팁·핫딜. 매일 바뀌는 오늘의 질문에 답해보세요.' },
+      { emoji: '🗣️', title: '광장', desc: '아낀 자랑, 살까 말까, 텅장 실화, 꿀팁·핫딜까지. 매일 바뀌는 오늘의 질문도 있어요.' },
       { emoji: '🏆', title: '주간 순위', desc: '절약 점수(기록+절약)로 리그 경쟁. 상위권은 토스포인트 보상을 받아요.' },
     ],
   },
@@ -39,7 +39,7 @@ export default function GuideModal({ open, onClose }: { open: boolean; onClose: 
     <div className="modal-overlay" onClick={onClose}>
       <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '20px 16px 12px', textAlign: 'left' }}>
-          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>{renderTextWithEmoji('❓ savelog 사용법')}</h3>
+          <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>{'savelog 사용법'}</h3>
           <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-sub)' }}>하루 한 줄 기록하면, 나머지는 전부 따라와요.</p>
         </div>
         <div style={{ overflowY: 'auto', padding: '0 16px', flex: 1 }}>

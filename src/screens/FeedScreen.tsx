@@ -1309,7 +1309,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             <button
               onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: !prev[entry.id] }))}
               aria-label="댓글"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px 6px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px 12px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
             >
               <CustomIcon emoji="💬" />{comments.length > 0 ? ` ${comments.length}` : ''}
             </button>
@@ -1317,7 +1317,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <button
                 onClick={() => setStampPickerFor(prev => (prev === entry.id ? null : entry.id))}
                 aria-label="스탬프"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
               >
                 <CustomIcon emoji="🙅" />{Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0) > 0 ? ` ${Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0)}` : ''}
               </button>
@@ -1327,13 +1327,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 onClick={(e) => handleReact(entry, 'trust', e)}
                 disabled={toggling.has(entry.id)}
                 aria-label="응원하기"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', background: 'none', border: 'none', cursor: 'pointer', color: liked ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: liked ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
               >
                 <CustomIcon emoji={liked ? '💖' : '🤍'} />{likeCount > 0 ? ` ${likeCount}` : ''}
               </button>
             ) : (
               likeCount > 0 && (
-                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '6px 10px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
+                <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
                   <CustomIcon emoji="💖" /> {likeCount}
                 </span>
               )
@@ -1419,8 +1419,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const inviteCard = (
     <div className="glass-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
       <div style={{ textAlign: 'left' }}>
-        <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-main)' }}><CustomIcon emoji="👯" /> 친구와 함께하면 덜 씁니다</p>
-        <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.4 }}>토스 친구를 초대하면 <strong>스트릭 보호권 🛡️ +1</strong> — 하루 빠져도 불꽃이 안 꺼져요</p>
+        <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-main)' }}><CustomIcon emoji="👯" /> 같이 아끼면 진짜 덜 씁니다</p>
+        <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.4 }}>친구를 초대하면 <strong>스트릭 보호권 +1</strong>. 하루 빼먹어도 불꽃이 안 꺼져요</p>
       </div>
       <button
         onClick={() => openContactsInvite(onShieldEarned)}
@@ -1648,7 +1648,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', cursor: 'pointer', border: '1.5px solid var(--primary-glow)' }}
         >
           <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, textAlign: 'left' }}>
-            <CustomIcon emoji="🔒" /> 지출 이야기는 광장보다 <strong>우리끼리</strong> — 3~8명 짠 서클에서 솔직하게
+            <CustomIcon emoji="🔒" /> 돈 얘기는 아는 사람끼리 · 3~8명 짠 서클
           </p>
           <span style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)' }}>시작하기 ›</span>
         </div>
@@ -1690,7 +1690,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           <div className="glass-card" style={{ padding: '18px 16px', textAlign: 'left', marginBottom: '16px' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800 }}>{renderTextWithEmoji('🔒 짠 서클')}</h3>
             <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.55 }}>
-              지출 이야기는 광장보다 <strong>우리끼리</strong>. 3~8명 닫힌 방에서 거지방처럼 솔직하게 기록하고, 서로의 하루를 판정해요. 서클의 절약이 모여 주간 보스를 잡습니다.
+              돈 얘기는 아는 사람끼리가 편하죠. 3~8명이서 서로 오늘 쓴 걸 보고, 놀리고, 같이 주간 보스를 잡는 방이에요.
             </p>
             {circleFormMode === 'create' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
