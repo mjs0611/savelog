@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
-import { formatAmount, formatWeekRange, getWeekKey, getTodayStr } from '../lib/utils';
+import { formatAmount, formatWeekRange, getWeekKey, getPrevWeekKey, getTodayStr } from '../lib/utils';
 import { sendCheeringMessage, getNickname, getPersona, getDailyMission } from '../lib/storage';
 import { shareExternal, buildRankBragMessage } from '../lib/share';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
@@ -35,6 +35,12 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
 
 
   // ── 순위 리워드는 지난 주 최종 성적 기준으로만 계산 ──
+  // 참여자 게이트: 주간 참여 5명 미만이면 보상 미지급 (2026-W29 정산분부터 — 이전 주는 소급하지 않음)
+  const MIN_WEEKLY_PARTICIPANTS = 5;
+  const REWARD_GATE_FROM_WEEK = '2026-W29';
+  const prevWeekKeyStr = getPrevWeekKey();
+  const prevRewardGated = prevWeekKeyStr >= REWARD_GATE_FROM_WEEK && prevWeekRank.length < MIN_WEEKLY_PARTICIPANTS;
+  const curRewardGated = weekRank.length < MIN_WEEKLY_PARTICIPANTS;
   const prevSpendGroup = prevWeekRank.filter(r => r.total > 0);
   const prevZeroGroup = prevWeekRank.filter(r => r.total === 0);
   const myPrevSpendIdx = prevSpendGroup.findIndex(r => r.user_id === userId);
@@ -43,7 +49,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
     : myPrevZeroIdx >= 0 ? prevZeroGroup[myPrevZeroIdx] : null;
   const isPrevSuspicious = prevMyRow ? (prevMyRow.total === 0 && prevMyRow.doubtCount >= 3) : false;
   const prevMyDays = prevMyRow?.days ?? 0;
-  const rankRewardAmount = isPrevSuspicious ? 0
+  const rankRewardAmount = isPrevSuspicious || prevRewardGated ? 0
     : myPrevSpendIdx === 0 && prevMyDays >= 3 ? 50
     : myPrevSpendIdx >= 0 && prevMyDays >= 3 && prevSpendGroup.length > 0 && (myPrevSpendIdx + 1) / prevSpendGroup.length <= 0.1 ? 30
     : myPrevZeroIdx === 0 && prevMyDays >= 3 ? 50
@@ -54,6 +60,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
   const curSpendGroup = weekRank.filter(r => r.total > 0);
   const curZeroGroup = weekRank.filter(r => r.total === 0);
   const projectReward = (row: WeekRankRow): { amount: number; label: string } | null => {
+    if (curRewardGated) return null;
     if (row.days < 3) return null;
     if (row.total > 0) {
       const idx = curSpendGroup.findIndex(r => r.user_id === row.user_id);
@@ -272,7 +279,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           )}
 
           <p style={{ fontSize: '11px', color: 'var(--text-mute)', textAlign: 'center', margin: '0 0 8px' }}>
-            <CustomIcon emoji="🏆" /> 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준
+            <CustomIcon emoji="🏆" /> 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준{curRewardGated ? ` · 참여자 ${MIN_WEEKLY_PARTICIPANTS}명부터 보상이 열려요 (지금 ${weekRank.length}명)` : ''}
           </p>
 
           {weekRank.map((row, i) => {

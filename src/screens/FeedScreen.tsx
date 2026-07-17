@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, type GlobalStats, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
 import { shareExternal, buildCircleInviteMessage, buildRecordBragMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
@@ -35,7 +35,10 @@ function FeedBannerSlot() {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    if (!TossAds.initialize.isSupported()) return;
+    // 토스 웹뷰 밖(브라우저)에서는 isSupported 호출 자체가 throw
+    try {
+      if (!TossAds.initialize.isSupported()) return;
+    } catch { return; }
 
     let attached: { destroy: () => void } | undefined;
     let retryTimer: ReturnType<typeof setTimeout> | null = null;
@@ -179,6 +182,21 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   useEffect(() => {
     fetchGlobalStats(getWeekKey()).then(setGlobalStats).catch(() => {});
   }, []);
+
+  // 자리 비운 사이 받은 반응 — 재방문 순간 가장 먼저 보상을 보여준다
+  const [welcomeBack, setWelcomeBack] = useState<{ reactions: number; comments: number } | null>(null);
+  useEffect(() => {
+    let lastSeen: string | null = null;
+    try {
+      lastSeen = localStorage.getItem('savelog_last_seen');
+      localStorage.setItem('savelog_last_seen', new Date().toISOString());
+    } catch { /* storage 불가 시 배너 생략 */ }
+    if (!lastSeen) return;
+    fetchFeedbackSince(userId, lastSeen).then(r => {
+      if (r && r.reactions + r.comments > 0) setWelcomeBack(r);
+    }).catch(() => {});
+  }, [userId]);
+
   useEffect(() => {
     fetchFollowersWithNickname(userId).then(list => {
       setFollowers(list);
@@ -506,6 +524,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [circleJoinInput, setCircleJoinInput] = useState('');
   const [circleBusy, setCircleBusy] = useState(false);
   const userTouchedTabRef = React.useRef(false);
+  // 서클이 없으면 발견이 홈 — 미사용 기능이 첫 화면을 차지하지 않게 (실측: 서클 실사용 0)
+  useEffect(() => {
+    if (circleLoaded && !myCircle && !userTouchedTabRef.current) setFeedTab('all');
+  }, [circleLoaded, myCircle]);
 
   useEffect(() => {
     fetchMyCircle(userId).then(res => {
@@ -1549,6 +1571,19 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         );
       })()}
 
+      {welcomeBack && (
+        <button
+          onClick={() => setWelcomeBack(null)}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(11, 169, 122, 0.25)', background: 'rgba(11, 169, 122, 0.06)', cursor: 'pointer' }}
+        >
+          <IconHeart filled size={18} className="" />
+          <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
+            자리 비운 사이 내 기록에 반응 {welcomeBack.reactions + welcomeBack.comments}개가 달렸어요
+          </span>
+          <span style={{ fontSize: '11px', color: 'var(--text-mute)', fontWeight: 700 }}>닫기</span>
+        </button>
+      )}
+
       {globalStats !== null && globalStats.weekRecords >= 10 && (
         <p className="social-pulse">이번 주 짠친들이 남긴 기록 {globalStats.weekRecords.toLocaleString('ko-KR')}개</p>
       )}
@@ -1652,6 +1687,23 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               )}
               <button onClick={() => setJudgeSkipped(prev => new Set(prev).add(e.id))} style={{ flexShrink: 0, background: 'none', border: 'none', fontSize: '11px', color: 'var(--text-mute)', cursor: 'pointer', padding: '4px' }}>넘기기</button>
             </div>
+            {!isDilemma && (
+              <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
+                {(['nope', 'approve', 'chicken'] as const).map(k => {
+                  const st = STAMP_BY_KEY[k];
+                  if (!st) return null;
+                  return (
+                    <button
+                      key={k}
+                      onClick={() => { setJudgedCount(c => c + 1); setJudgeSkipped(prev => new Set(prev).add(e.id)); handleStamp(e, k); }}
+                      style={{ flex: 1, padding: '8px 4px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#F7F8FA', color: 'var(--text-sub)', fontWeight: 800, fontSize: '11.5px', cursor: 'pointer' }}
+                    >
+                      <CustomIcon emoji={st.emoji} /> {st.label}
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
         );
       })() : judgedCount > 0 ? (

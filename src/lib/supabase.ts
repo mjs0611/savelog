@@ -1380,3 +1380,52 @@ export async function fetchQuestionAnswerCount(title: string): Promise<number> {
     return count ?? 0;
   } catch { return 0; }
 }
+
+// ── 절약 요정 — 첫 반응 보장 장치 (시스템 페르소나임을 닉네임으로 정직하게 노출) ──
+export const FAIRY_USER_ID = '__fairy__';
+export const FAIRY_NICKNAME = '절약 요정';
+const FAIRY_ZERO_LINES = [
+  '무지출 인정! 오늘 지갑이 평화로웠네요',
+  '한 푼도 안 썼다니, 요정이 다 뿌듯해요',
+  '오늘도 지켰네요. 이 맛에 절약하죠',
+  '무지출 도장 쾅. 내일도 볼 수 있죠?',
+];
+const FAIRY_SPEND_LINES = [
+  '쓴 건 쓴 거고, 기록한 게 어디예요. 인정',
+  '솔직한 자백 좋아요. 기록했으니 반은 아낀 거예요',
+  '적어도 어디에 썼는지는 아는 사람이 됐네요',
+  '오늘 기록 접수. 짠친들이 곧 판정하러 올 거예요',
+];
+export async function addFairyResponse(entryId: string, isZero: boolean): Promise<void> {
+  if (!supabase) return;
+  const pool = isZero ? FAIRY_ZERO_LINES : FAIRY_SPEND_LINES;
+  let h = 0;
+  for (const c of entryId) h = (h * 31 + c.charCodeAt(0)) >>> 0;
+  const msg = pool[h % pool.length];
+  try {
+    await Promise.all([
+      supabase.from('reactions').insert({ entry_id: entryId, user_id: FAIRY_USER_ID, type: 'trust' }),
+      supabase.from('community_comments').insert({ post_id: entryId, user_id: FAIRY_USER_ID, nickname: FAIRY_NICKNAME, persona: null, content: msg }),
+    ]);
+  } catch { /* 요정 실패는 조용히 — 기록 플로우를 막지 않는다 */ }
+}
+
+// 자리 비운 사이 내 기록에 달린 반응·댓글 수 (재방문 순간의 보상 가시화)
+export async function fetchFeedbackSince(userId: string, sinceISO: string): Promise<{ reactions: number; comments: number } | null> {
+  if (!supabase) return null;
+  try {
+    const { data: myEntries, error: e1 } = await supabase
+      .from('entries').select('id').eq('user_id', userId)
+      .order('created_at', { ascending: false }).limit(20);
+    if (e1 || !myEntries || myEntries.length === 0) return null;
+    const ids = myEntries.map(r => r.id);
+    const [r, c] = await Promise.all([
+      supabase.from('reactions').select('*', { count: 'exact', head: true })
+        .in('entry_id', ids).neq('user_id', userId).gt('created_at', sinceISO),
+      supabase.from('community_comments').select('*', { count: 'exact', head: true })
+        .in('post_id', ids).neq('user_id', userId).gt('created_at', sinceISO),
+    ]);
+    if (r.error || c.error) return null;
+    return { reactions: r.count ?? 0, comments: c.count ?? 0 };
+  } catch { return null; }
+}

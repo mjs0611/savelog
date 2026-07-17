@@ -44,7 +44,7 @@ import {
 } from './lib/storage';
 import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
 import { preloadReward, showReward, initBannerAds } from './lib/ads';
-import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, fetchGlobalStats, type GlobalStats, type SpendingItem, type WeekRankRow } from './lib/supabase';
+import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, fetchGlobalStats, addFairyResponse, type GlobalStats, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
 import FeedScreen from './screens/FeedScreen';
 import RankScreen from './screens/RankScreen';
@@ -450,6 +450,11 @@ export default function App() {
       if (!entryId && isSupabaseConfigured) {
         showToast('기록 저장에 실패했어요. 다시 시도해 주세요.');
         return;
+      }
+
+      // 절약 요정 첫 반응 — 어떤 기록도 무반응으로 남지 않게 (fire-and-forget)
+      if (entryId && !isSocialPost) {
+        addFairyResponse(entryId, total === 0).catch(() => {});
       }
 
       // 1. 젤리 저금통 예산 차감 및 몬스터 레이드 연동 (소셜 포스트 제외)
