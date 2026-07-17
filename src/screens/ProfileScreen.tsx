@@ -19,6 +19,7 @@ import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMes
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
 import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
+import { IconFriends, IconTrophy, IconGear } from '../components/Icons';
 import CustomIcon from '../components/CustomIcon';
 import JellyPockets from '../components/JellyPockets';
 import MyCockpit from '../components/MyCockpit';
@@ -266,11 +267,11 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <div className="mylog-nickname-row">
                 <span className="mylog-nickname">{nickname}</span>
                 <div className="mylog-header-actions">
-                  <button className="mylog-edit-btn" onClick={() => setShowFollows(true)}><CustomIcon emoji="👥" /></button>
+                  <button className="mylog-edit-btn" aria-label="짠친 목록" onClick={() => setShowFollows(true)}><IconFriends /></button>
                   {onOpenRanking && (
-                    <button className="mylog-edit-btn" onClick={onOpenRanking} title="주간 랭킹"><CustomIcon emoji="🏆" /></button>
+                    <button className="mylog-edit-btn" aria-label="주간 랭킹" onClick={onOpenRanking}><IconTrophy /></button>
                   )}
-                  <button className="mylog-edit-btn" onClick={() => setShowSettings(true)}><CustomIcon emoji="⚙️" /></button>
+                  <button className="mylog-edit-btn" aria-label="설정" onClick={() => setShowSettings(true)}><IconGear /></button>
                 </div>
               </div>
               {p ? (

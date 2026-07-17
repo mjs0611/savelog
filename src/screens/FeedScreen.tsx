@@ -29,6 +29,7 @@ import {
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
 import { openContactsInvite } from '../lib/share';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
+import { IconChat, IconStamp, IconHeart, IconShare } from '../components/Icons';
 
 function FeedBannerSlot() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -1056,6 +1057,19 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         key={entry.id}
         className={`feed-card-ig ${cardModifier}`}
       >
+        {/* 짠친 판결 도장 — 같은 스탬프 2표면 잉크 도장이 찍힌다 (제품 시그니처) */}
+        {(() => {
+          const verdict = topStamp(entry.stamp_counts || {});
+          return verdict ? (
+            <span
+              className={`verdict-stamp${verdict.stamp.key === 'approve' ? ' verdict-stamp--ok' : ''}`}
+              aria-label={`짠친 판결: ${verdict.stamp.label} ${verdict.count}표`}
+            >
+              <span className="verdict-stamp-label">{verdict.stamp.label}</span>
+              <span className="verdict-stamp-count">짠친 판결 · {verdict.count}표</span>
+            </span>
+          ) : null;
+        })()}
         {/* 카드 헤더 — 아바타 + 닉네임 + 팔로우 (아바타·닉네임 탭 → 미니 프로필) */}
         <div className="feed-card-ig-header">
           <div
@@ -1106,15 +1120,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             {isZeroSpend && !isMilestone && !isTipPost && !isDilemmaPost && (
               <span className="feed-badge feed-badge--blue"><CustomIcon emoji="🌿" /> 지갑 힐링</span>
             )}
-            {(() => {
-              // 가장 많이 받은 스탬프(2개 이상) = 짠친들의 판결
-              const verdict = topStamp(entry.stamp_counts || {});
-              return verdict ? (
-                <span className="feed-badge feed-badge--yellow" title={`짠친 판결 · ${verdict.count}표`}>
-                  <CustomIcon emoji={verdict.stamp.emoji} /> {verdict.stamp.label}
-                </span>
-              ) : null;
-            })()}
+
             {/* 이미 팔로우 중이면 버튼 숨김 — 누를 게 없는 상태가 정상 상태 */}
             {entry.user_id !== userId && !followedUsers[entry.user_id] && (
               <button
@@ -1325,7 +1331,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               aria-label="댓글"
               style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px 12px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
             >
-              <CustomIcon emoji="💬" />{comments.length > 0 ? ` ${comments.length}` : ''}
+              <IconChat />{comments.length > 0 ? ` ${comments.length}` : ''}
             </button>
             {entry.user_id !== userId && (
               <button
@@ -1333,7 +1339,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 aria-label="스탬프"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
               >
-                <CustomIcon emoji="🙅" />{Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0) > 0 ? ` ${Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0)}` : ''}
+                <IconStamp />{Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0) > 0 ? ` ${Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0)}` : ''}
               </button>
             )}
             {entry.user_id !== userId ? (
@@ -1343,13 +1349,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 aria-label="응원하기"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: liked ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
               >
-                <CustomIcon emoji={liked ? '💖' : '🤍'} />{likeCount > 0 ? ` ${likeCount}` : ''}
+                <IconHeart filled={liked} />{likeCount > 0 ? ` ${likeCount}` : ''}
               </button>
             ) : (
               <>
                 {likeCount > 0 && (
                   <span style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
-                    <CustomIcon emoji="💖" /> {likeCount}
+                    <IconHeart filled /> {likeCount}
                   </span>
                 )}
                 <button
@@ -1357,7 +1363,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   aria-label="자랑하기"
                   style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
                 >
-                  <CustomIcon emoji="📤" />
+                  <IconShare />
                 </button>
               </>
             )}
@@ -1662,7 +1668,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             className={`feed-tab-btn${feedTab === t ? ' feed-tab-btn--active' : ''}`}
             onClick={() => { userTouchedTabRef.current = true; setFeedTab(t); }}
           >
-            {t === 'circle' ? `🔒 서클${myCircle ? ` (${myCircle.members.length})` : ''}` : t === 'all' ? '발견' : `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}`}
+            {t === 'circle' ? `서클${myCircle ? ` (${myCircle.members.length})` : ''}` : t === 'all' ? '발견' : `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}`}
           </button>
         ))}
       </div>
@@ -1737,9 +1743,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={() => setCircleFormMode('create')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>{renderTextWithEmoji('💌 내 서클 만들고 친구 초대하기')}</button>
-                <button onClick={() => setCircleFormMode('join')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>{renderTextWithEmoji('🔑 초대 코드로 참여하기')}</button>
-                <button onClick={handleJoinOpen} disabled={circleBusy} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer', fontSize: '13px', opacity: circleBusy ? 0.5 : 1 }}>{circleBusy ? '배정 중...' : renderTextWithEmoji('🎲 이번 주 공개 서클 입장 (랜덤 매칭)')}</button>
+                <button onClick={() => setCircleFormMode('create')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>내 서클 만들고 친구 초대하기</button>
+                <button onClick={() => setCircleFormMode('join')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>초대 코드로 참여하기</button>
+                <button onClick={handleJoinOpen} disabled={circleBusy} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer', fontSize: '13px', opacity: circleBusy ? 0.5 : 1 }}>{circleBusy ? '배정 중...' : '이번 주 공개 서클 입장 (랜덤 매칭)'}</button>
                 {!circleLoaded && <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-mute)', textAlign: 'center' }}>서클 정보를 불러오는 중...</p>}
               </div>
             )}
@@ -1748,7 +1754,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           {/* 발견 미리보기 — 서클 만들기 전에도 화면이 비지 않게 */}
           {entries.length > 0 && (
             <>
-              <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', textAlign: 'left' }}><CustomIcon emoji="🌍" /> 지금 발견에서는</p>
+              <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', textAlign: 'left' }}>다른 짠친들의 기록</p>
               <div className="feed-list">
                 {entries.slice(0, 3).map(entry => (
                   <React.Fragment key={entry.id}>{renderFeedCard(entry)}</React.Fragment>

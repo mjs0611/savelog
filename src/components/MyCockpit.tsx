@@ -303,7 +303,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
     <div className="my-cockpit">
       {/* 사용법 가이드 진입 — 처음/헷갈릴 때 */}
       <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: '8px' }}>
-        <button onClick={() => setShowGuide(true)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', borderRadius: '100px', padding: '5px 12px', cursor: 'pointer' }}>❓ 사용법</button>
+        <button onClick={() => setShowGuide(true)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', borderRadius: '100px', padding: '5px 12px', cursor: 'pointer' }}>사용법</button>
       </div>
 
       {/* 💠 통합 리워드 스트립 — 토스포인트(현금) · 젤리(가상) · 목표(절약진행) 한눈에 */}

@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
 import {
@@ -53,6 +53,7 @@ import RecordScreen from './screens/RecordScreen';
 import PersonaTest from './screens/PersonaTest';
 import CommunityScreen from './screens/CommunityScreen';
 import CustomIcon from './components/CustomIcon';
+import { IconTabFeed, IconTabPlaza, IconTabMy } from './components/Icons';
 import GuideModal from './components/GuideModal';
 
 type Tab = 'feed' | 'community' | 'mylog';
@@ -80,10 +81,15 @@ try {
   }
 } catch { /* URL 파싱 실패는 무시 */ }
 
-const TABS: { key: Tab; icon: string; label: string }[] = [
-  { key: 'feed',      icon: '/images/icon_feed.png', label: '피드' },
-  { key: 'community', icon: '/images/icon_mail.png', label: '광장' },
-  { key: 'mylog',     icon: '/images/icon_profile.png', label: '마이로그'  },
+const TAB_ICONS: Record<Tab, React.ComponentType<{ size?: number; filled?: boolean }>> = {
+  feed: IconTabFeed,
+  community: IconTabPlaza,
+  mylog: IconTabMy,
+};
+const TABS: { key: Tab; label: string }[] = [
+  { key: 'feed', label: '피드' },
+  { key: 'community', label: '광장' },
+  { key: 'mylog', label: '마이로그' },
 ];
 
 
@@ -742,7 +748,7 @@ export default function App() {
             className={`tab-btn ${tab === t.key ? 'tab-btn--active bottom-nav-item--active' : ''}`}
             onClick={() => navigateTo(t.key)}
           >
-            <img src={t.icon} alt={t.label} className="custom-icon--tab" />
+            {(() => { const Ic = TAB_ICONS[t.key]; return <Ic size={22} filled={tab === t.key} />; })()}
             <span className="tab-label">{t.label}</span>
           </button>
         ))}

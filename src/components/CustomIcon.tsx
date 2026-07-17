@@ -34,8 +34,6 @@ const EMOJI_MAP: Record<string, string> = {
   '🎁': '/images/icon_other.png',
   '🤝': '/images/icon_friends.svg',
   '💞': '/images/icon_friends.svg',
-  '💰': '/images/icon_other.png',
-  '🪙': '/images/icon_other.png',
   '💬': '/images/icon_other.png',
   '🎉': '/images/icon_other.png',
   '🔄': '/images/icon_other.png',
