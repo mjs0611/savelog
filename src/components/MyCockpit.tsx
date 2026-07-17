@@ -275,7 +275,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
       return `오늘 ${formatAmount(spent)} 지출이 발생했지만 괜찮아요. 내일 또 아껴봐요! 🐹`;
     }
     if (intentTrigger) return `약속하신 '${intentTrigger}' 상황이네요! 지갑 수비 일지를 작성해 볼까요? 💤`;
-    return '오늘 하루를 가볍게 기록해 주세요. 요정이 기다리고 있어요! 💤';
+    return '오늘의 인증을 기다리고 있어요. 요정이 지켜봐요! 💤';
   };
   const activeSpeech = getPetSpeech();
 
@@ -353,7 +353,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
               {/* 컨디션 = 100 - 예산 엔트로피. 기록·무지출로 올리고 방치하면 떨어짐 */}
               <div style={{ marginTop: '6px' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '9.5px', color: 'var(--text-mute)', fontWeight: 700, marginBottom: '3px' }}>
-                  <span>컨디션 <span style={{ color: 'var(--text-mute)', fontWeight: 500 }}>(기록하면 ↑, 방치하면 ↓)</span></span>
+                  <span>컨디션 <span style={{ color: 'var(--text-mute)', fontWeight: 500 }}>(인증하면 ↑, 방치하면 ↓)</span></span>
                   <span style={{ color: conditionColor }}>{condition} · {conditionLabel}</span>
                 </div>
                 <div style={{ height: '6px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden' }}>
@@ -484,8 +484,8 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
           <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
             짝꿍과 <strong>목표·스트릭을 함께 키우는</strong> 기능이에요. 아직 짝꿍이 없다면 <strong>친구에게 초대 링크</strong>를 보내 바로 듀오를 맺거나, <strong>피드 → 팔로우 탭</strong>에서 짠친과 맞팔해 짝꿍을 만들어 보세요.
           </p>
-          <button onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '10px', background: 'linear-gradient(90deg, #FF5E62, #FF9966)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>
-            <CustomIcon emoji="💌" /> 친구에게 듀오 초대 링크 보내기
+          <button onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>
+            친구에게 듀오 초대 링크 보내기
           </button>
         </div>
       )}

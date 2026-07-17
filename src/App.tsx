@@ -406,7 +406,7 @@ export default function App() {
               <p className="setup-desc">커피 한 잔 참은 것도<br />자랑이 되는 곳</p>
             )}
             {!isMigration && globalStats !== null && globalStats.totalRecords >= 30 && (
-              <p className="setup-proof">지금까지 쌓인 짠 기록 {globalStats.totalRecords.toLocaleString('ko-KR')}개</p>
+              <p className="setup-proof">지금까지 쌓인 짠 인증 {globalStats.totalRecords.toLocaleString('ko-KR')}개</p>
             )}
           </div>
           <Button size="xlarge" display="full" color="primary" variant="fill" onClick={handleTossLogin} disabled={loginLoading}>
@@ -571,14 +571,14 @@ export default function App() {
 
         const goalMsg = chargedToGoal > 0 ? ` · 🎯 목표에 ${formatAmount(chargedToGoal)} 충전` : '';
         const toastMsg = actualEarned > 0
-          ? `기록 완료. ${actualEarned}원 대기 중 · 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`
-          : `기록 완료. 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`;
+          ? `인증 완료. ${actualEarned}원 대기 중 · 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`
+          : `인증 완료. 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`;
         showToast(toastMsg);
 
         // 습관 트리거 — 관문 대신 첫 기록의 성공 직후에 1회 제안 (거절 가능)
         if (!getIntentTrigger()) setShowTriggerPicker(true);
       } else {
-        showToast('추가 기록 완료');
+        showToast('추가 자백 완료');
       }
 
       // 소셜 포스트는 daily 상태 갱신 불필요 (오늘 기록 여부·지출액 변화 없음)

@@ -102,7 +102,7 @@ export function buildWrappedBragMessage(savedText: string, recordedDays: number,
     `📅 이번 주 나의 절약 Wrapped`,
     `${gaugeBar(pct)}`,
     `💰 지킨 돈 ${savedText} · ✍️ ${recordedDays}일 기록 · 🌿 무지출 ${zeroDays}일${streak > 0 ? ` · 🔥 ${streak}일 연속` : ''}`,
-    `너의 이번 주는 어땠어? 같이 기록해 보자 👇`,
+    `너의 이번 주는 어땠어? 같이 인증해 보자 👇`,
   ].join('\n');
 }
 
@@ -118,6 +118,6 @@ export function buildRecordBragMessage(myNickname: string, noteText: string, isZ
   return [
     isZero ? `${myNickname}: 오늘 무지출 성공 🌿` : `${myNickname}: 오늘 ${amountText} 쓰고 자백했다 💸`,
     noteText ? `"${noteText}"` : '',
-    `savelog에서 짠친들 판정 기다리는 중. 너도 와서 한 줄 남겨봐`,
+    `savelog에서 짠친들 판정 기다리는 중. 너도 와서 인증해 봐`,
   ].filter(Boolean).join('\n');
 }

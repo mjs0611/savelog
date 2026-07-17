@@ -131,7 +131,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
         <div className="modal-header">
           <button className="modal-close-btn" onClick={onClose} disabled={submitting}>✕</button>
           <h2 className="modal-title">
-            {isAdditional ? '추가 지출 기록' : '오늘의 기록'}
+            {isAdditional ? '추가 지출 자백' : '오늘의 인증'}
           </h2>
           <div className="modal-header-spacer" />
         </div>
@@ -263,7 +263,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
         {/* 6. 제출 — 화면당 primary CTA 하나 */}
         <div className="modal-footer" style={{ flexDirection: 'column', gap: '8px' }}>
           {!isNoteValid && !isAdditional && (
-            <p className="submit-hint submit-hint--mb">기록 내용을 5자 이상 입력해 주세요</p>
+            <p className="submit-hint submit-hint--mb">내용을 5자 이상 입력해 주세요</p>
           )}
           <Button
             size="xlarge"
@@ -275,10 +275,10 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
             disabled={!isNoteValid || submitting || (isAdditional && amount <= 0)}
           >
             {isAdditional
-              ? '추가 지출 기록하기'
+              ? '추가 지출 자백하기'
               : amount > 0
-                ? `기록하기 (${formatAmount(amount)})`
-                : '무지출로 기록하기 🌿'}
+                ? `지출 자백하기 (${formatAmount(amount)})`
+                : '무지출 인증하기 🌿'}
           </Button>
         </div>
       </div>

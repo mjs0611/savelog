@@ -15,13 +15,12 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 import type { Entry, WeekRankRow } from '../lib/supabase';
 import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
-import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, setWeeklyBudget, getFollowedUsers, saveFollowedUsers, getJellyPockets, setJellyPockets } from '../lib/storage';
+import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
 import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
 import { IconFriends, IconTrophy, IconGear } from '../components/Icons';
 import CustomIcon from '../components/CustomIcon';
-import JellyPockets from '../components/JellyPockets';
 import MyCockpit from '../components/MyCockpit';
 import MoneyMemory from '../components/MoneyMemory';
 import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
@@ -103,36 +102,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
   const [subTab, setSubTab] = useState<'records' | 'gallery' | 'stats' | 'mailbox'>('records');
 
-  const [budget, setBudget] = useState(getWeeklyBudget());
-  const [showBudgetEdit, setShowBudgetEdit] = useState(false);
-  const [budgetDraft, setBudgetDraft] = useState(budget.toString());
 
-  useEffect(() => {
-    const handleUpdate = () => {
-      setBudget(getWeeklyBudget());
-    };
-    window.addEventListener('savelog_budget_updated', handleUpdate);
-    return () => window.removeEventListener('savelog_budget_updated', handleUpdate);
-  }, []);
-
-  function handleSaveBudget() {
-    const val = parseInt(budgetDraft.replace(/,/g, ''), 10);
-    if (!isNaN(val) && val > 0) {
-      setWeeklyBudget(val);
-      setBudget(val);
-      const current = getJellyPockets();
-      const totalCurrent = current.reduce((s, p) => s + p.budget, 0);
-      if (totalCurrent > 0) {
-        const updated = current.map(p => ({
-          ...p,
-          budget: Math.round(val * (p.budget / totalCurrent))
-        }));
-        setJellyPockets(updated);
-      }
-      window.dispatchEvent(new Event('savelog_budget_updated'));
-    }
-    setShowBudgetEdit(false);
-  }
 
   function handleShare() {
     // 실제 발송 완료 수만큼 모달 close 시점에 보상 (오픈 직후 재생 이벤트는 무시)
@@ -303,37 +273,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           </div>
         </div>
 
-        {/* Budget Progress */}
-        <div className="mylog-budget-container">
-          <div className="mylog-budget-header">
-            <span className="mylog-budget-title">이번 주 예산</span>
-            <button className="mylog-budget-edit" onClick={() => { setBudgetDraft(budget.toString()); setShowBudgetEdit(true); }}>
-              {formatAmount(budget)} ✎
-            </button>
-          </div>
-          <div className="mylog-budget-bar">
-            <div
-              className="mylog-budget-fill"
-              style={{
-                width: `${Math.min(100, (weekTotal / budget) * 100)}%`,
-                background: weekTotal > budget 
-                  ? 'linear-gradient(90deg, #FF4D4F, #FF7875)' 
-                  : 'linear-gradient(90deg, var(--primary), var(--accent-pink))',
-                boxShadow: weekTotal > budget
-                  ? '0 0 8px rgba(255, 77, 79, 0.6)'
-                  : '0 0 8px rgba(139, 92, 246, 0.6)'
-              }}
-            />
-          </div>
-          <div className="mylog-budget-footer">
-            <span style={{ color: weekTotal > budget ? 'var(--error)' : 'var(--text-sub)' }}>
-              {weekTotal > budget ? `예산 초과 (${formatAmount(weekTotal - budget)})` : `${formatAmount(budget - weekTotal)} 남음`}
-            </span>
-          </div>
-        </div>
-
-        {/* 디지털 젤리 저금통 (Envelope Budgeting) */}
-        <JellyPockets />
       </div>
 
       {/* 🐹 내 절약 코쿼핏 (리워드·펫·목표·듀오) — 피드에서 마이로그로 이동 */}
@@ -379,26 +318,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       </div>
 
       <div className="rank-bottom-spacer" />
-
-      {/* Budget Edit Modal */}
-      <SimpleModal open={showBudgetEdit} onClose={() => setShowBudgetEdit(false)}>
-        <div style={{ width: '100%' }}>
-          <h3 className="simple-modal-title">주간 예산 설정</h3>
-          <p className="simple-modal-desc">이번 주 목표 지출액을 설정해보세요.</p>
-          <input
-            className="nickname-input"
-            style={{ width: '100%', marginTop: '16px', fontSize: '20px', textAlign: 'center' }}
-            type="text"
-            inputMode="numeric"
-            value={budgetDraft.replace(/\B(?=(\d{3})+(?!\d))/g, ",")}
-            onChange={e => setBudgetDraft(e.target.value.replace(/\D/g, ''))}
-          />
-          <div style={{ display: 'flex', gap: '8px', width: '100%', marginTop: '16px' }}>
-            <Button display="full" size="large" color="dark" variant="weak" onClick={() => setShowBudgetEdit(false)}>취소</Button>
-            <Button display="full" size="large" color="primary" variant="fill" onClick={handleSaveBudget} disabled={!budgetDraft || budgetDraft === '0'}>저장</Button>
-          </div>
-        </div>
-      </SimpleModal>
 
       {/* 6. Settings Modal */}
       <SimpleModal open={showSettings} onClose={() => setShowSettings(false)}>

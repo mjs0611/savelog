@@ -1391,10 +1391,10 @@ const FAIRY_ZERO_LINES = [
   '무지출 도장 쾅. 내일도 볼 수 있죠?',
 ];
 const FAIRY_SPEND_LINES = [
-  '쓴 건 쓴 거고, 기록한 게 어디예요. 인정',
-  '솔직한 자백 좋아요. 기록했으니 반은 아낀 거예요',
+  '쓴 건 쓴 거고, 자백한 게 어디예요. 인정',
+  '솔직한 자백 좋아요. 털어놨으니 반은 아낀 거예요',
   '적어도 어디에 썼는지는 아는 사람이 됐네요',
-  '오늘 기록 접수. 짠친들이 곧 판정하러 올 거예요',
+  '자백 접수. 짠친들이 곧 판정하러 올 거예요',
 ];
 export async function addFairyResponse(entryId: string, isZero: boolean): Promise<void> {
   if (!supabase) return;

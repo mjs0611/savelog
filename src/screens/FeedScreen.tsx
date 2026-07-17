@@ -1539,7 +1539,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 {streak.streak > 0 && <span className="story-badge">🔥{streak.streak}</span>}
                 {recordedTodayFlag && rouletteSpins > 0 && <span className="story-badge" style={{ left: '-4px', right: 'auto', color: '#b45309' }}>🎰{rouletteSpins}</span>}
               </span>
-              <span className="story-name">{recordedTodayFlag ? '나' : '기록하기'}</span>
+              <span className="story-name">{recordedTodayFlag ? '나' : '인증하기'}</span>
             </button>
 
             {/* 서클 멤버 — 오늘 기록 여부가 링으로 */}
@@ -1578,14 +1578,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         >
           <IconHeart filled size={18} className="" />
           <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
-            자리 비운 사이 내 기록에 반응 {welcomeBack.reactions + welcomeBack.comments}개가 달렸어요
+            자리 비운 사이 내 인증에 반응 {welcomeBack.reactions + welcomeBack.comments}개가 달렸어요
           </span>
           <span style={{ fontSize: '11px', color: 'var(--text-mute)', fontWeight: 700 }}>닫기</span>
         </button>
       )}
 
       {globalStats !== null && globalStats.weekRecords >= 10 && (
-        <p className="social-pulse">이번 주 짠친들이 남긴 기록 {globalStats.weekRecords.toLocaleString('ko-KR')}개</p>
+        <p className="social-pulse">이번 주 짠친들의 인증 {globalStats.weekRecords.toLocaleString('ko-KR')}개</p>
       )}
 
       {/* 📝 인라인 포스트 컴포저 (기록 CTA) — 피드 최상단 */}
@@ -1594,10 +1594,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           <div className="feed-composer-done">
             <span className="feed-composer-done-icon"><CustomIcon emoji="✅" /></span>
             <div className="feed-composer-done-info">
-              <span className="feed-composer-done-text">오늘 기록 완료!</span>
+              <span className="feed-composer-done-text">오늘 인증 완료!</span>
               <span className="feed-composer-done-amount">{formatAmount(daily.spentAmount ?? 0)} 지출</span>
             </div>
-            <button className="feed-composer-add-btn" onClick={onRecord}>추가 기록</button>
+            <button className="feed-composer-add-btn" onClick={onRecord}>추가 자백</button>
           </div>
         ) : (
           <>
@@ -1620,12 +1620,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 disabled={!quickText.trim() || submitting}
                 style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !quickText.trim() || submitting ? 0.5 : 1 }}
               >
-                {submitting ? '...' : '기록'}
+                {submitting ? '...' : '인증'}
               </button>
             </div>
             {streak.totalDays === 0 && (
               <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
-                <CustomIcon emoji="🔐" /> 닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요 · 금액 없이 글만 써도 무지출 기록이 돼요
+                <CustomIcon emoji="🔐" /> 닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요 · 금액 없이 글만 써도 무지출 인증이 돼요
               </p>
             )}
           </>
@@ -1668,7 +1668,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           <div className="glass-card" style={{ padding: '14px 16px', textAlign: 'left' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <span style={{ fontSize: '13px', fontWeight: 800 }}>오늘의 판정</span>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>반응 기다리는 기록 {judgeQueue.length}건</span>
+              <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>판정 기다리는 인증 {judgeQueue.length}건</span>
             </div>
             <p style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
               <strong>{e.nickname}</strong> · {judgeSnippet(e)}
@@ -1806,7 +1806,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           {/* 발견 미리보기 — 서클 만들기 전에도 화면이 비지 않게 */}
           {entries.length > 0 && (
             <>
-              <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', textAlign: 'left' }}>다른 짠친들의 기록</p>
+              <p style={{ margin: '0 0 8px', fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', textAlign: 'left' }}>다른 짠친들의 인증</p>
               <div className="feed-list">
                 {entries.slice(0, 3).map(entry => (
                   <React.Fragment key={entry.id}>{renderFeedCard(entry)}</React.Fragment>
