@@ -1890,7 +1890,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                             background: 'var(--bg-main)',
                             padding: '1px',
                             boxSizing: 'border-box',
-                            boxShadow: isSelected ? '0 0 8px rgba(0, 245, 160, 0.4)' : 'none',
+                            boxShadow: isSelected ? '0 0 8px rgba(11, 169, 122, 0.4)' : 'none',
                             transition: 'all 0.2s'
                           }}>
                             {p?.icon ? (
@@ -1919,8 +1919,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
               {selectedFriendId && (
                 <div style={{
-                  background: 'rgba(0, 245, 160, 0.08)',
-                  border: '1px solid rgba(0, 245, 160, 0.2)',
+                  background: 'rgba(11, 169, 122, 0.08)',
+                  border: '1px solid rgba(11, 169, 122, 0.2)',
                   borderRadius: '14px',
                   padding: '12px 16px',
                   marginBottom: '16px',
