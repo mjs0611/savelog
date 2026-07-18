@@ -16,22 +16,12 @@ import {
 import { PERSONAS, getPersona, getNickname } from '../lib/storage';
 import { timeAgo } from '../lib/utils';
 import CustomIcon from '../components/CustomIcon';
-import TopTipsWidget from '../components/TopTipsWidget';
 
 interface Props {
   userId: string;
 }
 
 // 광장 주제 — 거지방 정체성의 실전 주제 (DB 키는 기존 6종 재사용, 라벨만 재정의)
-const CATEGORIES: { key: CommunityCategory | 'all'; label: string; emoji: string }[] = [
-  { key: 'all',      label: '전체',       emoji: '🌿' },
-  { key: 'daily',    label: '아낀 자랑',  emoji: '💸' },
-  { key: 'question', label: '살까 말까',  emoji: '⚖️' },
-  { key: 'together', label: '텅장 실화',  emoji: '😭' },
-  { key: 'tip',      label: '꿀팁·핫딜',  emoji: '💡' },
-  { key: 'recipe',   label: '짠밥 레시피', emoji: '🍳' },
-  { key: 'free',     label: '잡담',       emoji: '💬' },
-];
 
 const POST_CATEGORIES: { key: CommunityCategory; label: string; emoji: string }[] = [
   { key: 'daily',    label: '아낀 자랑',  emoji: '💸' },
@@ -343,9 +333,6 @@ export default function CommunityScreen({ userId }: Props) {
 
   return (
     <div className="screen screen-community">
-      {/* 🏆 금주의 짠테크 꿀팁 베스트 (피드에서 이동) */}
-      <TopTipsWidget userId={userId} />
-
       {/* 오늘의 질문 — 매일 바뀌는 대화 씨앗, 답하기 원탭 */}
       {(() => {
         const tq = todayQuestion();
@@ -372,19 +359,6 @@ export default function CommunityScreen({ userId }: Props) {
         );
       })()}
 
-      {/* 카테고리 탭바 */}
-      <div className="community-cat-bar">
-        {CATEGORIES.map(c => (
-          <button
-            key={c.key}
-            className={`community-cat-chip ${category === c.key ? 'community-cat-chip--active' : ''}`}
-            onClick={() => setCategory(c.key)}
-          >
-            <span className="community-cat-emoji"><CustomIcon emoji={c.emoji} /></span>
-            <span>{c.label}</span>
-          </button>
-        ))}
-      </div>
 
       {/* 글 리스트 */}
       <div className="community-list">

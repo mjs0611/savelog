@@ -285,13 +285,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 2. Sub-tab Navigation */}
       <div className="mylog-subtab-bar">
-        {(['records', 'gallery', 'stats', 'mailbox'] as const).map(t => (
+        {(['records', 'stats', 'mailbox'] as const).map(t => (
           <button
             key={t}
             className={`mylog-subtab-btn ${subTab === t ? 'mylog-subtab-btn--active' : ''}`}
             onClick={() => setSubTab(t)}
           >
-            {t === 'records' ? <><CustomIcon emoji="📋" /> 기록</> : t === 'gallery' ? <><CustomIcon emoji="🖼️" /> 갤러리</> : t === 'stats' ? <><CustomIcon emoji="📊" /> 통계</> : <><CustomIcon emoji="✉️" /> 쪽지</>}
+            {t === 'records' ? '기록' : t === 'stats' ? '통계' : '쪽지'}
           </button>
         ))}
       </div>

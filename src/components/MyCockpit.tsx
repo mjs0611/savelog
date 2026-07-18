@@ -478,17 +478,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
             </button>
           </div>
         );
-      })() : (
-        <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: '#FAFBFC', border: '1px solid #F0F1F3' }}>
-          <p style={{ margin: 0, fontSize: '13px', fontWeight: 800 }}><CustomIcon emoji="💞" /> 머니 듀오란?</p>
-          <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
-            짝꿍과 <strong>목표·스트릭을 함께 키우는</strong> 기능이에요. 아직 짝꿍이 없다면 <strong>친구에게 초대 링크</strong>를 보내 바로 듀오를 맺거나, <strong>피드 → 팔로우 탭</strong>에서 짠친과 맞팔해 짝꿍을 만들어 보세요.
-          </p>
-          <button onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '10px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>
-            친구에게 듀오 초대 링크 보내기
-          </button>
-        </div>
-      )}
+      })() : null}
 
       {/* 🎯 절약 목표 상세 및 설정 모달 */}
       <SimpleModal open={showGoalModal} onClose={() => { setShowGoalModal(false); setGoalForm(false); }}>

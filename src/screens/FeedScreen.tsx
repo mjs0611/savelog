@@ -27,7 +27,6 @@ import {
   getRouletteSpins
 } from '../lib/storage';
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
-import { openContactsInvite } from '../lib/share';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 import { IconChat, IconStamp, IconHeart, IconShare } from '../components/Icons';
 
@@ -136,7 +135,7 @@ export function parseQuickRecord(text: string): SpendingItem[] {
 }
 
 
-export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onClaimPending, onNavigateToMyLog, onShieldEarned }: Props) {
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onClaimPending, onNavigateToMyLog }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   // 소비 고민 글 실제 투표 집계 (seed 가짜값 대체)
   const [dilemmaVotes, setDilemmaVotes] = useState<Record<string, { over: number; ok: number; total: number }>>({});
@@ -1472,22 +1471,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     );
   };
 
-  // 친구 초대 카드 — 피드 사이 인터스티셜로 노출 (SNS 추천 카드 스타일)
-  const inviteCard = (
-    <div className="glass-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
-      <div style={{ textAlign: 'left' }}>
-        <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-main)' }}>같이 아끼면 진짜 덜 씁니다</p>
-        <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.4 }}>친구를 초대하면 <strong>스트릭 보호권 +1</strong>. 하루 빼먹어도 불꽃이 안 꺼져요</p>
-      </div>
-      <button
-        onClick={() => openContactsInvite(onShieldEarned)}
-        style={{ flexShrink: 0, padding: '9px 14px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px', whiteSpace: 'nowrap' }}
-      >
-        초대하기
-      </button>
-    </div>
-  );
-
   if (loading) {
     return (
       <div className="screen screen-feed">
@@ -1719,17 +1702,19 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       ) : null)}
 
       {/* 탭 필터: 전체 / 팔로우 / 절약 그룹 */}
+      {myCircle && (
       <div className="feed-tab-bar">
-        {(['circle', 'all', 'follow'] as const).map((t) => (
+        {(['circle', 'all'] as const).map((t) => (
           <button
             key={t}
             className={`feed-tab-btn${feedTab === t ? ' feed-tab-btn--active' : ''}`}
             onClick={() => { userTouchedTabRef.current = true; setFeedTab(t); }}
           >
-            {t === 'circle' ? `서클${myCircle ? ` (${myCircle.members.length})` : ''}` : t === 'all' ? '발견' : `팔로우${Object.keys(followedUsers).length > 0 ? ` (${Object.keys(followedUsers).length})` : ''}`}
+            {t === 'circle' ? `서클 (${myCircle.members.length})` : '발견'}
           </button>
         ))}
       </div>
+      )}
 
       {/* 🔒 서클 티저 — 발견 탭의 서클 미보유 유저에게 컨셉 노출 */}
       {feedTab === 'all' && circleLoaded && !myCircle && (
@@ -1847,7 +1832,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   </>
                 )}
               </div>
-              {!loadFailed && inviteCard}
             </>
           ) : (
             <div className="feed-list">
@@ -2119,7 +2103,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <React.Fragment key={entry.id}>
                   {renderFeedCard(entry)}
                   {/* 친구 초대 인터스티셜 — 두 번째 글 다음 (글이 1개뿐이면 그 아래) */}
-                  {(idx === 1 || (displayedEntries.length === 1 && idx === 0)) && inviteCard}
                   {(idx + 1) % 5 === 0 && <FeedBannerSlot />}
                 </React.Fragment>
               ))}
