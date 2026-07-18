@@ -308,7 +308,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
 
       {/* 💠 통합 리워드 스트립 — 토스포인트(현금) · 젤리(가상) · 목표(절약진행) 한눈에 */}
       <div className="glass-card" style={{ padding: '12px', marginBottom: '16px', display: 'flex', gap: '8px' }}>
-        <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid #F0F1F3' }}>
+        <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="💰" /> 토스포인트</p>
           <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: pendingPoints > 0 ? 'var(--primary)' : 'var(--text-main)' }}>{pendingPoints}원</p>
           {pendingPoints > 0 && (
@@ -318,16 +318,16 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
             </button>
           )}
         </div>
-        <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid #F0F1F3' }}>
+        <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🪙" /> 젤리</p>
           <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800 }}>{jellyBalance}</p>
-          <button onClick={() => setShowShopModal(true)} style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)', color: 'var(--text-main)', cursor: 'pointer' }}>꾸미기</button>
+          <button onClick={() => setShowShopModal(true)} style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#F5F3EF', color: 'var(--text-main)', cursor: 'pointer' }}>꾸미기</button>
         </div>
         <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', cursor: 'pointer' }} onClick={() => setShowGoalModal(true)}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🎯" /> 목표</p>
           <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: goalPct !== null ? 'var(--primary)' : 'var(--text-mute)' }}>{goalPct !== null ? `${goalPct}%` : '미설정'}</p>
           {goalPct === null && (
-            <button style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid rgba(255,255,255,0.15)', background: 'rgba(255,255,255,0.06)', color: 'var(--text-main)', cursor: 'pointer' }}>설정</button>
+            <button style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#F5F3EF', color: 'var(--text-main)', cursor: 'pointer' }}>설정</button>
           )}
         </div>
       </div>
@@ -336,7 +336,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
       <div className="glass-card pet-card" style={{ cursor: 'pointer', marginBottom: '16px' }} onClick={handlePetClick}>
         <div className="pet-inner" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
           <div className="pet-left" style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-            <div className={`pet-avatar-circle ${isWobbling ? 'wobble-anim' : ''}`} style={{ border: `1.8px solid ${p?.color || '#FF5E62'}`, boxShadow: `0 0 15px ${(p?.color || '#FF5E62')}15`, position: 'relative', overflow: 'visible' }}>
+            <div className={`pet-avatar-circle ${isWobbling ? 'wobble-anim' : ''}`} style={{ border: `1.8px solid ${p?.color || 'var(--ink-red)'}`, boxShadow: `0 0 15px ${(p?.color || 'var(--ink-red)')}15`, position: 'relative', overflow: 'visible' }}>
               <img src={p?.icon} alt="" className="pet-avatar-img" />
               {equippedItems.head && <span style={{ position: 'absolute', top: '-20px', left: '50%', transform: 'translateX(-50%)', fontSize: '24px', pointerEvents: 'none', zIndex: 10 }}><CustomIcon emoji={SHOP_ITEMS.find(i => i.id === equippedItems.head)?.emoji || ''} /></span>}
               {equippedItems.face && <span style={{ position: 'absolute', top: '2px', left: '50%', transform: 'translateX(-50%)', fontSize: '18px', pointerEvents: 'none', zIndex: 10 }}><CustomIcon emoji={SHOP_ITEMS.find(i => i.id === equippedItems.face)?.emoji || ''} /></span>}
@@ -347,7 +347,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
               <div className="pet-name-row" style={{ flexWrap: 'wrap', gap: '6px' }}>
                 <span className="pet-name">{petName || `${p?.name} 요정`}</span>
                 <span className="pet-level">LV.{petLevel}</span>
-                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 7px', borderRadius: '100px', background: 'rgba(0,245,160,0.12)', color: 'var(--primary)' }}><CustomIcon emoji={habitStage.emoji} /> {habitStage.label}</span>
+                <span style={{ fontSize: '10px', fontWeight: 800, padding: '2px 7px', borderRadius: '100px', background: 'rgba(31, 30, 28,0.12)', color: 'var(--primary)' }}><CustomIcon emoji={habitStage.emoji} /> {habitStage.label}</span>
               </div>
               <span className="pet-status">{renderTextWithEmoji(activeSpeech)}</span>
               {/* 컨디션 = 100 - 예산 엔트로피. 기록·무지출로 올리고 방치하면 떨어짐 */}
@@ -375,11 +375,11 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
           <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>48시간 참으면 목표 충전 +15젤리</span>
         </div>
         {wishlist.filter(isWishlistItemReady).map(it => (
-          <div key={it.id} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', borderRadius: '10px', background: 'rgba(245,158,11,0.08)' }}>
+          <div key={it.id} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', borderRadius: '10px', background: '#F7F4EF' }}>
             <p style={{ margin: 0, fontSize: '12px', fontWeight: 700, minWidth: 0 }}><CustomIcon emoji="⏰" /> '{it.name}' — 아직도 원해요?</p>
             <div style={{ display: 'flex', gap: '6px', flexShrink: 0 }}>
               <button onClick={() => handleWishResolve(it.id, false)} style={{ padding: '5px 9px', borderRadius: '100px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '11px' }}>참았어요</button>
-              <button onClick={() => handleWishResolve(it.id, true)} style={{ padding: '5px 9px', borderRadius: '100px', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '11px' }}>샀어요</button>
+              <button onClick={() => handleWishResolve(it.id, true)} style={{ padding: '5px 9px', borderRadius: '100px', background: 'rgba(225, 75, 59,0.1)', color: 'var(--ink-red)', border: '1px solid rgba(225, 75, 59,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '11px' }}>샀어요</button>
             </div>
           </div>
         ))}
@@ -437,7 +437,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                   <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{formatAmount(sharedSaved)} ({pct}%)</span>
                 </div>
                 <div style={{ height: '12px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, #FF5E62, #FF9966)', transition: 'width 0.4s' }} />
+                  <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, var(--ink-red), #FF9966)', transition: 'width 0.4s' }} />
                 </div>
                 <p style={{ margin: '8px 0 0', fontSize: '11px', color: 'var(--text-sub)' }}>
                   {myNick} {formatAmount(isA ? duo.saved_a : duo.saved_b)} · {otherNick} {formatAmount(isA ? duo.saved_b : duo.saved_a)} 기여 — 둘의 절약이 한 목표를 채워요
@@ -457,7 +457,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                 <button onClick={handleSaveDuoGoal} style={{ width: '100%', padding: '9px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer' }}>공동 목표 저장</button>
               </>
             ) : (
-              <button onClick={() => setDuoGoalForm(true)} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(255,94,98,0.12)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}><CustomIcon emoji="🎯" /> 공동 목표 정하기</button>
+              <button onClick={() => setDuoGoalForm(true)} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(225, 75, 59,0.12)', color: 'var(--ink-red)', border: '1px solid rgba(225, 75, 59,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}><CustomIcon emoji="🎯" /> 공동 목표 정하기</button>
             )}
             <button onClick={handleLeaveDuo} style={{ marginTop: '8px', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '10.5px', textDecoration: 'underline', cursor: 'pointer' }}>듀오 해제</button>
           </div>
@@ -470,10 +470,10 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}><CustomIcon emoji="💞" /> {duoBuddy.nickname}님과 머니 듀오 맺기</p>
               <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
                 둘이 함께 <strong>공동 목표·스트릭</strong>을 키워요. 매일 둘 다 기록하면 공동 불꽃이 오르고, 한 명이 빠지면 같이 깨져요.<br />
-                <span style={{ color: '#FF5E62', fontWeight: 800 }}>탭해서 맺기 →</span>
+                <span style={{ color: 'var(--ink-red)', fontWeight: 800 }}>탭해서 맺기 →</span>
               </p>
             </div>
-            <button onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(255,94,98,0.12)', color: '#FF5E62', border: '1px solid rgba(255,94,98,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}>
+            <button onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(225, 75, 59,0.12)', color: 'var(--ink-red)', border: '1px solid rgba(225, 75, 59,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}>
               <CustomIcon emoji="💌" /> 다른 친구를 초대해 듀오 맺기
             </button>
           </div>
@@ -590,7 +590,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                   <span style={{ fontSize: '32px', display: 'block', margin: '4px 0' }}><CustomIcon emoji={item.emoji} /></span>
                   <span style={{ fontSize: '12px', fontWeight: 800, display: 'block', color: 'var(--text-main)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{item.name}</span>
                   {isOwned ? (
-                    <button style={{ marginTop: '8px', width: '100%', padding: '6px 0', borderRadius: '10px', border: 'none', fontSize: '11px', fontWeight: 800, cursor: 'pointer', background: isEquipped ? 'rgba(0, 245, 160, 0.15)' : 'rgba(255,255,255,0.1)', color: isEquipped ? 'var(--primary)' : 'var(--text-main)' }}
+                    <button style={{ marginTop: '8px', width: '100%', padding: '6px 0', borderRadius: '10px', border: 'none', fontSize: '11px', fontWeight: 800, cursor: 'pointer', background: isEquipped ? 'rgba(31, 30, 28, 0.15)' : 'rgba(255,255,255,0.1)', color: isEquipped ? 'var(--primary)' : 'var(--text-main)' }}
                       onClick={() => { if (isEquipped) equipItem(null, item.type); else equipItem(item.id, item.type); setEquippedItems(getEquippedItems()); }}>
                       {isEquipped ? '장착 해제' : '착용하기'}
                     </button>

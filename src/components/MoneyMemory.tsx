@@ -37,7 +37,7 @@ export default function MoneyMemory({ userId }: { userId: string }) {
   const todaySpent = entries.find(x => x.date === today)?.total_amount;
 
   return (
-    <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(0,245,160,0.06))', border: '1.5px solid rgba(168,85,247,0.2)', textAlign: 'left' }}>
+    <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', background: 'linear-gradient(135deg, rgba(168,85,247,0.1), rgba(31, 30, 28,0.06))', border: '1.5px solid rgba(168,85,247,0.2)', textAlign: 'left' }}>
       <p style={{ margin: '0 0 4px', fontSize: '12px', fontWeight: 800, color: '#a855f7' }}>💎 {hit.label}</p>
       <p style={{ margin: 0, fontSize: '13px', lineHeight: 1.5, color: 'var(--text-main)' }}>
         그날의 나는 {spent === 0

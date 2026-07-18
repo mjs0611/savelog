@@ -142,7 +142,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           shareExternal(buildRankBragMessage(myRankIdx + 1, weekRank.length, statLine));
         };
         return (
-          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(11, 169, 122, 0.08) 0%, rgba(11, 169, 122, 0.02) 100%)', border: '1.5px solid rgba(11, 169, 122, 0.3)', marginBottom: '16px' }}>
+          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(31, 30, 28, 0.08) 0%, rgba(31, 30, 28, 0.02) 100%)', border: '1.5px solid rgba(31, 30, 28, 0.3)', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="my-rank-left">
                 <span className="my-rank-pos" style={{ color: 'var(--primary)', fontSize: '20px', fontWeight: 800 }}>{myRankIdx + 1}위</span>
@@ -160,7 +160,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
             </div>
             <button
               onClick={handleBragRank}
-              style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(0,245,160,0.12)', color: 'var(--primary)', border: '1px solid rgba(0,245,160,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}
+              style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(31, 30, 28,0.12)', color: 'var(--primary)', border: '1px solid rgba(31, 30, 28,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}
             >
               <CustomIcon emoji="📣" /> 친구에게 내 순위 자랑하기
             </button>
@@ -297,7 +297,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
                       <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
                     )}
                     {reward && (
-                      <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(0,245,160,0.12)', borderRadius: '8px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                      <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(31, 30, 28,0.12)', borderRadius: '8px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
                         <CustomIcon emoji="🏆" /> {reward.label} +{reward.amount}원
                       </span>
                     )}

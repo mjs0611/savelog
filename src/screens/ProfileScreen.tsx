@@ -22,7 +22,6 @@ import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openConta
 import { IconFriends, IconTrophy, IconGear } from '../components/Icons';
 import CustomIcon from '../components/CustomIcon';
 import MyCockpit from '../components/MyCockpit';
-import MoneyMemory from '../components/MoneyMemory';
 import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
 import GuideModal from '../components/GuideModal';
 
@@ -268,7 +267,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             <span className="mylog-summary-value">{recordedDays}일</span>
           </div>
           <div className="mylog-summary-item">
-            <span className="mylog-summary-label">지갑 힐링</span>
+            <span className="mylog-summary-label">무지출</span>
             <span className="mylog-summary-value">{zeroDays}일</span>
           </div>
         </div>
@@ -279,9 +278,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       {daily && onClaimPending && (
         <MyCockpit userId={userId} daily={daily} streak={streak} weekRank={weekRank} pendingPoints={pendingPoints} pendingClaiming={pendingClaiming} onClaimPending={onClaimPending} />
       )}
-
-      {/* 💎 머니 회고 (재정 기억 복리) */}
-      <MoneyMemory userId={userId} />
 
       {/* 2. Sub-tab Navigation */}
       <div className="mylog-subtab-bar">
@@ -447,8 +443,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               minHeight: '80px',
               padding: '12px',
               borderRadius: '12px',
-              background: 'rgba(255, 255, 255, 0.03)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
+              background: '#F5F3EF',
+              border: '1px solid #F5F3EF',
               color: '#fff',
               fontSize: '13px',
               resize: 'none',
@@ -588,7 +584,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                     className="timeline-share-btn" 
                     title="짠톡방에 공유하기" 
                     onClick={() => onShareToChat(entryForDate)}
-                    style={{ background: 'rgba(255,255,255,0.04)', border: '1px solid #F0F1F3', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
+                    style={{ background: '#F5F3EF', border: '1px solid #F0F1F3', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
                   >
                     <CustomIcon emoji="👥" /> 공유
                   </button>
@@ -856,7 +852,7 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
                 const isPeak = i === peakDow && v > 0;
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
-                    <div style={{ width: '100%', height: `${h}%`, borderRadius: '6px 6px 0 0', background: isPeak ? 'linear-gradient(180deg,#ff4d4f,#fbbf24)' : 'rgba(255,255,255,0.15)' }} />
+                    <div style={{ width: '100%', height: `${h}%`, borderRadius: '6px 6px 0 0', background: isPeak ? 'linear-gradient(180deg,#ff4d4f,#fbbf24)' : 'var(--divider)' }} />
                     <span style={{ fontSize: '10px', fontWeight: isPeak ? 800 : 500, color: isPeak ? '#fbbf24' : 'var(--text-sub)' }}>{dayNames[i]}</span>
                   </div>
                 );
@@ -948,11 +944,11 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
             })}
             {[0, 1, 2, 3, 4].map((i) => {
               const pt = getPoint(100, i);
-              return <line key={i} x1="100" y1="92" x2={pt.split(',')[0]} y2={pt.split(',')[1]} stroke="rgba(255,255,255,0.04)" strokeWidth="1" />;
+              return <line key={i} x1="100" y1="92" x2={pt.split(',')[0]} y2={pt.split(',')[1]} stroke="#F5F3EF" strokeWidth="1" />;
             })}
             <polygon points={myPoints} fill="rgba(168, 85, 247, 0.28)" stroke="#A855F7" strokeWidth="2" className="radar-polygon" />
             {labels.map((lbl, i) => (
-              <text key={i} x={lbl.x} y={lbl.y} fill="#fff" fontSize="10" fontWeight="900" textAnchor={lbl.align} style={{ fill: i === 4 && p ? p.color : i === 0 ? '#FF5E62' : 'var(--text-sub)' }}>
+              <text key={i} x={lbl.x} y={lbl.y} fill="#fff" fontSize="10" fontWeight="900" textAnchor={lbl.align} style={{ fill: i === 4 && p ? p.color : i === 0 ? 'var(--ink-red)' : 'var(--text-sub)' }}>
                 {lbl.name}
               </text>
             ))}

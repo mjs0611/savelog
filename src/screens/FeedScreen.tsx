@@ -1136,8 +1136,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             {isMilestone && (
               <span className="feed-badge feed-badge--yellow"><CustomIcon emoji="🏆" /> 달성</span>
             )}
-            {isZeroSpend && !isMilestone && !isTipPost && !isDilemmaPost && (
-              <span className="feed-badge feed-badge--blue"><CustomIcon emoji="🌿" /> 지갑 힐링</span>
+            {(entry.total_amount ?? 0) === 0 && !isMilestone && !isTipPost && !isDilemmaPost && (
+              <span className="feed-badge feed-badge--ink">무지출</span>
             )}
 
             {/* 이미 팔로우 중이면 버튼 숨김 — 누를 게 없는 상태가 정상 상태 */}
@@ -1280,14 +1280,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
         {/* 오늘 한마디 (💬 한마디 특수 항목) */}
         {entry.items.filter(it => it.category === '한마디').map((it, i) => (
-          <p key={i} className="feed-note"><CustomIcon emoji="💬" /> {it.comment}</p>
+          <p key={i} className="feed-note">{it.comment}</p>
         ))}
-
-        {/* 무지출 인증 칩 — 지출 항목 없는 0원 인증 */}
-        {!isMilestone && !isTipPost && !isDilemmaPost && (entry.total_amount ?? 0) === 0 &&
-          entry.items.every(it => it.category === '한마디') && entry.items.length > 0 && (
-          <span className="cert-chip">무지출 인증 ✓</span>
-        )}
 
         {/* 인증샷 / 영수증 이미지 */}
         {entry.image && (
@@ -1561,7 +1555,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       {welcomeBack && (
         <button
           onClick={() => setWelcomeBack(null)}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(11, 169, 122, 0.25)', background: 'rgba(11, 169, 122, 0.06)', cursor: 'pointer' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(31, 30, 28, 0.25)', background: 'rgba(31, 30, 28, 0.06)', cursor: 'pointer' }}
         >
           <IconHeart filled size={18} className="" />
           <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
@@ -1645,7 +1639,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           <span>'{readyWish[0].name}' ({formatAmount(readyWish[0].price)}) — 아직도 원해요?</span>
           <span style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
             <button onClick={() => handleWishResolve(readyWish[0].id, false)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>참았어요</button>
-            <button onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ fontSize: '12px', fontWeight: 700, color: '#FF5E62', background: 'none', border: 'none', cursor: 'pointer' }}>샀어요</button>
+            <button onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink-red)', background: 'none', border: 'none', cursor: 'pointer' }}>샀어요</button>
           </span>
         </div>
       )}
@@ -1852,7 +1846,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                             <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.nickname}</p>
                             <p style={{ margin: '1px 0 0', fontSize: '10.5px', color: 'var(--text-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🤝 {proof}</p>
                           </div>
-                          <button onClick={() => handleToggleFollow(f.id, f.nickname)} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '100px', border: '1.5px solid var(--primary)', background: 'rgba(0,245,160,0.1)', color: 'var(--primary)', cursor: 'pointer' }}>팔로우</button>
+                          <button onClick={() => handleToggleFollow(f.id, f.nickname)} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '100px', border: '1.5px solid var(--primary)', background: 'rgba(31, 30, 28,0.1)', color: 'var(--primary)', cursor: 'pointer' }}>팔로우</button>
                         </div>
                       );
                     })}
@@ -1940,7 +1934,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                             background: 'var(--bg-main)',
                             padding: '1px',
                             boxSizing: 'border-box',
-                            boxShadow: isSelected ? '0 0 8px rgba(11, 169, 122, 0.4)' : 'none',
+                            boxShadow: isSelected ? '0 0 8px rgba(31, 30, 28, 0.4)' : 'none',
                             transition: 'all 0.2s'
                           }}>
                             {p?.icon ? (
@@ -1969,8 +1963,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
               {selectedFriendId && (
                 <div style={{
-                  background: 'rgba(11, 169, 122, 0.08)',
-                  border: '1px solid rgba(11, 169, 122, 0.2)',
+                  background: 'rgba(31, 30, 28, 0.08)',
+                  border: '1px solid rgba(31, 30, 28, 0.2)',
                   borderRadius: '14px',
                   padding: '12px 16px',
                   marginBottom: '16px',
