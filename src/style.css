@@ -24,8 +24,8 @@
 
   --bg: #FAFBFC; /* Cool Neutral — 플랫 화이트+헤어라인 시스템과 온도 통일 */
   --card-bg: rgba(255, 255, 255, 0.88); /* Frosted Milky Glass */
-  --text-main: #1A1C1E; /* Deeper Dark Charcoal */
-  --text-sub: #4E5156; /* Richer Warm Slate Gray */
+  --text-main: #121417; /* Ink Black — e-ink 종이 위 잉크 대비 */
+  --text-sub: #43474D; /* Ink Gray */
   --text-mute: #86898E; /* Medium Slate Gray */
 
   --glass: rgba(255, 255, 255, 0.85);
@@ -6371,7 +6371,7 @@ input { font: inherit; outline: none; border: none; }
   display: flex;
   flex-direction: column;
   gap: 12px;
-  padding: 16px 4px;
+  padding: 18px 4px;
   background: transparent;
   border: none;
   border-bottom: 1px solid #F0F1F3; /* 헤어라인 — 포스트는 카드가 아니라 흐름 */

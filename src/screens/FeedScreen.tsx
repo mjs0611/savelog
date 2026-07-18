@@ -1476,7 +1476,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const inviteCard = (
     <div className="glass-card" style={{ padding: '14px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px' }}>
       <div style={{ textAlign: 'left' }}>
-        <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-main)' }}><CustomIcon emoji="👯" /> 같이 아끼면 진짜 덜 씁니다</p>
+        <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-main)' }}>같이 아끼면 진짜 덜 씁니다</p>
         <p style={{ margin: '4px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.4 }}>친구를 초대하면 <strong>스트릭 보호권 +1</strong>. 하루 빼먹어도 불꽃이 안 꺼져요</p>
       </div>
       <button
@@ -1631,7 +1631,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             </div>
             {streak.totalDays === 0 && (
               <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
-                <CustomIcon emoji="🔐" /> 닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요 · 금액 없이 글만 써도 무지출 인증이 돼요
+                닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요 · 금액 없이 글만 써도 무지출 인증이 돼요
               </p>
             )}
           </>
@@ -1682,13 +1682,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
               {isDilemma ? (
                 <>
-                  <button onClick={(ev) => handleJudge(e, 'ok', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>{renderTextWithEmoji('🌱 참아!')}</button>
-                  <button onClick={(ev) => handleJudge(e, 'over', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1.5px solid rgba(255,94,98,0.4)', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>{renderTextWithEmoji('💸 사도 돼')}</button>
+                  <button onClick={(ev) => handleJudge(e, 'ok', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>참아!</button>
+                  <button onClick={(ev) => handleJudge(e, 'over', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1.5px solid rgba(255,94,98,0.4)', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>사도 돼</button>
                 </>
               ) : (
                 <>
-                  <button onClick={(ev) => handleJudge(e, 'trust', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>{renderTextWithEmoji('👏 짠내난다')}</button>
-                  <button onClick={(ev) => handleJudge(e, 'doubt', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1.5px solid rgba(251,191,36,0.4)', background: 'rgba(251,191,36,0.1)', color: '#d97706', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>{renderTextWithEmoji('🤔 진짜야?')}</button>
+                  <button onClick={(ev) => handleJudge(e, 'trust', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>짠내난다</button>
+                  <button onClick={(ev) => handleJudge(e, 'doubt', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid var(--divider)', background: '#F7F8FA', color: 'var(--text-sub)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>진짜야?</button>
                 </>
               )}
               <button onClick={() => setJudgeSkipped(prev => new Set(prev).add(e.id))} style={{ flexShrink: 0, background: 'none', border: 'none', fontSize: '11px', color: 'var(--text-mute)', cursor: 'pointer', padding: '4px' }}>넘기기</button>
@@ -1739,7 +1739,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', cursor: 'pointer', border: '1.5px solid var(--primary-glow)' }}
         >
           <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, textAlign: 'left' }}>
-            <CustomIcon emoji="🔒" /> 돈 얘기는 아는 사람끼리 · 3~8명 짠 서클
+            돈 얘기는 아는 사람끼리 · 3~8명 짠 서클
           </p>
           <span style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)' }}>시작하기 ›</span>
         </div>
@@ -1779,7 +1779,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           /* 서클 없음 — 온보딩 (콜드스타트: 만들기 / 코드 참여 / 공개 서클 랜덤 매칭) + 발견 미리보기 */
           <>
           <div className="glass-card" style={{ padding: '18px 16px', textAlign: 'left', marginBottom: '16px' }}>
-            <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800 }}>{renderTextWithEmoji('🔒 짠 서클')}</h3>
+            <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800 }}>{'짠 서클'}</h3>
             <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.55 }}>
               돈 얘기는 아는 사람끼리가 편하죠. 3~8명이서 서로 오늘 쓴 걸 보고, 놀리고, 같이 주간 보스를 잡는 방이에요.
             </p>
