@@ -708,7 +708,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   // ── ⚖️ 오늘의 판정 큐 — 아직 반응 없는 글에 반응을 조직해 "글=반응"을 시스템으로 보장 ──
   const [judgeSkipped, setJudgeSkipped] = useState<Set<string>>(new Set());
-  const [judgedCount, setJudgedCount] = useState(0);
 
   const judgeQueue = React.useMemo(() => {
     return entries.filter(e =>
@@ -733,7 +732,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   }
 
   async function handleJudge(e: EntryWithReactions, verdict: 'trust' | 'doubt' | 'ok' | 'over', ev: React.MouseEvent<HTMLButtonElement>) {
-    setJudgedCount(c => c + 1);
     if (verdict === 'ok' || verdict === 'over') {
       await handleFeedVote(e.id, verdict);
       recordInteraction(e.user_id, e.nickname || undefined);
@@ -1513,8 +1511,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         )}
       </div>
 
-      {/* 스토리 레일 — 미션·멤버 현황·보스를 아바타 링 하나의 문법으로 (지시문 0줄) */}
-      {(() => {
+      {/* 스토리 레일 — 서클 멤버 현황·보스. 서클 없으면 히어로(컴포저)만 남긴다 */}
+      {myCircle && (() => {
         const recordedTodayFlag = daily.recorded && daily.date === getTodayStr();
         const myPersona = getPersona();
         const members = (myCircle?.members ?? []).filter(m => m.user_id !== userId);
@@ -1583,9 +1581,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           <div className="feed-composer-done">
             <span className="feed-composer-done-icon"><CustomIcon emoji="✅" /></span>
             <div className="feed-composer-done-info">
-              <span className="feed-composer-done-text">오늘 인증 완료!</span>
+              <span className="feed-composer-done-text">오늘 인증 완료!{streak.streak > 0 ? ` · 🔥${streak.streak}일` : ''}</span>
               <span className="feed-composer-done-amount">{formatAmount(daily.spentAmount ?? 0)} 지출</span>
             </div>
+            {rouletteSpins > 0 && (
+              <button className="feed-composer-add-btn" onClick={() => setShowRoulette(true)} style={{ marginRight: '6px' }}>🎰 {rouletteSpins}</button>
+            )}
             <button className="feed-composer-add-btn" onClick={onRecord}>추가 자백</button>
           </div>
         ) : (
@@ -1614,7 +1615,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             </div>
             {streak.totalDays === 0 && (
               <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
-                닉네임만 보여요 · 토스 실명·자산 정보와 연동되지 않아요 · 금액 없이 글만 써도 무지출 인증이 돼요
+                닉네임만 보여요 · 금액 없이 써도 무지출 인증이 돼요
               </p>
             )}
           </>
@@ -1649,57 +1650,31 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         </div>
       )}
 
-      {/* ⚖️ 오늘의 판정 큐 — 발견 탭 전용 (서클 안에서는 미션·피드가 반응을 유도) */}
-      {feedTab === 'all' && (judgeQueue.length > 0 ? (() => {
+      {/* ⚖️ 오늘의 판정 — 발견 탭 전용, 보더리스 미니멀 프롬프트 */}
+      {feedTab === 'all' && judgeQueue.length > 0 && (() => {
         const e = judgeQueue[0];
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
-          <div className="glass-card" style={{ padding: '14px 16px', textAlign: 'left' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
-              <span style={{ fontSize: '13px', fontWeight: 800 }}>오늘의 판정</span>
-              <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>판정 기다리는 인증 {judgeQueue.length}건</span>
-            </div>
-            <p style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-main)', lineHeight: 1.45, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-              <strong>{e.nickname}</strong> · {judgeSnippet(e)}
-            </p>
-            <div style={{ display: 'flex', gap: '8px', alignItems: 'center' }}>
+          <div className="judge-prompt">
+            <p className="judge-prompt-eyebrow">판정을 기다려요 · {judgeQueue.length}건</p>
+            <p className="judge-prompt-snippet"><strong>{e.nickname}</strong> · {judgeSnippet(e)}</p>
+            <div className="judge-prompt-actions">
               {isDilemma ? (
                 <>
-                  <button onClick={(ev) => handleJudge(e, 'ok', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>참아!</button>
-                  <button onClick={(ev) => handleJudge(e, 'over', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1.5px solid rgba(255,94,98,0.4)', background: 'rgba(255,94,98,0.1)', color: '#FF5E62', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>사도 돼</button>
+                  <button onClick={(ev) => handleJudge(e, 'ok', ev)} className="judge-btn judge-btn--primary">참아!</button>
+                  <button onClick={(ev) => handleJudge(e, 'over', ev)} className="judge-btn">사도 돼</button>
                 </>
               ) : (
                 <>
-                  <button onClick={(ev) => handleJudge(e, 'trust', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>짠내난다</button>
-                  <button onClick={(ev) => handleJudge(e, 'doubt', ev)} style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid var(--divider)', background: '#F7F8FA', color: 'var(--text-sub)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>진짜야?</button>
+                  <button onClick={(ev) => handleJudge(e, 'trust', ev)} className="judge-btn judge-btn--primary">짠내난다</button>
+                  <button onClick={(ev) => handleJudge(e, 'doubt', ev)} className="judge-btn">진짜야?</button>
                 </>
               )}
-              <button onClick={() => setJudgeSkipped(prev => new Set(prev).add(e.id))} style={{ flexShrink: 0, background: 'none', border: 'none', fontSize: '11px', color: 'var(--text-mute)', cursor: 'pointer', padding: '4px' }}>넘기기</button>
+              <button onClick={() => setJudgeSkipped(prev => new Set(prev).add(e.id))} className="judge-skip">넘기기</button>
             </div>
-            {!isDilemma && (
-              <div style={{ display: 'flex', gap: '6px', marginTop: '8px' }}>
-                {(['nope', 'approve', 'chicken'] as const).map(k => {
-                  const st = STAMP_BY_KEY[k];
-                  if (!st) return null;
-                  return (
-                    <button
-                      key={k}
-                      onClick={() => { setJudgedCount(c => c + 1); setJudgeSkipped(prev => new Set(prev).add(e.id)); handleStamp(e, k); }}
-                      style={{ flex: 1, padding: '8px 4px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#F7F8FA', color: 'var(--text-sub)', fontWeight: 800, fontSize: '11.5px', cursor: 'pointer' }}
-                    >
-                      <CustomIcon emoji={st.emoji} /> {st.label}
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
         );
-      })() : judgedCount > 0 ? (
-        <div className="glass-card" style={{ padding: '12px 16px', textAlign: 'left' }}>
-          <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 800, color: 'var(--primary)' }}><CustomIcon emoji="🎉" /> 오늘의 판정 완료! 짠친 {judgedCount}명에게 반응이 전달됐어요</p>
-        </div>
-      ) : null)}
+      })()}
 
       {/* 탭 필터: 전체 / 팔로우 / 절약 그룹 */}
       {myCircle && (
@@ -1721,7 +1696,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         <div
           className="glass-card"
           onClick={() => { userTouchedTabRef.current = true; setFeedTab('circle'); }}
-          style={{ padding: '12px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', cursor: 'pointer', border: '1.5px solid var(--primary-glow)' }}
+          style={{ padding: '12px 16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '10px', cursor: 'pointer' }}
         >
           <p style={{ margin: 0, fontSize: '12.5px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4, textAlign: 'left' }}>
             돈 얘기는 아는 사람끼리 · 3~8명 짠 서클
