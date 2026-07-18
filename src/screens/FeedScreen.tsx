@@ -1286,6 +1286,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           <p key={i} className="feed-note"><CustomIcon emoji="💬" /> {it.comment}</p>
         ))}
 
+        {/* 무지출 인증 칩 — 지출 항목 없는 0원 인증 */}
+        {!isMilestone && !isTipPost && !isDilemmaPost && (entry.total_amount ?? 0) === 0 &&
+          entry.items.every(it => it.category === '한마디') && entry.items.length > 0 && (
+          <span className="cert-chip">무지출 인증 ✓</span>
+        )}
+
         {/* 인증샷 / 영수증 이미지 */}
         {entry.image && (
           <div className="feed-card-image-wrap" onClick={() => setLightboxImage(entry.image || null)} onDoubleClick={(e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
@@ -1336,7 +1342,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       {commentText && <span className="feed-item-comment">{commentText}</span>}
                     </div>
                     <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
-                      {item.amount === 0 ? '0원' : formatAmount(item.amount)}
+                      {item.amount === 0 ? '0원' : `−${formatAmount(item.amount)}`}
                     </span>
                   </div>
                 );
@@ -1348,18 +1354,11 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         {/* 액션 바 — X 문법: 아이콘 3개(댓글·스탬프·응원), 카운트만 회색으로 */}
         {!isMilestone && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-            <button
-              onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: !prev[entry.id] }))}
-              aria-label="댓글"
-              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px 12px 0', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
-            >
-              <IconChat />{comments.length > 0 ? ` ${comments.length}` : ''}
-            </button>
             {entry.user_id !== userId && (
               <button
                 onClick={() => setStampPickerFor(prev => (prev === entry.id ? null : entry.id))}
                 aria-label="스탬프"
-                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px 12px 0', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
               >
                 <IconStamp />{Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0) > 0 ? ` ${Object.values(entry.stamp_counts ?? {}).reduce((a, b) => a + b, 0)}` : ''}
               </button>
@@ -1389,6 +1388,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 </button>
               </>
             )}
+            <button
+              onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: !prev[entry.id] }))}
+              aria-label="댓글"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+            >
+              <IconChat />{comments.length > 0 ? ` ${comments.length}` : ''}
+            </button>
             {/* 받은 스탬프 요약 — 있는 것만, 읽기 전용 느낌의 작은 칩 */}
             {(() => {
               const received = STAMPS.filter(st => (entry.stamp_counts?.[st.key] ?? 0) > 0);
@@ -1611,7 +1617,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 value={quickText}
                 onChange={e => setQuickText(e.target.value.slice(0, 60))}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSubmit(); } }}
-                placeholder='오늘 뭐 썼어요? 예) 커피 4500'
+                placeholder='오늘 뭐 썼어요?'
                 maxLength={60}
                 className="quick-input"
               />

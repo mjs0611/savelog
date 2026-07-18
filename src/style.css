@@ -3,10 +3,15 @@
 
 :root {
   /* 절약·자산 정체성의 에메랄드 그린 — 인라인 민트 계열(rgba(0,245,160,…))과 같은 색 가족으로 통일 */
-  --primary: #0BA97A; /* Deep Mint Emerald */
-  --primary-dark: #078F65;
-  --primary-light: rgba(11, 169, 122, 0.10);
-  --primary-glow: rgba(11, 169, 122, 0.22);
+  --primary: #0E9573; /* Ink Green — 도장 잉크 (민트 에메랄드에서 한 톤 깊게) */
+  --primary-dark: #0A7A5E;
+  --primary-light: rgba(14, 149, 115, 0.10);
+  --primary-glow: rgba(14, 149, 115, 0.22);
+
+  /* 인주 레드 — 지출 자백·판정 잉크 (영수증과 도장 세계관의 2색 잉크) */
+  --ink-red: #D6493E;
+  --ink-red-bg: rgba(214, 73, 62, 0.08);
+  --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
 
   --accent-pink: #FF8FA3; /* Warm Pink — 듀오·하트 전용 포인트 */
   --accent-cyan: #7FE3D2; /* Soft Mint Soda */
@@ -8443,3 +8448,33 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 @media (prefers-reduced-motion: reduce) {
   .verdict-stamp { animation: none; }
 }
+
+/* ── 영수증 미학 — 금액은 영수증 숫자처럼 (모노·탭룰러), 지출=인주 잉크 ── */
+.feed-item-amount {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.3px;
+  color: var(--ink-red) !important;
+}
+.feed-item-amount--zero { color: var(--primary) !important; }
+
+/* 무지출 인증 칩 — 도장 느낌의 아웃라인 칩 (살짝 기울여 찍힌 감각) */
+.cert-chip {
+  display: inline-flex;
+  align-self: flex-start;
+  align-items: center;
+  gap: 4px;
+  margin: 2px 0 4px;
+  padding: 4px 10px;
+  border: 1.5px solid var(--primary);
+  border-radius: 6px;
+  color: var(--primary);
+  font-size: 11.5px;
+  font-weight: 900;
+  letter-spacing: 1px;
+  transform: rotate(-1.5deg);
+}
+
+/* 금액 입력·통계 숫자도 영수증 모노 */
+.custom-input-field { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
+.mylog-summary-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
