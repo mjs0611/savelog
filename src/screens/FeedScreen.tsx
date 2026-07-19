@@ -1136,7 +1136,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             {isMilestone && (
               <span className="feed-badge feed-badge--yellow"><CustomIcon emoji="🏆" /> 달성</span>
             )}
-            {(entry.total_amount ?? 0) === 0 && !isMilestone && !isTipPost && !isDilemmaPost && (
+            {entry.items.some(it => (it.saved_amount ?? 0) > 0) ? (
+              <span className="feed-badge feed-badge--ink">모음</span>
+            ) : (entry.total_amount ?? 0) === 0 && !isMilestone && !isTipPost && !isDilemmaPost && (
               <span className="feed-badge feed-badge--ink">무지출</span>
             )}
 
@@ -1312,6 +1314,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   else if (emotionTag.includes('후회')) emotionClass = 'emotion-badge--no-regret';
                 }
 
+                const savedAmt = item.saved_amount ?? 0;
+                const isSaved = savedAmt > 0;
                 return (
                   <div key={i} className="feed-item">
                     <span className="feed-item-emoji"><CustomIcon emoji={item.emoji} /></span>
@@ -1332,9 +1336,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       </span>
                       {commentText && <span className="feed-item-comment">{commentText}</span>}
                     </div>
-                    <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
-                      {item.amount === 0 ? '0원' : `−${formatAmount(item.amount)}`}
-                    </span>
+                    {isSaved ? (
+                      <span className="feed-item-amount feed-item-amount--saved">+{formatAmount(savedAmt)}</span>
+                    ) : (
+                      <span className={`feed-item-amount ${item.amount === 0 ? 'feed-item-amount--zero' : ''}`}>
+                        {item.amount === 0 ? '0원' : `−${formatAmount(item.amount)}`}
+                      </span>
+                    )}
                   </div>
                 );
               })}

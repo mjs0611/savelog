@@ -8461,6 +8461,13 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   color: var(--ink-red) !important;
 }
 .feed-item-amount--zero { color: var(--primary) !important; }
+.feed-item-amount--saved { color: var(--primary) !important; font-family: var(--font-mono); font-variant-numeric: tabular-nums; letter-spacing: -0.3px; }
+
+/* 기록 종류 세그먼트 — 지출 자백 / 모은 돈 */
+.record-mode-seg { display: flex; gap: 6px; padding: 4px; background: #F1EEE8; border-radius: 12px; margin-bottom: 16px; }
+.record-mode-btn { flex: 1; padding: 9px; border-radius: 9px; border: none; background: transparent; color: var(--text-sub); font-weight: 800; font-size: 13px; cursor: pointer; transition: all 0.15s; }
+.record-mode-btn--active { background: #FFFFFF; color: var(--text-main); box-shadow: 0 1px 3px rgba(60,50,40,0.08); }
+
 
 /* 무지출 인증 칩 — 도장 느낌의 아웃라인 칩 (살짝 기울여 찍힌 감각) */
 .cert-chip {
