@@ -6426,18 +6426,19 @@ input { font: inherit; outline: none; border: none; }
   color: var(--text-mute);
 }
 .feed-card-ig-follow {
-  background: var(--primary);
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  padding: 6px 12px;
+  background: transparent;
+  color: var(--text-main);
+  border: 1px solid var(--divider);
+  border-radius: 100px;
+  padding: 5px 13px;
   font-size: 12px;
   font-weight: 800;
   cursor: pointer;
   transition: all 0.2s;
 }
 .feed-card-ig-follow:hover {
-  background: var(--primary-dark);
+  background: var(--primary-light);
+  border-color: var(--primary);
 }
 .feed-card-ig-follow.following {
   background: var(--bg);

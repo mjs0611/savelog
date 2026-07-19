@@ -1610,7 +1610,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <button
                 onClick={handleQuickSubmit}
                 disabled={!quickText.trim() || submitting}
-                style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !quickText.trim() || submitting ? 0.5 : 1 }}
+                style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: (!quickText.trim() || submitting) ? '#ECE7DE' : 'var(--primary)', color: (!quickText.trim() || submitting) ? 'var(--text-mute)' : '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s, color 0.2s' }}
               >
                 {submitting ? '...' : '인증'}
               </button>
