@@ -214,6 +214,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   // 스탬프 피커 (카드당 온디맨드)
   const [stampPickerFor, setStampPickerFor] = useState<string | null>(null);
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
+  // 발견 랜덤 — 알고리즘 없이 무작위로 흘려보기 (내 클릭 반영 안 함). 0=최신순
+  const [shuffleKey, setShuffleKey] = useState(0);
 
   // 내 기록 외부 자랑 — 성취 피크 순간에 바이럴 접점 (딥링크 by/bn = 수신자 자동 맞팔)
   async function handleBragShare(entry: EntryWithReactions) {
@@ -1035,8 +1037,16 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       // 서클 = 사람 필터 — 멤버들의 글만 (내 글 포함)
       return sorted.filter(e => circleMemberIdSet.has(e.user_id));
     }
+    // 발견 랜덤: 시드 기반 결정적 셔플 (내 취향·인기 반영 없음)
+    if (feedTab === 'all' && shuffleKey > 0) {
+      const arr = sorted.slice();
+      let seed = shuffleKey;
+      const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+      for (let i = arr.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [arr[i], arr[j]] = [arr[j], arr[i]]; }
+      return arr;
+    }
     return sorted;
-  }, [entries, userId, followedUsers, feedTab, selectedFriendId, circleMemberIdSet]);
+  }, [entries, userId, followedUsers, feedTab, selectedFriendId, circleMemberIdSet, shuffleKey]);
 
   const renderFeedCard = (entry: EntryWithReactions) => {
     const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
@@ -2074,6 +2084,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       );
                     })}
                   </div>
+                </div>
+              )}
+              {feedTab === 'all' && displayedEntries.length > 1 && (
+                <div className="discover-controls">
+                  <button className={`discover-sort${shuffleKey === 0 ? ' discover-sort--active' : ''}`} onClick={() => setShuffleKey(0)}>최신순</button>
+                  <button className={`discover-sort${shuffleKey > 0 ? ' discover-sort--active' : ''}`} onClick={() => setShuffleKey(Date.now())}>🎲 랜덤</button>
                 </div>
               )}
               {displayedEntries.map((entry, idx) => (

@@ -20,6 +20,7 @@ import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
 import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
 import { IconFriends, IconTrophy, IconGear } from '../components/Icons';
+import MoneyPattern from '../components/MoneyPattern';
 import CustomIcon from '../components/CustomIcon';
 import MyCockpit from '../components/MyCockpit';
 import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
@@ -273,6 +274,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         </div>
 
       </div>
+
+      {/* 💠 돈 패턴 회고 — 재방문의 내재적 이유 (게임 대신 자기이해) */}
+      <MoneyPattern entries={allEntries.length > 0 ? allEntries : myEntries} />
 
       {/* 🐹 내 절약 코쿼핏 (리워드·펫·목표·듀오) — 피드에서 마이로그로 이동 */}
       {daily && onClaimPending && (
