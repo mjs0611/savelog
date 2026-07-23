@@ -403,7 +403,7 @@ export default function App() {
             {isMigration ? (
               <p className="setup-desc">더 안전한 서비스 이용을 위해<br />토스 계정 연동이 필요해요</p>
             ) : (
-              <p className="setup-desc">커피 한 잔 참은 것도<br />자랑이 되는 곳</p>
+              <p className="setup-desc">쓴 돈도 모은 돈도, 물타기까지<br />짠친들이 판정해주는 곳</p>
             )}
             {!isMigration && globalStats !== null && globalStats.totalRecords >= 30 && (
               <p className="setup-proof">지금까지 쌓인 짠 인증 {globalStats.totalRecords.toLocaleString('ko-KR')}개</p>

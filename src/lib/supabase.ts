@@ -1142,7 +1142,7 @@ export async function deleteStory(storyId: string): Promise<boolean> {
 }
 
 // ── Community (블라인드식 게시판) ──────────────────────────────────────────
-export type CommunityCategory = 'tip' | 'recipe' | 'together' | 'daily' | 'question' | 'free';
+export type CommunityCategory = 'tip' | 'recipe' | 'together' | 'daily' | 'question' | 'free' | 'invest';
 
 export interface CommunityPost {
   id: string;

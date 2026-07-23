@@ -28,6 +28,7 @@ const POST_CATEGORIES: { key: CommunityCategory; label: string; emoji: string }[
   { key: 'question', label: '살까 말까',  emoji: '⚖️' },
   { key: 'together', label: '텅장 실화',  emoji: '😭' },
   { key: 'tip',      label: '꿀팁·핫딜',  emoji: '💡' },
+  { key: 'invest',   label: '투자 자백',  emoji: '📈' },
   { key: 'recipe',   label: '짠밥 레시피', emoji: '🍳' },
   { key: 'free',     label: '잡담',       emoji: '💬' },
 ];
@@ -38,6 +39,7 @@ const COMPOSE_PLACEHOLDER: Record<CommunityCategory, { title: string; content: s
   together: { title: '예) 충동구매한 무드등, 3일째 박스째 있음', content: '지출 실패담을 고백하는 곳. 웃으면서 배웁니다. 어림도 없지!' },
   tip: { title: '예) 통신비 1만원대로 줄인 방법 / 지금 반값 핫딜', content: '실제로 돈이 굳는 꿀팁이나 핫딜 정보를 공유해 주세요.' },
   recipe: { title: '예) 5천원으로 4끼 — 냉털 카레', content: '가성비 최고의 레시피와 예상 비용을 알려주세요.' },
+  invest: { title: '예) 삼성전자 물타기 3번째… 이게 맞나', content: '투자 고민이나 손실도 자백하세요. 물타기? 손절? 짠친들이 판정해줍니다.' },
   free: { title: '제목을 입력해주세요', content: '돈 얘기든 아니든, 자유롭게.' },
 };
 
@@ -73,6 +75,11 @@ const DAILY_QUESTIONS: { q: string; category: CommunityCategory }[] = [
   { q: '한 달 식비, 다들 얼마나 써요?', category: 'free' },
   { q: '올해 가장 잘한 소비 하나만 자랑해 주세요', category: 'daily' },
   { q: '지갑 지키는 최후의 주문 한마디는?', category: 'tip' },
+  { q: '지금 물타기 할까 손절할까, 짠친들이 판정해 드림', category: 'invest' },
+  { q: '첫 주식·코인으로 산 종목, 지금 물렸어요 벌었어요?', category: 'invest' },
+  { q: '"이건 투자야"라고 우겼다가 물린 썰 있어요?', category: 'invest' },
+  { q: '적금 vs 주식, 요즘 어디에 넣고 있어요?', category: 'invest' },
+  { q: '이번 달 모은 돈, 얼마 인증 가능해요?', category: 'daily' },
 ];
 
 function todayQuestion(): { q: string; category: CommunityCategory } {

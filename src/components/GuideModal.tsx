@@ -6,7 +6,7 @@ const GROUPS: { title: string; items: { emoji: string; title: string; desc: stri
   {
     title: '기본 · 하루 한 줄이면 됩니다',
     items: [
-      { emoji: '✍️', title: '매일 한 줄 인증', desc: '쓴 돈은 자백하고, 안 썼으면 무지출 인증. 한 줄이면 돼요.' },
+      { emoji: '✍️', title: '매일 한 줄 인증', desc: '쓴 돈은 자백, 안 쓴 날은 무지출 인증, 모은 돈·투자는 물타기 고백까지. 한 줄이면 돼요.' },
       { emoji: '💰', title: '토스포인트 (진짜 현금)', desc: '인증하면 쌓여요. "광고 보고 받기"를 누르면 실제 토스포인트로 받아요.' },
       { emoji: '🪙', title: '젤리 (앱 안 재화)', desc: '인증·룰렛·배틀로 모이는 가상 재화. 절약 요정을 꾸미는 데 써요.' },
     ],
