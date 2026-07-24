@@ -137,3 +137,18 @@ export function IconGear({ size = 18, strokeWidth = 1.8, className }: IconProps)
     </svg>
   );
 }
+
+// 책갈피 (짠수첩에 담기)
+export function IconBookmark({ size = 17, strokeWidth = 1.8, filled = false, className }: IconProps) {
+  return (
+    <svg {...base(size, className)}>
+      <path
+        d="M7 3.9h10c.55 0 1 .45 1 1V20l-6-3.4L6 20V4.9c0-.55.45-1 1-1z"
+        stroke="currentColor"
+        strokeWidth={strokeWidth}
+        strokeLinejoin="round"
+        fill={filled ? 'currentColor' : 'none'}
+      />
+    </svg>
+  );
+}

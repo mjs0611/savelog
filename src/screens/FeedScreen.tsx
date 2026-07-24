@@ -2,11 +2,12 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, setScrapServer, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
 import { shareExternal, buildCircleInviteMessage, buildRecordBragMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
 import { recordInteraction, getRelation, getEffectiveStreak } from '../lib/relations';
+import { getScrapIds, toggleScrapLocal } from '../lib/scraps';
 import { formatAmount, timeAgo, getWeekKey, getTodayStr } from '../lib/utils';
 import { 
   PERSONAS, 
@@ -28,7 +29,7 @@ import {
 } from '../lib/storage';
 import { FEED_BANNER_AD_ID, initBannerAds } from '../lib/ads';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
-import { IconChat, IconStamp, IconHeart, IconShare } from '../components/Icons';
+import { IconChat, IconStamp, IconHeart, IconShare, IconBookmark } from '../components/Icons';
 
 function FeedBannerSlot() {
   const containerRef = useRef<HTMLDivElement>(null);
@@ -145,6 +146,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [loadFailed, setLoadFailed] = useState(false);
   const [toggling, setToggling] = useState<Set<string>>(() => new Set());
   const togglingRef = React.useRef<Set<string>>(new Set());
+  // 짠수첩 — 내가 담은 entry id (원본=localStorage, lib/scraps.ts)
+  const [scrapped, setScrapped] = useState<Set<string>>(() => new Set(getScrapIds()));
   // 쪽지 및 하트 인터랙션 관련 상태
   const [messageRecipientEntry, setMessageRecipientEntry] = useState<EntryWithReactions | { user_id: string; nickname: string } | null>(null);
   const [messageText, setMessageText] = useState('');
@@ -771,6 +774,20 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     } catch { /* 실패해도 다음 피드 로드에서 서버 상태로 동기화 */ }
   }
 
+  // 수첩에 담기 — 판정이 '평가'라면 담기는 '내 삶에 가져갈 것' (Are.na Connect 번안)
+  function handleScrap(entry: EntryWithReactions) {
+    const on = toggleScrapLocal(entry.id);
+    setScrapped(new Set(getScrapIds()));
+    setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, scrap_count: Math.max(0, e.scrap_count + (on ? 1 : -1)) } : e));
+    setScrapServer(entry.id, userId, on);
+    if (on) {
+      showFeedToast('🔖 짠수첩에 담았어요 — 마이로그 · 수첩');
+      recordInteraction(entry.user_id, entry.nickname || undefined);
+      setRelTick(t => t + 1);
+      sendCheerNotification(userId, entry.user_id, getNickname() || '짠친', '🔖 회원님의 자백이 누군가의 짠수첩에 담겼어요!').catch(() => {});
+    }
+  }
+
   async function handleReact(entry: EntryWithReactions, type: 'trust' | 'doubt', e: React.MouseEvent<HTMLButtonElement>) {
     if (entry.user_id === userId) return;
     if (togglingRef.current.has(entry.id)) return;
@@ -1388,6 +1405,11 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                     <IconHeart filled /> {likeCount}
                   </span>
                 )}
+                {entry.scrap_count > 0 && (
+                  <span title="수첩에 담아간 짠친" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', color: 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}>
+                    <IconBookmark filled /> {entry.scrap_count}
+                  </span>
+                )}
                 <button
                   onClick={() => handleBragShare(entry)}
                   aria-label="자랑하기"
@@ -1396,6 +1418,15 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   <IconShare />
                 </button>
               </>
+            )}
+            {entry.user_id !== userId && (
+              <button
+                onClick={() => handleScrap(entry)}
+                aria-label="짠수첩에 담기"
+                style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: scrapped.has(entry.id) ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
+              >
+                <IconBookmark filled={scrapped.has(entry.id)} />{entry.scrap_count > 0 ? ` ${entry.scrap_count}` : ''}
+              </button>
             )}
             <button
               onClick={() => setCommentExpanded(prev => ({ ...prev, [entry.id]: !prev[entry.id] }))}

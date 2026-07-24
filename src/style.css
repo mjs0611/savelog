@@ -8550,3 +8550,17 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 }
 .money-pattern--teaser .money-pattern-eyebrow { text-align: center; }
 .money-pattern-sub { margin: 12px 0 0; font-size: 12px; color: var(--text-sub); line-height: 1.5; }
+
+/* ── 짠수첩 (Are.na Connect 번안 — 담아온 남의 자백) ─────────────────── */
+.scrapbook-list { display: flex; flex-direction: column; gap: 10px; }
+.scrapbook-card { background: #fff; border: 1px solid var(--divider); border-radius: 16px; padding: 14px 16px; }
+.scrapbook-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+.scrapbook-nick { font-size: 13.5px; font-weight: 800; color: var(--text-main); }
+.scrapbook-date { font-size: 11px; color: var(--text-mute); }
+.scrapbook-remove { margin-left: auto; background: none; border: none; color: var(--primary); cursor: pointer; padding: 4px; display: inline-flex; }
+.scrapbook-note { font-size: 14px; color: var(--text-main); margin: 2px 0 6px; line-height: 1.5; }
+.scrapbook-item { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; padding: 3px 0; }
+.scrapbook-item-cat { font-size: 12.5px; color: var(--text-sub); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.scrapbook-item-amount { font-family: var(--font-mono); font-variant-numeric: tabular-nums; font-size: 12.5px; font-weight: 700; color: var(--ink-red); flex-shrink: 0; }
+.scrapbook-item-amount--saved { color: var(--primary); }
+.scrapbook-gone { font-size: 11px; color: var(--text-mute); text-align: center; margin: 4px 0 0; }

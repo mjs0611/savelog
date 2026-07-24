@@ -13,13 +13,14 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 }
 
 import type { Entry, WeekRankRow } from '../lib/supabase';
-import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
+import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, fetchEntriesByIds, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
+import { getScrapIds, toggleScrapLocal } from '../lib/scraps';
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
 import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
-import { IconFriends, IconTrophy, IconGear } from '../components/Icons';
+import { IconFriends, IconTrophy, IconGear, IconBookmark } from '../components/Icons';
 import MoneyPattern from '../components/MoneyPattern';
 import CustomIcon from '../components/CustomIcon';
 import MyCockpit from '../components/MyCockpit';
@@ -100,7 +101,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     }
   }, [showFollows, userId]);
 
-  const [subTab, setSubTab] = useState<'records' | 'gallery' | 'stats' | 'mailbox'>('records');
+  const [subTab, setSubTab] = useState<'records' | 'scrapbook' | 'gallery' | 'stats' | 'mailbox'>('records');
 
 
 
@@ -285,13 +286,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
       {/* 2. Sub-tab Navigation */}
       <div className="mylog-subtab-bar">
-        {(['records', 'stats', 'mailbox'] as const).map(t => (
+        {(['records', 'scrapbook', 'stats', 'mailbox'] as const).map(t => (
           <button
             key={t}
             className={`mylog-subtab-btn ${subTab === t ? 'mylog-subtab-btn--active' : ''}`}
             onClick={() => setSubTab(t)}
           >
-            {t === 'records' ? '기록' : t === 'stats' ? '통계' : '쪽지'}
+            {t === 'records' ? '기록' : t === 'scrapbook' ? '수첩' : t === 'stats' ? '통계' : '쪽지'}
           </button>
         ))}
       </div>
@@ -310,6 +311,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         ) : (
           <>
             {subTab === 'records' && <RecordsTab entries={allEntries.length > 0 ? allEntries : myEntries} onShareToChat={onShareToChat} />}
+            {subTab === 'scrapbook' && <ScrapbookTab />}
             {subTab === 'gallery' && <GalleryTab entries={galleryEntries.length > 0 ? galleryEntries : (allEntries.length > 0 ? allEntries : myEntries)} />}
             {subTab === 'stats' && <StatsTab entries={myEntries} allEntries={allEntries} lastWeekEntries={allEntries.filter(e => e.week_key === getPrevWeekKey(getWeekKey()))} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
             {subTab === 'mailbox' && <MailboxTab messages={messages} handleClearAllMessages={handleClearAllMessages} clearConfirm={clearConfirm} handleReplyClick={handleReplyClick} nickname={nickname} />}
@@ -642,6 +644,82 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
           </div>
         );
       })}
+    </div>
+  );
+}
+
+// 짠수첩 — 피드에서 담아온 남의 자백·꿀팁 (Are.na 'Connect' 번안). 원본=localStorage(lib/scraps.ts)
+function ScrapbookTab() {
+  const [ids, setIds] = useState<string[]>(() => getScrapIds());
+  const [items, setItems] = useState<Entry[] | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    if (ids.length === 0) { setItems([]); return; }
+    fetchEntriesByIds(ids).then(list => {
+      if (!alive) return;
+      const order = new Map(ids.map((id, i) => [id, i]));
+      setItems([...list].sort((a, b) => (order.get(a.id) ?? 999) - (order.get(b.id) ?? 999)));
+    });
+    return () => { alive = false; };
+  }, [ids]);
+
+  function handleRemove(id: string) {
+    toggleScrapLocal(id);
+    setIds(getScrapIds());
+  }
+
+  if (ids.length === 0) {
+    return (
+      <div className="mylog-empty">
+        아직 담은 게 없어요 <CustomIcon emoji="🔖" />
+        <span style={{ display: 'block', marginTop: '6px', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 500 }}>
+          피드에서 책갈피를 누르면 남의 절약이 내 수첩에 모여요
+        </span>
+      </div>
+    );
+  }
+  if (items === null) {
+    return <div className="mylog-loading"><div className="skeleton-card" style={{ height: '120px' }} /></div>;
+  }
+
+  return (
+    <div className="scrapbook-list">
+      {items.map(e => (
+        <div key={e.id} className="scrapbook-card">
+          <div className="scrapbook-head">
+            <span className="scrapbook-nick">{e.nickname}</span>
+            <span className="scrapbook-date">{e.date.substring(5).replace('-', '.')}</span>
+            <button className="scrapbook-remove" onClick={() => handleRemove(e.id)} aria-label="수첩에서 빼기" title="수첩에서 빼기">
+              <IconBookmark filled size={15} />
+            </button>
+          </div>
+          {e.items.filter(it => it.category === '한마디').map((it, i) => (
+            <p key={i} className="scrapbook-note">{it.comment}</p>
+          ))}
+          {e.items.filter(it => it.category !== '한마디' && it.category !== '마일스톤').slice(0, 4).map((it, i) => {
+            const commentText = (it.comment || '').replace(/^\[.*?\]\s*/, '');
+            const savedAmt = it.saved_amount ?? 0;
+            const showAmount = savedAmt > 0 || it.amount > 0;
+            return (
+              <div key={i} className="scrapbook-item">
+                <span className="scrapbook-item-cat">
+                  <CustomIcon emoji={it.emoji} /> {it.category === '무지출' ? '무지출' : it.category}
+                  {commentText ? ` · ${commentText}` : ''}
+                </span>
+                {showAmount && (
+                  <span className={`scrapbook-item-amount${savedAmt > 0 ? ' scrapbook-item-amount--saved' : ''}`}>
+                    {savedAmt > 0 ? `+${formatAmount(savedAmt)}` : `−${formatAmount(it.amount)}`}
+                  </span>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ))}
+      {items.length < ids.length && (
+        <p className="scrapbook-gone">지워진 기록 {ids.length - items.length}개는 표시되지 않아요</p>
+      )}
     </div>
   );
 }

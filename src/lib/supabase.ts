@@ -52,6 +52,8 @@ export interface EntryWithReactions extends Entry {
   // 거지방 스탬프 — reactions 테이블에 type='stamp:{key}' 행으로 저장 (리액션과 별도 1인 1개)
   stamp_counts: Record<string, number>;
   my_stamp: string | null; // stamp key (예: 'nope')
+  // 짠수첩 담김 수 — reactions type='scrap' 집계 (내가 담았는지는 localStorage가 원본, lib/scraps.ts)
+  scrap_count: number;
 }
 
 export interface WeekRankRow {
@@ -133,6 +135,31 @@ export async function toggleStamp(entryId: string, userId: string, stampKey: str
   }
 }
 
+// 짠수첩 담기 서버 집계 — reactions에 type='scrap' 행. 마이그레이션 SQL 미적용 환경에선
+// check 제약(23514)으로 조용히 실패하고, 수첩 자체는 localStorage(lib/scraps.ts)로 동작한다.
+export async function setScrapServer(entryId: string, userId: string, on: boolean): Promise<void> {
+  if (!supabase) return;
+  try {
+    if (on) {
+      await supabase.from('reactions').insert({ entry_id: entryId, user_id: userId, type: 'scrap' });
+    } else {
+      await supabase.from('reactions').delete().eq('entry_id', entryId).eq('user_id', userId).eq('type', 'scrap');
+    }
+  } catch { /* best-effort */ }
+}
+
+// 수첩 탭 — 담아둔 entry들을 id로 조회 (지워진 글은 자연 탈락)
+export async function fetchEntriesByIds(ids: string[]): Promise<Entry[]> {
+  if (!supabase || ids.length === 0) return [];
+  try {
+    const { data, error } = await supabase.from('entries').select('*').in('id', ids);
+    if (error || !data) return [];
+    return data as Entry[];
+  } catch {
+    return [];
+  }
+}
+
 // ── Read ──────────────────────────────────────────────────────────────────────
 
 export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithReactions[] | null> {
@@ -156,7 +183,7 @@ export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithRe
 
   return (entries as Entry[]).map((e) => {
     const rx = rxList.filter((r) => r.entry_id === e.id);
-    const plain = rx.filter((r) => !r.type.startsWith('stamp:'));
+    const plain = rx.filter((r) => !r.type.startsWith('stamp:') && r.type !== 'scrap');
     const stamps = rx.filter((r) => r.type.startsWith('stamp:'));
     const mine = plain.find((r) => r.user_id === userId);
     const myStampRow = stamps.find((r) => r.user_id === userId);
@@ -172,6 +199,7 @@ export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithRe
       my_reaction: mine ? (mine.type as 'trust' | 'doubt') : null,
       stamp_counts,
       my_stamp: myStampRow ? myStampRow.type.slice(6) : null,
+      scrap_count: rx.filter((r) => r.type === 'scrap').length,
     };
   });
 }
@@ -1019,7 +1047,7 @@ function localDateStr(d: Date): string {
 function buildMockFeed(_userId: string): EntryWithReactions[] {
   const today = localDateStr(new Date());
   const yesterday = localDateStr(new Date(Date.now() - 86400000));
-  const list: Array<Omit<EntryWithReactions, 'stamp_counts' | 'my_stamp'>> = [
+  const list: Array<Omit<EntryWithReactions, 'stamp_counts' | 'my_stamp' | 'scrap_count'>> = [
     {
       id: 'mock-1', user_id: 'mock-a', nickname: '잔잔한민지',
       date: today,
@@ -1060,7 +1088,7 @@ function buildMockFeed(_userId: string): EntryWithReactions[] {
       image: 'https://images.unsplash.com/photo-1556910103-1c02745aae4d?w=800&q=80',
     },
   ];
-  return list.map(e => ({ ...e, stamp_counts: {}, my_stamp: null }));
+  return list.map(e => ({ ...e, stamp_counts: {}, my_stamp: null, scrap_count: 0 }));
 }
 
 const MOCK_RANK: WeekRankRow[] = [
