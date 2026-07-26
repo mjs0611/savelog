@@ -1602,16 +1602,32 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       })()}
 
       {welcomeBack && (
-        <button
-          onClick={() => setWelcomeBack(null)}
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(31, 30, 28, 0.25)', background: 'rgba(31, 30, 28, 0.06)', cursor: 'pointer' }}
+        <div
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(31, 30, 28, 0.25)', background: 'rgba(31, 30, 28, 0.06)' }}
         >
           <IconHeart filled size={18} className="" />
           <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
             자리 비운 사이 내 인증에 반응 {welcomeBack.reactions + welcomeBack.comments}개가 달렸어요
           </span>
-          <span style={{ fontSize: '11px', color: 'var(--text-mute)', fontWeight: 700 }}>닫기</span>
-        </button>
+          {/* 피크-엔드: 반응 받은 걸 안 직후가 공유 유도 최적점 */}
+          {(() => {
+            const mine = entries.find(e => e.user_id === userId);
+            return mine ? (
+              <button
+                onClick={() => { handleBragShare(mine); setWelcomeBack(null); }}
+                style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: 'var(--text-main)', color: 'var(--bg-base, #FAF8F4)', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+              >
+                자랑하기
+              </button>
+            ) : null;
+          })()}
+          <button
+            onClick={() => setWelcomeBack(null)}
+            style={{ flexShrink: 0, padding: '6px 4px', border: 'none', background: 'transparent', fontSize: '11px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}
+          >
+            닫기
+          </button>
+        </div>
       )}
 
       {globalStats !== null && globalStats.weekRecords >= 10 && (

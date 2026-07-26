@@ -210,6 +210,15 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const zeroDays = myEntries.filter(e => e.total_amount === 0).length;
   const recordedDays = new Set(myEntries.map(e => e.date)).size;
 
+  // 이번 달 Outcome — 방어한 돈(saved_amount)·무지출일·기록일 실시간 누적
+  const monthPrefix = getTodayStr().slice(0, 7);
+  const monthSource = allEntries.length > 0 ? allEntries : myEntries;
+  const monthEntries = monthSource.filter(e => e.date.startsWith(monthPrefix));
+  const monthSaved = monthEntries.reduce(
+    (s, e) => s + e.items.reduce((a, it) => a + (it.saved_amount ?? 0), 0), 0);
+  const monthZero = new Set(monthEntries.filter(e => e.total_amount === 0).map(e => e.date)).size;
+  const monthRecorded = new Set(monthEntries.map(e => e.date)).size;
+
   const personaKey = getPersona();
   const p = personaKey ? PERSONAS[personaKey] : null;
 
@@ -273,6 +282,13 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             <span className="mylog-summary-value">{zeroDays}일</span>
           </div>
         </div>
+
+        {/* 이번 달 성과 스트립 — 쌓인 결과가 보여야 다시 올 이유가 된다 */}
+        {(monthSaved > 0 || monthZero > 0 || monthRecorded > 0) && (
+          <p className="mylog-outcome-strip">
+            이번 달 {monthSaved > 0 && <>지킨 돈 <strong>+{formatAmount(monthSaved)}</strong> · </>}무지출 <strong>{monthZero}일</strong> · 기록 <strong>{monthRecorded}일</strong>
+          </p>
+        )}
 
       </div>
 

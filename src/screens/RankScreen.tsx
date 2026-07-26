@@ -88,6 +88,17 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           <img src="/images/icon_rank.png" className="custom-icon" />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
+        {/* 마감 임박에만 노출(넛지 피로 방지) — 손실 프레이밍+실데이터 사회적 증거 */}
+        {(() => {
+          const dow = new Date(getTodayStr()).getDay(); // 0=일
+          if (dow !== 0 && dow !== 6) return null;
+          const label = dow === 0 ? '오늘 밤 마감' : '내일 마감';
+          return (
+            <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 800, color: 'var(--accent, #D6493E)' }}>
+              <CustomIcon emoji="⏳" /> 이번 주 순위 {label}{weekRank.length > 0 ? ` · 지금 ${weekRank.length}명 참여 중` : ''}
+            </p>
+          );
+        })()}
         <div className="glass-card" style={{
           background: '#F7F8FA',
           padding: '12px 14px',
@@ -279,8 +290,23 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           )}
 
           <p style={{ fontSize: '11px', color: 'var(--text-mute)', textAlign: 'center', margin: '0 0 8px' }}>
-            <CustomIcon emoji="🏆" /> 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준{curRewardGated ? ` · 참여자 ${MIN_WEEKLY_PARTICIPANTS}명부터 보상이 열려요 (지금 ${weekRank.length}명)` : ''}
+            <CustomIcon emoji="🏆" /> 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준
           </p>
+
+          {/* 목표 근접 효과: 실참여 인원으로 게이트를 진행형으로 — "N명만 더" */}
+          {curRewardGated && (
+            <div className="glass-card" style={{ padding: '12px 14px', borderRadius: '12px', margin: '0 0 10px', background: '#FFFFFF', border: '1.5px solid var(--divider)' }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
+                <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>보상 게이트 {Math.min(weekRank.length, MIN_WEEKLY_PARTICIPANTS)}/{MIN_WEEKLY_PARTICIPANTS}</span>
+                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-sub)' }}>
+                  {MIN_WEEKLY_PARTICIPANTS - weekRank.length}명만 더 오면 전원 보상이 열려요
+                </span>
+              </div>
+              <div style={{ height: '6px', borderRadius: '3px', background: 'var(--divider)', overflow: 'hidden' }}>
+                <div style={{ height: '100%', width: `${Math.min(100, (weekRank.length / MIN_WEEKLY_PARTICIPANTS) * 100)}%`, borderRadius: '3px', background: 'var(--text-main)' }} />
+              </div>
+            </div>
+          )}
 
           {weekRank.map((row, i) => {
             const rowScore = row.score ?? (800 * row.days + Math.round(Math.max(0, 100000 - row.total) / 100000 * 4400));
