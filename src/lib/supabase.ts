@@ -48,6 +48,8 @@ export interface BalanceEntry {
 export interface EntryWithReactions extends Entry {
   trust_count: number;
   doubt_count: number;
+  // 절약 요정(FAIRY_USER_ID) 제외 사람 반응 수 — 판정 큐 노출 기준 (요정 자동 trust와 상쇄 방지)
+  human_reaction_count?: number;
   my_reaction: 'trust' | 'doubt' | null;
   // 거지방 스탬프 — reactions 테이블에 type='stamp:{key}' 행으로 저장 (리액션과 별도 1인 1개)
   stamp_counts: Record<string, number>;
@@ -196,6 +198,7 @@ export async function fetchFeed(userId: string, limit = 30): Promise<EntryWithRe
       ...e,
       trust_count: plain.filter((r) => r.type === 'trust').length,
       doubt_count: plain.filter((r) => r.type === 'doubt').length,
+      human_reaction_count: plain.filter((r) => r.user_id !== FAIRY_USER_ID).length,
       my_reaction: mine ? (mine.type as 'trust' | 'doubt') : null,
       stamp_counts,
       my_stamp: myStampRow ? myStampRow.type.slice(6) : null,

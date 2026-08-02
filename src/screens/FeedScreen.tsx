@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, setScrapServer, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, fetchFriendsOfFriends, toggleFollowSupabase, searchUsers, sendCheerNotification, fetchFollowedPersonas, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type SearchUser, type FofCandidate, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, setScrapServer, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, toggleFollowSupabase, sendCheerNotification, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
 import { shareExternal, buildCircleInviteMessage, buildRecordBragMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
@@ -164,22 +164,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   // 라이트박스 (이미지 확대 보기)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
 
-  // 팔로우 / 탭 필터
-  const [feedTab, setFeedTab] = useState<'circle' | 'all' | 'follow'>('circle'); // 서클이 홈 — 없어도 온보딩이 첫 화면
+  // 탭 필터 — 기본은 발견(all), 서클 로드 후 서클이 있으면 승격 (신규에게 빈 서클 온보딩 플래시 방지)
+  const [feedTab, setFeedTab] = useState<'circle' | 'all'>('all');
   const [followedUsers, setFollowedUsers] = useState<Record<string, string>>(() => getFollowedUsers());
   // 절약 짝꿍 = 상호 팔로우(내가 팔로우 ∩ 나를 팔로우). 관계 moat 핵심
   const [mutualSet, setMutualSet] = useState<Set<string>>(new Set());
   const [relTick, setRelTick] = useState(0); // 관계 자본 갱신 시 뱃지 리렌더
-  // 나를 팔로우한 사람들 (맞팔 추천 + 짝꿍 확정 감지용)
-  const [followers, setFollowers] = useState<{ id: string; nickname: string }[]>([]);
+  // 나를 팔로우한 사람들 (짝꿍 확정 감지용)
   const followerIdSetRef = React.useRef<Set<string>>(new Set());
-  // 친구의 친구 추천 (삼각 폐쇄 — 그래프 densify)
-  const [fofList, setFofList] = useState<FofCandidate[]>([]);
-  useEffect(() => {
-    const ids = Object.keys(followedUsers);
-    if (ids.length === 0) { setFofList([]); return; }
-    fetchFriendsOfFriends(userId, ids).then(setFofList).catch(() => {});
-  }, [userId, followedUsers]);
 
   useEffect(() => {
     fetchGlobalStats(getWeekKey()).then(setGlobalStats).catch(() => {});
@@ -201,7 +193,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   useEffect(() => {
     fetchFollowersWithNickname(userId).then(list => {
-      setFollowers(list);
       const followerSet = new Set(list.map(f => f.id));
       followerIdSetRef.current = followerSet;
       setMutualSet(new Set(Object.keys(followedUsers).filter(id => followerSet.has(id))));
@@ -238,26 +229,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     setQuickText('');
     await onQuickRecord(items);
   }
-  // ── 팔로우/소셜 고도화 관련 상태 ──
-  const [followedPersonas, setFollowedPersonas] = useState<Record<string, string>>({});
-  const [selectedFriendId, setSelectedFriendId] = useState<string | null>(null);
+  // 짠친 미니 프로필 모달
   const [quickMenuFriend, setQuickMenuFriend] = useState<{
     id: string;
     nickname: string;
     personaIcon: string | null;
     personaColor: string;
   } | null>(null);
-
-  useEffect(() => {
-    const ids = Object.keys(followedUsers);
-    if (ids.length > 0) {
-      fetchFollowedPersonas(ids).then(map => {
-        setFollowedPersonas(map);
-      }).catch(() => {});
-    } else {
-      setFollowedPersonas({});
-    }
-  }, [followedUsers]);
 
   useEffect(() => { setWishlistState(getWishlist()); }, [refreshToken]);
   const readyWish = wishlist.filter(isWishlistItemReady);
@@ -272,12 +250,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         : '👏 충동을 이겨냈어요! +15 젤리');
     }
   };
-  // 검색
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState<SearchUser[]>([]);
-  const [searching, setSearching] = useState(false);
-  const searchTimerRef = React.useRef<ReturnType<typeof setTimeout> | null>(null);
-
   // Pull-to-refresh
   const [pullState, setPullState] = useState<{ y: number; refreshing: boolean }>({ y: 0, refreshing: false });
   const pullStartRef = React.useRef<number | null>(null);
@@ -363,21 +335,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const myPersonaKey = getPersona();
 
 
-
-  // 추천 짠친 계산
-  const recommendedFriends = React.useMemo(() => {
-    const uniqueUsers: Record<string, { user_id: string; nickname: string; persona: string | null }> = {};
-    entries.forEach((e) => {
-      if (e.user_id !== userId && !followedUsers[e.user_id] && !uniqueUsers[e.user_id]) {
-        uniqueUsers[e.user_id] = {
-          user_id: e.user_id,
-          nickname: e.nickname || '익명 짠친',
-          persona: e.persona || null,
-        };
-      }
-    });
-    return Object.values(uniqueUsers).slice(0, 5);
-  }, [entries, userId, followedUsers]);
 
   // 팔로우 목록 동기화 — 피드 진입 / 새로고침 시마다 원격 truth 가져오기
   // (다른 탭에서 unfollow 한 결과 반영)
@@ -528,9 +485,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [circleJoinInput, setCircleJoinInput] = useState('');
   const [circleBusy, setCircleBusy] = useState(false);
   const userTouchedTabRef = React.useRef(false);
-  // 서클이 없으면 발견이 홈 — 미사용 기능이 첫 화면을 차지하지 않게 (실측: 서클 실사용 0)
+  // 서클이 있으면 서클이 홈 — fetch 완료 후 승격 (초기값은 'all')
   useEffect(() => {
-    if (circleLoaded && !myCircle && !userTouchedTabRef.current) setFeedTab('all');
+    if (circleLoaded && myCircle && !userTouchedTabRef.current) setFeedTab('circle');
   }, [circleLoaded, myCircle]);
 
   useEffect(() => {
@@ -717,7 +674,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const judgeQueue = React.useMemo(() => {
     return entries.filter(e =>
       e.user_id !== userId &&
-      (e.trust_count + e.doubt_count) === 0 &&
+      // 사람 반응 0 기준 — 절약 요정 자동 trust는 세지 않는다 (요정↔판정큐 상쇄 방지)
+      (e.human_reaction_count ?? (e.trust_count + e.doubt_count)) === 0 &&
       !e.my_reaction &&
       !feedVotes[e.id] &&
       !judgeSkipped.has(e.id)
@@ -983,27 +941,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     }
   }
 
-  // 검색 (디바운스 300ms)
-  useEffect(() => {
-    if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    const q = searchQuery.trim();
-    if (q.length === 0) {
-      setSearchResults([]);
-      setSearching(false);
-      return;
-    }
-    setSearching(true);
-    searchTimerRef.current = setTimeout(() => {
-      searchUsers(q, userId).then(results => {
-        setSearchResults(results);
-        setSearching(false);
-      }).catch(() => setSearching(false));
-    }, 300);
-    return () => {
-      if (searchTimerRef.current) clearTimeout(searchTimerRef.current);
-    };
-  }, [searchQuery, userId]);
-
   // Pull-to-refresh
   function handleTouchStart(e: React.TouchEvent<HTMLDivElement>) {
     const el = screenRef.current;
@@ -1043,13 +980,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     const sorted = entries.slice().sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-    if (feedTab === 'follow') {
-      let filtered = sorted.filter(e => e.user_id === userId || !!followedUsers[e.user_id]);
-      if (selectedFriendId) {
-        filtered = filtered.filter(e => e.user_id === selectedFriendId);
-      }
-      return filtered;
-    }
     if (feedTab === 'circle') {
       // 서클 = 사람 필터 — 멤버들의 글만 (내 글 포함)
       return sorted.filter(e => circleMemberIdSet.has(e.user_id));
@@ -1063,7 +993,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       return arr;
     }
     return sorted;
-  }, [entries, userId, followedUsers, feedTab, selectedFriendId, circleMemberIdSet, shuffleKey]);
+  }, [entries, feedTab, circleMemberIdSet, shuffleKey]);
 
   const renderFeedCard = (entry: EntryWithReactions) => {
     const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
@@ -1244,13 +1174,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <div className="dilemma-result-section">
                   <div className="dilemma-result-labels">
                     <span className="dilemma-result-over">
-                      행복 충전 {overPct}%
+                      사도 돼 {overPct}%
                       {myVote === 'over' && <span className="dilemma-my-badge dilemma-my-badge--over">내 선택 <CustomIcon emoji="🔥" /></span>}
                     </span>
                     <span className="dilemma-result-total">총 {totalFeedVotes}명 참여</span>
                     <span className="dilemma-result-ok">
                       {myVote === 'ok' && <span className="dilemma-my-badge dilemma-my-badge--ok">내 선택 <CustomIcon emoji="🌱" /></span>}
-                      스마트 세이브 {okPct}%
+                      참아! {okPct}%
                     </span>
                   </div>
 
@@ -1266,14 +1196,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                     className="balance-vote-card balance-vote-card--over"
                   >
                     <span className="vote-emoji"><CustomIcon emoji="🔥" /></span>
-                    <span className="vote-title">행복 충전</span>
+                    <span className="vote-title">사도 돼</span>
                   </button>
                   <button
                     onClick={() => handleFeedVote(entry.id, 'ok')}
                     className="balance-vote-card balance-vote-card--ok"
                   >
                     <span className="vote-emoji"><CustomIcon emoji="🌱" /></span>
-                    <span className="vote-title">스마트 세이브</span>
+                    <span className="vote-title">참아!</span>
                   </button>
                 </div>
               )}
@@ -1284,7 +1214,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 const outcome = getDilemmaOutcome(entry.id);
                 if (outcome) {
                   return (
-                    <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '12px', background: outcome === 'resisted' ? 'var(--primary-light)' : '#F7F8FA', fontSize: '12.5px', fontWeight: 800, color: outcome === 'resisted' ? 'var(--primary)' : 'var(--text-sub)', textAlign: 'center' }}>
+                    <div style={{ marginTop: '10px', padding: '10px 12px', borderRadius: '12px', background: outcome === 'resisted' ? 'var(--primary-light)' : 'var(--surface-dim)', fontSize: '12.5px', fontWeight: 800, color: outcome === 'resisted' ? 'var(--primary)' : 'var(--text-sub)', textAlign: 'center' }}>
                       {outcome === 'resisted'
                         ? `🌱 짠친들과 함께 참았어요! ${formatAmount(amount)}을 목표에 충전`
                         : '🔥 질렀어요! 행복했길 바라요 — 다음엔 또 막아줄게요'}
@@ -1298,7 +1228,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       <button onClick={() => handleResolveDilemma(entry.id, amount, false)}
                         style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🌱 참았어요</button>
                       <button onClick={() => handleResolveDilemma(entry.id, amount, true)}
-                        style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid #E4E6EA', background: '#F7F8FA', color: 'var(--text-main)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🔥 질렀어요</button>
+                        style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-main)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🔥 질렀어요</button>
                     </div>
                   </div>
                 );
@@ -1349,9 +1279,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                     <div className="feed-item-info">
                       <span className="feed-item-cat">
                         {item.category === '절약 방어' ? (
-                          <span><CustomIcon emoji="🌱" /> 플러스 저축</span>
+                          <span><CustomIcon emoji="🌱" /> 지킨 돈</span>
                         ) : item.category === '무지출' ? (
-                          <span><CustomIcon emoji="🌿" /> 지갑 힐링</span>
+                          <span><CustomIcon emoji="🌿" /> 무지출</span>
                         ) : (
                           item.category
                         )}
@@ -1442,7 +1372,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               return (
                 <span style={{ display: 'inline-flex', gap: '4px', marginLeft: 'auto', overflow: 'hidden' }}>
                   {received.slice(0, 3).map(st => (
-                    <span key={st.key} title={st.label} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', padding: '3px 8px', borderRadius: '100px', fontSize: '10.5px', fontWeight: 800, background: '#F7F8FA', color: 'var(--text-sub)' }}>
+                    <span key={st.key} title={st.label} style={{ display: 'inline-flex', alignItems: 'center', gap: '2px', padding: '3px 8px', borderRadius: '100px', fontSize: '10.5px', fontWeight: 800, background: 'var(--surface-dim)', color: 'var(--text-sub)' }}>
                       <CustomIcon emoji={st.emoji} /> {entry.stamp_counts[st.key]}
                     </span>
                   ))}
@@ -1462,7 +1392,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   key={st.key}
                   onClick={() => { handleStamp(entry, st.key); setStampPickerFor(null); }}
                   title={st.label}
-                  style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 11px', borderRadius: '100px', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', border: mine ? '1.5px solid var(--primary)' : '1px solid var(--divider)', background: mine ? 'var(--primary-light)' : '#F7F8FA', color: mine ? 'var(--primary)' : 'var(--text-sub)' }}
+                  style={{ flexShrink: 0, display: 'inline-flex', alignItems: 'center', gap: '4px', padding: '6px 11px', borderRadius: '100px', fontSize: '11.5px', fontWeight: 800, cursor: 'pointer', border: mine ? '1.5px solid var(--primary)' : '1px solid var(--divider)', background: mine ? 'var(--primary-light)' : 'var(--surface-dim)', color: mine ? 'var(--primary)' : 'var(--text-sub)' }}
                 >
                   <CustomIcon emoji={st.emoji} /> {st.label}
                 </button>
@@ -1655,7 +1585,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <span className="feed-composer-avatar" style={{ flexShrink: 0 }}>
                 {(() => { const p = getPersona(); return p ? <img src={PERSONAS[p].icon} alt="" className="custom-icon" /> : <CustomIcon emoji="🐷" className="custom-icon" />; })()}
               </span>
-              <button onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--divider)', background: '#F7F8FA', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
+              <button onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
               <input
                 value={quickText}
                 onChange={e => setQuickText(e.target.value.slice(0, 60))}
@@ -1769,7 +1699,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           return (
             <>
               {/* 서클 슬림 행 — 상세·초대는 시트로 (레일이 이미 멤버 현황을 말해줌) */}
-              <div className="system-row" style={{ borderTop: '1px solid #F0F1F3' }}>
+              <div className="system-row" style={{ borderTop: '1px solid var(--divider)' }}>
                 <button onClick={() => setShowCircleSheet(true)} style={{ background: 'none', border: 'none', fontSize: '13px', fontWeight: 800, color: 'var(--text-main)', cursor: 'pointer', padding: 0 }}>
                   {myCircle.circle.name} <span style={{ color: 'var(--text-mute)', fontWeight: 600 }}>{myCircle.members.length}/{CIRCLE_MAX_MEMBERS} ›</span>
                 </button>
@@ -1861,8 +1791,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   </>
                 ) : (
                   <>
-                    <p>오늘 뭐든 편하게 남겨봐요</p>
-                    <p className="empty-sub">짧은 한 줄, 사진 한 장이면 충분해요</p>
+                    <p>첫 자백을 남겨보세요</p>
+                    <p className="empty-sub">한 줄이면 절약 요정이 바로 판정하러 와요</p>
                   </>
                 )}
               </div>
@@ -1876,263 +1806,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 </div>
               )}
 
-              {/* 🤝 나를 팔로우한 짠친 — 맞팔하면 즉시 짝꿍 (상호성 루프) */}
-              {feedTab === 'follow' && (() => {
-                const followBack = followers.filter(f => !followedUsers[f.id]);
-                if (followBack.length === 0) return null;
-                return (
-                  <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: 'var(--primary-light)', border: '1px solid #F0F1F3' }}>
-                    <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 800 }}>🤝 나를 팔로우한 짠친 {followBack.length}명</p>
-                    <p style={{ margin: '0 0 10px', fontSize: '11.5px', color: 'var(--text-sub)' }}>맞팔하면 바로 <strong style={{ color: 'var(--primary)' }}>절약 짝꿍</strong>이 돼요. (+20 젤리)</p>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                      {followBack.slice(0, 5).map(f => (
-                        <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <span style={{ fontSize: '13px', fontWeight: 700, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>👀 {f.nickname}</span>
-                          <button onClick={() => handleToggleFollow(f.id, f.nickname)} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '100px', border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer' }}>맞팔하기</button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                );
-              })()}
-
-              {/* 🔗 친구의 친구 추천 (삼각 폐쇄 — 그래프 densify) */}
-              {feedTab === 'follow' && fofList.length > 0 && searchQuery.trim().length === 0 && (
-                <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
-                  <p style={{ margin: '0 0 4px', fontSize: '13px', fontWeight: 800 }}>🔗 짠친 추천</p>
-                  <p style={{ margin: '0 0 10px', fontSize: '11.5px', color: 'var(--text-sub)' }}>내 짠친들이 팔로우하는 사람이에요</p>
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                    {fofList.filter(f => !followedUsers[f.id]).slice(0, 5).map(f => {
-                      const viaNick = followedUsers[f.viaId] || '짠친';
-                      const proof = f.count > 1 ? `${viaNick}님 외 ${f.count - 1}명이 팔로우` : `${viaNick}님이 팔로우`;
-                      return (
-                        <div key={f.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px' }}>
-                          <div style={{ minWidth: 0 }}>
-                            <p style={{ margin: 0, fontSize: '13px', fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.nickname}</p>
-                            <p style={{ margin: '1px 0 0', fontSize: '10.5px', color: 'var(--text-mute)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>🤝 {proof}</p>
-                          </div>
-                          <button onClick={() => handleToggleFollow(f.id, f.nickname)} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, padding: '6px 14px', borderRadius: '100px', border: '1.5px solid var(--primary)', background: 'rgba(31, 30, 28,0.1)', color: 'var(--primary)', cursor: 'pointer' }}>팔로우</button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {feedTab === 'follow' && (
-                <div className="followed-friends-strip" style={{
-                  background: '#FFFFFF',
-                  padding: '16px 16px 12px',
-                  borderRadius: '20px',
-                  border: '1px solid #F0F1F3',
-                  marginBottom: '16px',
-                  textAlign: 'left'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
-                    <span style={{ fontSize: '13px', fontWeight: 800, color: 'var(--text-main)' }}>내가 팔로우하는 짠친</span>
-                    {selectedFriendId && (
-                      <button
-                        onClick={() => setSelectedFriendId(null)}
-                        style={{
-                          fontSize: '11px',
-                          color: 'var(--primary)',
-                          background: 'none',
-                          border: 'none',
-                          cursor: 'pointer',
-                          fontWeight: 800
-                        }}
-                      >
-                        모든 친구 보기 ✕
-                      </button>
-                    )}
-                  </div>
-                  
-                  <div style={{ display: 'flex', gap: '14px', overflowX: 'auto', paddingBottom: '4px', scrollbarWidth: 'none' }} className="no-scrollbar">
-                    {/* 탐색/추가 버튼 */}
-                    <div
-                      onClick={() => {
-                        const searchEl = document.querySelector('.follow-search-input') as HTMLInputElement;
-                        searchEl?.focus();
-                        searchEl?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-                      }}
-                      style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}
-                    >
-                      <div style={{
-                        width: '50px',
-                        height: '50px',
-                        borderRadius: '50%',
-                        border: '1.5px dashed var(--border)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        background: '#F7F8FA'
-                      }}>
-                        <CustomIcon emoji="➕" />
-                      </div>
-                      <span style={{ fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 600 }}>짠친 탐색</span>
-                    </div>
-
-                    {Object.entries(followedUsers).map(([friendId, friendNickname]) => {
-                      const personaKey = followedPersonas[friendId];
-                      const p = personaKey ? PERSONAS[personaKey] : null;
-                      const isSelected = selectedFriendId === friendId;
-                      return (
-                        <div
-                          key={friendId}
-                          onClick={() => setQuickMenuFriend({
-                            id: friendId,
-                            nickname: friendNickname,
-                            personaIcon: p?.icon ?? null,
-                            personaColor: p?.color ?? 'var(--border)'
-                          })}
-                          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px', cursor: 'pointer', flexShrink: 0 }}
-                        >
-                          <div style={{
-                            width: '50px',
-                            height: '50px',
-                            borderRadius: '50%',
-                            border: `2px solid ${isSelected ? 'var(--primary)' : p?.color ?? 'var(--border)'}`,
-                            overflow: 'hidden',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            background: 'var(--bg-main)',
-                            padding: '1px',
-                            boxSizing: 'border-box',
-                            boxShadow: isSelected ? '0 0 8px rgba(31, 30, 28, 0.4)' : 'none',
-                            transition: 'all 0.2s'
-                          }}>
-                            {p?.icon ? (
-                              <img src={p.icon} style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
-                            ) : (
-                              <span style={{ fontSize: '16px', fontWeight: 800 }}>{friendNickname[0]}</span>
-                            )}
-                          </div>
-                          <span style={{
-                            fontSize: '10.5px',
-                            color: isSelected ? 'var(--primary)' : 'var(--text-main)',
-                            fontWeight: isSelected ? 800 : 600,
-                            maxWidth: '60px',
-                            overflow: 'hidden',
-                            textOverflow: 'ellipsis',
-                            whiteSpace: 'nowrap'
-                          }}>
-                            {friendNickname}
-                          </span>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-
-              {selectedFriendId && (
-                <div style={{
-                  background: 'rgba(31, 30, 28, 0.08)',
-                  border: '1px solid rgba(31, 30, 28, 0.2)',
-                  borderRadius: '14px',
-                  padding: '12px 16px',
-                  marginBottom: '16px',
-                  display: 'flex',
-                  justifyContent: 'space-between',
-                  alignItems: 'center'
-                }}>
-                  <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>
-                    👤 <strong>{followedUsers[selectedFriendId] || '친구'}</strong> 님의 글만 모아보는 중
-                  </span>
-                  <button
-                    onClick={() => setSelectedFriendId(null)}
-                    style={{
-                      background: 'var(--primary)',
-                      color: '#fff',
-                      border: 'none',
-                      borderRadius: '8px',
-                      padding: '6px 12px',
-                      fontSize: '11px',
-                      fontWeight: 800,
-                      cursor: 'pointer'
-                    }}
-                  >
-                    필터 해제
-                  </button>
-                </div>
-              )}
-              {displayedEntries.length === 0 && feedTab === 'follow' && (
-                <div className="follow-empty-state">
-                  <p className="follow-empty-icon"><CustomIcon emoji="👥" /></p>
-                  <p className="follow-empty-title">
-                    {Object.keys(followedUsers).length > 0 ? '오늘은 아직 친구들의 새 소식이 없어요' : '마음에 드는 사람 한 명만 골라봐요'}
-                  </p>
-                  <p className="follow-empty-desc">
-                    {Object.keys(followedUsers).length > 0
-                      ? '내일은 어떤 이야기가 올라올까요?'
-                      : recommendedFriends.length > 0 ? '아래 친구 후보들 중 마음에 드는 사람을 골라보세요' : '피드에서 마음에 드는 사람을 발견해보세요'}
-                  </p>
-                </div>
-              )}
-              {feedTab === 'follow' && (
-                <div className="follow-search-box">
-                  <input
-                    type="text"
-                    className="follow-search-input"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="🔍 닉네임으로 짠친 검색"
-                    maxLength={20}
-                  />
-                  {searchQuery.trim().length > 0 && (
-                    <div className="follow-search-results">
-                      {searching && <p className="follow-search-status">검색 중...</p>}
-                      {!searching && searchResults.length === 0 && (
-                        <p className="follow-search-status">검색 결과가 없어요</p>
-                      )}
-                      {!searching && searchResults.map((u) => {
-                        const p = u.persona ? PERSONAS[u.persona] : null;
-                        const isFollowing = !!followedUsers[u.user_id];
-                        return (
-                          <div key={u.user_id} className="follow-search-row">
-                            <div className="follow-search-avatar" style={p ? { borderColor: p.color } : {}}>
-                              {p ? <img src={p.icon} alt="" /> : u.nickname.charAt(0).toUpperCase()}
-                            </div>
-                            <span className="follow-search-name">{u.nickname}</span>
-                            <button
-                              className={`follow-search-btn ${isFollowing ? 'following' : ''}`}
-                              onClick={() => handleToggleFollow(u.user_id, u.nickname)}
-                            >
-                              {isFollowing ? '팔로잉' : '팔로우'}
-                            </button>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
-              )}
-              {feedTab === 'follow' && recommendedFriends.length > 0 && searchQuery.trim().length === 0 && (
-                <div className="recommended-friends-strip">
-                  <h4 className="recommended-friends-strip-title">추천 짠친</h4>
-                  <div className="recommended-friends-strip-list">
-                    {recommendedFriends.map((friend) => {
-                      const p = friend.persona ? PERSONAS[friend.persona] : null;
-                      const isFollowing = !!followedUsers[friend.user_id];
-                      return (
-                        <div key={friend.user_id} className="rec-strip-card">
-                          <div className="rec-strip-avatar" style={p ? { borderColor: p.color } : {}}>
-                            {p ? <img src={p.icon} alt="" /> : friend.nickname.charAt(0).toUpperCase()}
-                          </div>
-                          <span className="rec-strip-name">{friend.nickname}</span>
-                          <button
-                            onClick={() => handleToggleFollow(friend.user_id, friend.nickname)}
-                            className={`rec-strip-btn ${isFollowing ? 'following' : ''}`}
-                          >
-                            {isFollowing ? '✓' : '+'}
-                          </button>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
               {feedTab === 'all' && displayedEntries.length > 1 && (
                 <div className="discover-controls">
                   <button className={`discover-sort${shuffleKey === 0 ? ' discover-sort--active' : ''}`} onClick={() => setShuffleKey(0)}>최신순</button>
@@ -2252,15 +1925,15 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   멤버 {myCircle.members.length}/{CIRCLE_MAX_MEMBERS} · 초대 코드 <strong>{myCircle.circle.invite_code}</strong>{myCircle.circle.is_open ? ' · 이번 주 공개 서클' : ''}
                 </p>
                 <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
-                  <div style={{ flex: 1, background: '#F7F8FA', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                  <div style={{ flex: 1, background: 'var(--surface-dim)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                     <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>이번 주 절약 점수</p>
                     <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--primary)' }}>{circleScore.toLocaleString('ko-KR')}</p>
                   </div>
-                  <div style={{ flex: 1, background: '#F7F8FA', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                  <div style={{ flex: 1, background: 'var(--surface-dim)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                     <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>기록</p>
                     <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800 }}>{circleDays}일</p>
                   </div>
-                  <div style={{ flex: 1, background: '#F7F8FA', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
+                  <div style={{ flex: 1, background: 'var(--surface-dim)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                     <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>무지출</p>
                     <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--success)' }}>{circleZero}명</p>
                   </div>
@@ -2268,9 +1941,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                   <button onClick={() => { setShowCircleSheet(false); handleShareCircleInvite(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '13px', cursor: 'pointer' }}>친구 초대하기</button>
                   {todayBattle ? (
-                    <div style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#F7F8FA', color: 'var(--text-sub)', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}>오늘 배틀 진행 중 · 자정 정산</div>
+                    <div style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}>오늘 배틀 진행 중 · 자정 정산</div>
                   ) : myDuo ? (
-                    <button onClick={() => { setShowCircleSheet(false); handleChallengeBattle(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: '#F7F8FA', border: 'none', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>듀오 짝꿍에게 오늘 덜 쓰기 배틀 신청</button>
+                    <button onClick={() => { setShowCircleSheet(false); handleChallengeBattle(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--surface-dim)', border: 'none', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>듀오 짝꿍에게 오늘 덜 쓰기 배틀 신청</button>
                   ) : null}
                   <button onClick={() => { setShowCircleSheet(false); handleLeaveCircle(); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: 'var(--text-mute)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>서클 나가기</button>
                 </div>
@@ -2293,7 +1966,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 {dead ? (
                   <>
                     <p style={{ margin: '0 0 14px', fontSize: '13.5px', fontWeight: 800, color: '#b45309' }}>처치 완료! 우리 서클의 절약이 보스를 쓰러뜨렸어요 🎉</p>
-                    <button onClick={handleClaimBossReward} disabled={bossRewardClaimed} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: bossRewardClaimed ? '#F7F8FA' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '13px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}>
+                    <button onClick={handleClaimBossReward} disabled={bossRewardClaimed} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: bossRewardClaimed ? 'var(--surface-dim)' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '13px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}>
                       {bossRewardClaimed ? '보상 수령 완료 ✓' : '젤리 50개 받기'}
                     </button>
                   </>
@@ -2303,7 +1976,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       <span style={{ color: '#a855f7' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
                       <span style={{ color: 'var(--text-sub)' }}>{pct}%</span>
                     </div>
-                    <div style={{ height: '10px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden', marginBottom: '12px' }}>
+                    <div style={{ height: '10px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden', marginBottom: '12px' }}>
                       <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: '#a855f7', transition: 'width 0.5s' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
@@ -2375,18 +2048,6 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', border: 'none', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
                 >
                   {renderTextWithEmoji('➕ 팔로우하고 짠친 되기')}
-                </button>
-              )}
-
-              {isFollowing && (
-                <button
-                  onClick={() => {
-                    setSelectedFriendId(f.id);
-                    setQuickMenuFriend(null);
-                  }}
-                  style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', fontWeight: 800, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
-                >
-                  {renderTextWithEmoji('📝 이 짠친의 글만 모아보기')}
                 </button>
               )}
 

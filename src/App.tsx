@@ -54,7 +54,6 @@ import PersonaTest from './screens/PersonaTest';
 import CommunityScreen from './screens/CommunityScreen';
 import CustomIcon from './components/CustomIcon';
 import { IconTabFeed, IconTabPlaza, IconTabMy } from './components/Icons';
-import GuideModal from './components/GuideModal';
 
 type Tab = 'feed' | 'community' | 'mylog';
 
@@ -138,14 +137,8 @@ export default function App() {
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
-  // 첫 실행 사용법 안내 — 온보딩 완료 후 메인 화면에서 1회 표시
-  const [showFirstGuide, setShowFirstGuide] = useState<boolean>(() => {
-    try { return !localStorage.getItem('savelog_seen_guide'); } catch { return false; }
-  });
-  function closeFirstGuide() {
-    try { localStorage.setItem('savelog_seen_guide', '1'); } catch {}
-    setShowFirstGuide(false);
-  }
+  // 첫 실행 자동 가이드는 제거 — 13개 개념 오버레이가 첫 자백(아하) 전에 끼어들지 않게.
+  // 사용법은 마이로그 설정 '❓ savelog 사용법'에서 온디맨드로 (ProfileScreen)
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const submittingRef = useRef(false);
@@ -401,7 +394,7 @@ export default function App() {
             <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
             <h1 className="setup-title">savelog</h1>
             {isMigration ? (
-              <p className="setup-desc">더 안전한 서비스 이용을 위해<br />토스 계정 연동이 필요해요</p>
+              <p className="setup-desc">기록과 포인트를 잃지 않게<br />토스 계정에 연결해 둘게요</p>
             ) : (
               <p className="setup-desc">쓴 돈도 모은 돈도, 물타기까지<br />짠친들이 판정해주는 곳</p>
             )}
@@ -452,9 +445,11 @@ export default function App() {
         return;
       }
 
-      // 절약 요정 첫 반응 — 어떤 기록도 무반응으로 남지 않게 (fire-and-forget)
+      // 절약 요정 첫 반응 — 어떤 기록도 무반응으로 남지 않게.
+      // 오늘 첫 기록은 await — 직후 피드 refresh에 요정 반응이 반드시 실려 "자백→판정" 아하가 100% 재현되게
       if (entryId && !isSocialPost) {
-        addFairyResponse(entryId, total === 0).catch(() => {});
+        const fairyDone = addFairyResponse(entryId, total === 0).catch(() => {});
+        if (isFirstRecord) await fairyDone;
       }
 
       // 1. 젤리 저금통 예산 차감 및 몬스터 레이드 연동 (소셜 포스트 제외)
@@ -570,13 +565,19 @@ export default function App() {
         }
 
         const goalMsg = chargedToGoal > 0 ? ` · 🎯 목표에 ${formatAmount(chargedToGoal)} 충전` : '';
-        const toastMsg = actualEarned > 0
+        // 생애 첫 기록(totalDays는 updateStreak 전 0)은 아하 카피 — 요정 판정으로 시선 유도
+        const isVeryFirstEver = newStreak.totalDays === 1;
+        const toastMsg = isVeryFirstEver
+          ? '자백 완료! 절약 요정이 첫 판정을 남겼어요 · 3원 적립 대기'
+          : actualEarned > 0
           ? `인증 완료. ${actualEarned}원 대기 중 · 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`
           : `인증 완료. 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`;
         showToast(toastMsg);
 
-        // 습관 트리거 — 관문 대신 첫 기록의 성공 직후에 1회 제안 (거절 가능)
-        if (!getIntentTrigger()) setShowTriggerPicker(true);
+        // 습관 트리거 — 아하 정점(내 카드의 요정 반응)을 가리지 않게 토스트(3s) 소멸 후 ~4초 뒤 제안
+        if (!getIntentTrigger()) {
+          setTimeout(() => { if (!getIntentTrigger()) setShowTriggerPicker(true); }, 7000);
+        }
       } else {
         showToast('추가 자백 완료');
       }
@@ -775,7 +776,7 @@ export default function App() {
           <div className="modal-sheet zero-note-modal-sheet" onClick={e => e.stopPropagation()}>
             <p className="zero-note-modal-title"><CustomIcon emoji="🌿" /> 무지출 기록하기</p>
             <p className="zero-note-modal-desc">
-              오늘 어떻게 무지출을 달성했나요? 한 줄로 남겨보세요.<br />피드에 공유되어 다른 사람들과 나눌 수 있어요.
+              오늘 지갑을 어떻게 지켰어요?<br />한 줄 남기면 짠친들이 무지출 도장을 찍어줘요.
             </p>
             <textarea
               className="zero-note-textarea"
@@ -823,7 +824,7 @@ export default function App() {
         <div className="modal-overlay" onClick={() => setShowTriggerPicker(false)}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div style={{ padding: '20px 16px', textAlign: 'left' }}>
-              <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>🎉 첫 기록 완료! 언제 또 올까요?</h3>
+              <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>내일도 판정 받으려면, 언제가 편해요?</h3>
               <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>구체적인 순간을 정해두면 습관 유지 확률이 크게 올라가요.</p>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
                 {['🍚 점심 식사 마치고', '☕ 카페 갈 때', '🚌 퇴근길 버스/지하철에서', '🛌 자기 전 침대에서'].map(label => (
@@ -845,9 +846,6 @@ export default function App() {
           </div>
         </div>
       )}
-
-      {/* 첫 실행 사용법 안내 */}
-      <GuideModal open={showFirstGuide} onClose={closeFirstGuide} />
 
       {/* 포인트 토스트 */}
       {showPointToast && (

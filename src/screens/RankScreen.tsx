@@ -5,6 +5,7 @@ import { formatAmount, formatWeekRange, getWeekKey, getPrevWeekKey, getTodayStr 
 import { sendCheeringMessage, getNickname, getPersona, getDailyMission } from '../lib/storage';
 import { shareExternal, buildRankBragMessage } from '../lib/share';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
+import { IconTrophy } from '../components/Icons';
 
 interface Props {
   userId: string;
@@ -85,7 +86,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
       <div className="rank-header">
         <h2 className="rank-title">
           주간 절약 순위
-          <img src="/images/icon_rank.png" className="custom-icon" />
+          <IconTrophy size={20} />
         </h2>
         <p className="rank-period">{formatWeekRange(weekKey)}</p>
         {/* 마감 임박에만 노출(넛지 피로 방지) — 손실 프레이밍+실데이터 사회적 증거 */}
@@ -100,7 +101,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           );
         })()}
         <div className="glass-card" style={{
-          background: '#F7F8FA',
+          background: 'var(--surface-dim)',
           padding: '12px 14px',
           fontSize: '13px',
           fontWeight: 800,
@@ -253,7 +254,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
       </div>
 
       {/* 💡 하이브리드 절약 점수 안내 카드 */}
-      <div className="glass-card" style={{ padding: '16px', background: '#F7F8FA', borderRadius: '20px', border: '1px solid #F0F1F3', marginBottom: '20px', textAlign: 'left' }}>
+      <div className="glass-card" style={{ padding: '16px', background: 'var(--surface-dim)', borderRadius: '20px', border: '1px solid var(--divider)', marginBottom: '20px', textAlign: 'left' }}>
         <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}><CustomIcon emoji="💡" /> savelog 하이브리드 점수제</h4>
         <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.5', color: 'var(--text-sub)' }}>
           기록 성실도(최대 5,600점)와 주간 예산 절약비율(최대 4,400점)을 합산하여 <strong>10,000점 만점</strong>으로 공정하게 평가합니다. 지출이 있어도 성실하게 기록하면 높은 점수를 얻을 수 있습니다!

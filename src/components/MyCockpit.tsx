@@ -356,7 +356,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                   <span>컨디션 <span style={{ color: 'var(--text-mute)', fontWeight: 500 }}>(인증하면 ↑, 방치하면 ↓)</span></span>
                   <span style={{ color: conditionColor }}>{condition} · {conditionLabel}</span>
                 </div>
-                <div style={{ height: '6px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden' }}>
+                <div style={{ height: '6px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden' }}>
                   <div style={{ width: `${condition}%`, height: '100%', borderRadius: '100px', background: conditionColor, transition: 'width 0.4s' }} />
                 </div>
               </div>
@@ -425,7 +425,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
         const ydStr = `${yd.getFullYear()}-${String(yd.getMonth() + 1).padStart(2, '0')}-${String(yd.getDate()).padStart(2, '0')}`;
         const effStreak = (duo.last_both_date === today || duo.last_both_date === ydStr) ? duo.streak : 0;
         return (
-          <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left', background: '#FFF7F8', border: '1px solid #F0F1F3' }}>
+          <div className="glass-card" style={{ padding: '16px', marginBottom: '16px', textAlign: 'left', background: '#FFF7F8', border: '1px solid var(--divider)' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
               <h4 style={{ margin: 0, fontSize: '15px', fontWeight: 800 }}><CustomIcon emoji="💞" /> 머니 듀오 · {myNick} ＋ {otherNick}</h4>
               <span style={{ fontSize: '11px', color: '#d97706', fontWeight: 800 }}><CustomIcon emoji="🔥" /> 공동 {effStreak}일</span>
@@ -436,7 +436,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                   <span style={{ fontWeight: 800 }}><CustomIcon emoji={duo.goal_emoji || '✈️'} /> {duo.goal_name}</span>
                   <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{formatAmount(sharedSaved)} ({pct}%)</span>
                 </div>
-                <div style={{ height: '12px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden' }}>
+                <div style={{ height: '12px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden' }}>
                   <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, var(--ink-red), #FF9966)', transition: 'width 0.4s' }} />
                 </div>
                 <p style={{ margin: '8px 0 0', fontSize: '11px', color: 'var(--text-sub)' }}>
@@ -447,13 +447,13 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
               <>
                 <div style={{ display: 'flex', gap: '6px', marginBottom: '8px', flexWrap: 'wrap' }}>
                   {['✈️','🏠','💍','🎁','🚗','💻'].map(e => (
-                    <button key={e} onClick={() => setDuoGoalEmoji(e)} style={{ fontSize: '18px', padding: '5px', borderRadius: '8px', cursor: 'pointer', background: duoGoalEmoji === e ? 'var(--primary-light)' : '#F7F8FA', border: duoGoalEmoji === e ? '1.5px solid var(--primary)' : '1px solid #F0F1F3' }}>
+                    <button key={e} onClick={() => setDuoGoalEmoji(e)} style={{ fontSize: '18px', padding: '5px', borderRadius: '8px', cursor: 'pointer', background: duoGoalEmoji === e ? 'var(--primary-light)' : 'var(--surface-dim)', border: duoGoalEmoji === e ? '1.5px solid var(--primary)' : '1px solid var(--divider)' }}>
                       <CustomIcon emoji={e} />
                     </button>
                   ))}
                 </div>
-                <input className="nickname-input" value={duoGoalName} onChange={e => setDuoGoalName(e.target.value)} maxLength={16} placeholder="공동 목표 (예: 둘이 제주 여행)" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '10px', background: '#F7F8FA', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '13px', marginBottom: '8px' }} />
-                <input className="nickname-input" value={duoGoalTarget} onChange={e => setDuoGoalTarget(e.target.value)} inputMode="numeric" placeholder="목표 금액 (원)" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '10px', background: '#F7F8FA', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '13px', marginBottom: '10px' }} />
+                <input className="nickname-input" value={duoGoalName} onChange={e => setDuoGoalName(e.target.value)} maxLength={16} placeholder="공동 목표 (예: 둘이 제주 여행)" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '13px', marginBottom: '8px' }} />
+                <input className="nickname-input" value={duoGoalTarget} onChange={e => setDuoGoalTarget(e.target.value)} inputMode="numeric" placeholder="목표 금액 (원)" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '13px', marginBottom: '10px' }} />
                 <button onClick={handleSaveDuoGoal} style={{ width: '100%', padding: '9px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer' }}>공동 목표 저장</button>
               </>
             ) : (
@@ -465,7 +465,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
       })() : buddyList.length > 0 ? (() => {
         const duoBuddy = buddyList.find(b => b.id === topRel?.userId) || buddyList[0];
         return (
-          <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: '#FFF7F8', border: '1px solid #F0F1F3' }}>
+          <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: '#FFF7F8', border: '1px solid var(--divider)' }}>
             <div style={{ cursor: 'pointer' }} onClick={handleMakeDuo}>
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}><CustomIcon emoji="💞" /> {duoBuddy.nickname}님과 머니 듀오 맺기</p>
               <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
@@ -501,7 +501,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                 const done = savingGoal.saved >= savingGoal.target;
                 return (
                   <>
-                    <div style={{ height: '14px', borderRadius: '100px', background: '#F0F1F3', overflow: 'hidden', marginBottom: '10px' }}>
+                    <div style={{ height: '14px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden', marginBottom: '10px' }}>
                       <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: done ? 'linear-gradient(90deg,#fbbf24,#f59e0b)' : 'linear-gradient(90deg, var(--primary), #34d399)', transition: 'width 0.4s' }} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', fontSize: '13px' }}>
@@ -538,15 +538,15 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
               </h3>
               <div style={{ display: 'flex', gap: '6px', marginBottom: '14px', flexWrap: 'wrap' }}>
                 {['✈️','💻','👟','🎮','💍','🏠','🎸','📷'].map(e => (
-                  <button key={e} onClick={() => setGoalEmoji(e)} style={{ fontSize: '20px', padding: '6px', borderRadius: '10px', cursor: 'pointer', background: goalEmoji === e ? 'var(--primary-light)' : '#F7F8FA', border: goalEmoji === e ? '1.5px solid var(--primary)' : '1px solid #F0F1F3' }}>
+                  <button key={e} onClick={() => setGoalEmoji(e)} style={{ fontSize: '20px', padding: '6px', borderRadius: '10px', cursor: 'pointer', background: goalEmoji === e ? 'var(--primary-light)' : 'var(--surface-dim)', border: goalEmoji === e ? '1.5px solid var(--primary)' : '1px solid var(--divider)' }}>
                     <CustomIcon emoji={e} />
                   </button>
                 ))}
               </div>
               <input className="nickname-input" value={goalName} onChange={e => setGoalName(e.target.value)} maxLength={16} placeholder="목표 이름 (예: 제주 여행)"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: '#F7F8FA', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px', marginBottom: '10px' }} />
+                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px', marginBottom: '10px' }} />
               <input className="nickname-input" value={goalTarget} onChange={e => setGoalTarget(e.target.value)} inputMode="numeric" placeholder="목표 금액 (원)"
-                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: '#F7F8FA', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px', marginBottom: '16px' }} />
+                style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px', marginBottom: '16px' }} />
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button size="medium" display="full" color="primary" disabled={!goalName.trim() || !parseInt(goalTarget.replace(/[^0-9]/g,''),10)} onClick={handleSaveGoal}>저장</Button>
                 <Button size="medium" display="full" color="dark" variant="weak" onClick={() => { if (savingGoal) { setGoalForm(false); } else { setShowGoalModal(false); } }}>취소</Button>
@@ -564,11 +564,11 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
             <span style={{ fontSize: '13px', fontWeight: 700, color: 'var(--primary)' }}><CustomIcon emoji="🪙" /> 내 젤리: {jellyBalance}개</span>
           </div>
 
-          <div className="glass-card" style={{ padding: '12px 16px', background: '#F7F8FA', borderRadius: '16px', border: '1px solid #F0F1F3', marginBottom: '20px' }}>
+          <div className="glass-card" style={{ padding: '12px 16px', background: 'var(--surface-dim)', borderRadius: '16px', border: '1px solid var(--divider)', marginBottom: '20px' }}>
             <p style={{ margin: '0 0 8px 0', fontSize: '12px', fontWeight: 700, color: 'var(--text-sub)' }}>요정의 이름</p>
             {editingPetName ? (
               <div style={{ display: 'flex', gap: '8px' }}>
-                <input className="nickname-input" style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', background: '#F7F8FA', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px' }} value={petNameInput} onChange={(e) => setPetNameInput(e.target.value)} maxLength={10} placeholder="새로운 이름 입력" />
+                <input className="nickname-input" style={{ flex: 1, padding: '8px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px' }} value={petNameInput} onChange={(e) => setPetNameInput(e.target.value)} maxLength={10} placeholder="새로운 이름 입력" />
                 <button style={{ padding: '8px 16px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}
                   onClick={() => { const c = petNameInput.trim(); if (c) { setPetName(c); setPetNameState(c); } setEditingPetName(false); }}>저장</button>
               </div>
@@ -586,7 +586,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
               const isOwned = ownedItems.includes(item.id);
               const isEquipped = equippedItems[item.type] === item.id;
               return (
-                <div key={item.id} style={{ background: '#F7F8FA', border: isEquipped ? '1.5px solid var(--primary)' : '1px solid #F0F1F3', borderRadius: '16px', padding: '12px', textAlign: 'center', position: 'relative' }}>
+                <div key={item.id} style={{ background: 'var(--surface-dim)', border: isEquipped ? '1.5px solid var(--primary)' : '1px solid var(--divider)', borderRadius: '16px', padding: '12px', textAlign: 'center', position: 'relative' }}>
                   <span style={{ fontSize: '32px', display: 'block', margin: '4px 0' }}><CustomIcon emoji={item.emoji} /></span>
                   <span style={{ fontSize: '12px', fontWeight: 800, display: 'block', color: 'var(--text-main)', textOverflow: 'ellipsis', whiteSpace: 'nowrap', overflow: 'hidden' }}>{item.name}</span>
                   {isOwned ? (
@@ -595,7 +595,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                       {isEquipped ? '장착 해제' : '착용하기'}
                     </button>
                   ) : (
-                    <button style={{ marginTop: '8px', width: '100%', padding: '6px 0', borderRadius: '10px', border: 'none', fontSize: '11px', fontWeight: 800, cursor: 'pointer', background: jellyBalance >= item.price ? 'var(--primary)' : '#F0F1F3', color: jellyBalance >= item.price ? '#fff' : 'var(--text-mute)' }}
+                    <button style={{ marginTop: '8px', width: '100%', padding: '6px 0', borderRadius: '10px', border: 'none', fontSize: '11px', fontWeight: 800, cursor: 'pointer', background: jellyBalance >= item.price ? 'var(--primary)' : 'var(--divider)', color: jellyBalance >= item.price ? '#fff' : 'var(--text-mute)' }}
                       disabled={jellyBalance < item.price}
                       onClick={() => { if (buyItem(item.id, item.price)) { setOwnedItems(getOwnedItems()); setJellyBalance(getJellyBalance()); showToast(`🛒 ${item.name} 구매 완료!`); } }}>
                       <CustomIcon emoji="🪙" /> {item.price} 젤리

@@ -13,7 +13,7 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 }
 
 import type { Entry, WeekRankRow } from '../lib/supabase';
-import { fetchMyWeekEntries, fetchMyAllEntries, fetchMyImageEntries, fetchEntriesByIds, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
+import { fetchMyWeekEntries, fetchMyAllEntries, fetchEntriesByIds, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
 import { getScrapIds, toggleScrapLocal } from '../lib/scraps';
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
@@ -54,7 +54,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
 
   const [myEntries, setMyEntries] = useState<Entry[]>([]);       // 이번 주 (통계용)
   const [allEntries, setAllEntries] = useState<Entry[]>([]);     // 전체 기록 (RecordsTab용)
-  const [galleryEntries, setGalleryEntries] = useState<Entry[]>([]); // 이미지 있는 전체 entries (GalleryTab용, social/milestone 포함)
   const [entriesLoading, setEntriesLoading] = useState(true);
   const [entriesError, setEntriesError] = useState(false);
   const [entriesRetry, setEntriesRetry] = useState(0);
@@ -101,7 +100,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
     }
   }, [showFollows, userId]);
 
-  const [subTab, setSubTab] = useState<'records' | 'scrapbook' | 'gallery' | 'stats' | 'mailbox'>('records');
+  const [subTab, setSubTab] = useState<'records' | 'scrapbook' | 'stats' | 'mailbox'>('records');
 
 
 
@@ -116,10 +115,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       setEntriesLoading(true);
       setEntriesError(false);
       try {
-        const [weekData, allData, imageData] = await Promise.all([
+        const [weekData, allData] = await Promise.all([
           fetchMyWeekEntries(userId, getWeekKey()),
           fetchMyAllEntries(userId),
-          fetchMyImageEntries(userId),
         ]);
         if (!cancelled) {
           if (weekData === null) {
@@ -128,7 +126,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             setMyEntries(weekData);
           }
           if (allData !== null) setAllEntries(allData);
-          if (imageData !== null) setGalleryEntries(imageData);
         }
       } catch {
         if (!cancelled) setEntriesError(true);
@@ -145,7 +142,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         id: `notif-${n.id}`,
         senderNickname: n.sender_nickname,
         senderPersonaEmoji: n.type === 'follow' ? '👥' : '💌',
-        senderPersonaColor: n.type === 'follow' ? '#3182F6' : '#FF7E8D',
+        senderPersonaColor: n.type === 'follow' ? '#1F1E1C' : '#E14B3B', // 먹 잉크 / 인주
         text: n.type === 'follow' ? `${n.sender_nickname}님이 회원님을 팔로우했어요!` : (n.message || ''),
         timestamp: timeAgo(n.created_at),
         created_at: n.created_at,
@@ -328,7 +325,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <>
             {subTab === 'records' && <RecordsTab entries={allEntries.length > 0 ? allEntries : myEntries} onShareToChat={onShareToChat} />}
             {subTab === 'scrapbook' && <ScrapbookTab />}
-            {subTab === 'gallery' && <GalleryTab entries={galleryEntries.length > 0 ? galleryEntries : (allEntries.length > 0 ? allEntries : myEntries)} />}
             {subTab === 'stats' && <StatsTab entries={myEntries} allEntries={allEntries} lastWeekEntries={allEntries.filter(e => e.week_key === getPrevWeekKey(getWeekKey()))} streak={streak} personaKey={personaKey} p={p} messages={messages} nickname={nickname} daily={daily} weekTotal={weekTotal} zeroDays={zeroDays} />}
             {subTab === 'mailbox' && <MailboxTab messages={messages} handleClearAllMessages={handleClearAllMessages} clearConfirm={clearConfirm} handleReplyClick={handleReplyClick} nickname={nickname} />}
           </>
@@ -606,7 +602,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                     className="timeline-share-btn" 
                     title="짠톡방에 공유하기" 
                     onClick={() => onShareToChat(entryForDate)}
-                    style={{ background: '#F5F3EF', border: '1px solid #F0F1F3', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
+                    style={{ background: '#F5F3EF', border: '1px solid var(--divider)', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
                   >
                     <CustomIcon emoji="👥" /> 공유
                   </button>
@@ -614,7 +610,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
               </div>
             </div>
             {d.total === 0 && (
-              <div className="timeline-zero-badge"><CustomIcon emoji="✨" /> 지갑 힐링 데이! <CustomIcon emoji="🌿" /></div>
+              <div className="timeline-zero-badge"><CustomIcon emoji="✨" /> 무지출 데이! <CustomIcon emoji="🌿" /></div>
             )}
             <div className="timeline-items">
               {d.items.map((item, idx) => {
@@ -636,9 +632,9 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                     <div className="timeline-item-info">
                       <span className="timeline-item-cat">
                         {item.category === '절약 방어' ? (
-                          <span><CustomIcon emoji="🌱" /> 플러스 저축</span>
+                          <span><CustomIcon emoji="🌱" /> 지킨 돈</span>
                         ) : item.category === '무지출' ? (
-                          <span><CustomIcon emoji="🌿" /> 지갑 힐링</span>
+                          <span><CustomIcon emoji="🌿" /> 무지출</span>
                         ) : (
                           item.category
                         )}
@@ -739,24 +735,6 @@ function ScrapbookTab() {
     </div>
   );
 }
-
-function GalleryTab({ entries }: { entries: Entry[] }) {
-  const images = entries.filter(e => e.image);
-  if (images.length === 0) {
-    return <div className="mylog-empty">아직 올린 이미지가 없어요 <CustomIcon emoji="📸" /></div>;
-  }
-  return (
-    <div className="gallery-grid">
-      {images.map(e => (
-        <div key={e.id} className="gallery-cell">
-          <img src={e.image} alt="영수증" className="gallery-img" />
-          <span className="gallery-date-badge">{e.date.substring(5)}</span>
-        </div>
-      ))}
-    </div>
-  );
-}
-
 
 function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKey, p, messages, nickname, daily, weekTotal, zeroDays }: any) {
   // 1. Weekly Spending Bar Chart
@@ -883,7 +861,7 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
   return (
     <div className="stats-container">
       {/* 📅 절약 Wrapped — 이번 주 결산 카드 */}
-      <div className="glass-card" style={{ background: '#F6FBF8', border: '1px solid #F0F1F3' }}>
+      <div className="glass-card" style={{ background: 'var(--surface-faint)', border: '1px solid var(--divider)' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 className="stats-card-title" style={{ margin: 0 }}>📅 이번 주 절약 Wrapped</h4>
           <div style={{ display: 'flex', gap: '6px' }}>
@@ -892,19 +870,19 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
           </div>
         </div>
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px' }}>
-          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--surface-dim)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>이번 주 지킨 돈</p>
             <p style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800, color: 'var(--primary)' }}>{formatAmount(weekSaved)}</p>
           </div>
-          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--surface-dim)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>기록 · 무지출</p>
             <p style={{ margin: '4px 0 0', fontSize: '18px', fontWeight: 800 }}>{recordedThisWeek}일 · {zeroDays}일</p>
           </div>
-          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--surface-dim)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>최다 지출</p>
             <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800 }}>{topCat ? <><CustomIcon emoji={topCat.emoji} /> {topCat.name}</> : '없음 🎉'}</p>
           </div>
-          <div style={{ background: '#F7F8FA', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
+          <div style={{ background: 'var(--surface-dim)', borderRadius: '14px', padding: '12px', textAlign: 'center' }}>
             <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-sub)' }}>나의 소비 페르소나</p>
             <p style={{ margin: '4px 0 0', fontSize: '15px', fontWeight: 800, color: p?.color }}>{p?.name || '짠친'}</p>
           </div>
@@ -1088,7 +1066,7 @@ function MailboxTab({ messages, handleClearAllMessages, clearConfirm, handleRepl
                 <div className="mailbox-msg-meta">
                   <div className="mailbox-msg-from">
                     {!isSent && (
-                      <span className="mailbox-sender-badge" style={{ background: `${msg.senderPersonaColor || '#FF7E8D'}15`, color: msg.senderPersonaColor || '#FF7E8D' }}>
+                      <span className="mailbox-sender-badge" style={{ background: `${msg.senderPersonaColor || '#E14B3B'}15`, color: msg.senderPersonaColor || '#E14B3B' }}>
                         <CustomIcon emoji={msg.senderPersonaEmoji || '🐷'} className="custom-icon--sm" /> {msg.senderNickname}
                       </span>
                     )}
