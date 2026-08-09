@@ -4,6 +4,7 @@ import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
 import { fetchFeed, toggleReaction, toggleStamp, setScrapServer, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, toggleFollowSupabase, sendCheerNotification, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
+import { haptic } from '../lib/haptics';
 import { shareExternal, buildCircleInviteMessage, buildRecordBragMessage } from '../lib/share';
 import RouletteModal from '../components/RouletteModal';
 import { recordInteraction, getRelation, getEffectiveStreak } from '../lib/relations';
@@ -739,6 +740,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     if (entry.user_id === userId) return;
     const prevKey = entry.my_stamp;
     const removing = prevKey === stampKey;
+    haptic(removing ? 'tickWeak' : 'basicMedium'); // 도장 압인 — optimistic 카운트 갱신과 같은 프레임
     setEntries(prev => prev.map(e => {
       if (e.id !== entry.id) return e;
       const counts = { ...(e.stamp_counts || {}) };
@@ -1063,9 +1065,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         {/* 짠친 판결 도장 — 같은 스탬프 2표면 잉크 도장이 찍힌다 (제품 시그니처) */}
         {(() => {
           const verdict = topStamp(entry.stamp_counts || {});
+          // 실제 도장은 매번 똑같이 안 찍힌다 — 엔트리별 고정 기울기 4~10도 (재렌더 시 흔들리지 않게 결정론)
+          const tilt = 4 + ((entry.id.charCodeAt(0) * 7 + entry.id.charCodeAt(entry.id.length - 1) * 13) % 7);
           return verdict ? (
             <span
               className={`verdict-stamp${verdict.stamp.key === 'approve' ? ' verdict-stamp--ok' : ''}`}
+              style={{ '--stamp-tilt': `${tilt}deg` } as React.CSSProperties}
               aria-label={`짠친 판결: ${verdict.stamp.label} ${verdict.count}표`}
             >
               <span className="verdict-stamp-label">{verdict.stamp.label}</span>

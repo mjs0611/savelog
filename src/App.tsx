@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
+import { haptic } from './lib/haptics';
 import {
   getUserId,
   getUserKey,
@@ -572,6 +573,7 @@ export default function App() {
           : actualEarned > 0
           ? `인증 완료. ${actualEarned}원 대기 중 · 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`
           : `인증 완료. 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`;
+        if (chargedToGoal === 0) haptic('softMedium'); // 영수증 쾅 — 충전 시엔 addToGoal의 무게 햅틱이 대신함(이중 진동 방지)
         showToast(toastMsg);
 
         // 습관 트리거 — 아하 정점(내 카드의 요정 반응)을 가리지 않게 토스트(3s) 소멸 후 ~4초 뒤 제안
@@ -579,6 +581,7 @@ export default function App() {
           setTimeout(() => { if (!getIntentTrigger()) setShowTriggerPicker(true); }, 7000);
         }
       } else {
+        haptic('softMedium');
         showToast('추가 자백 완료');
       }
 

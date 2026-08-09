@@ -93,6 +93,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
   const intentTrigger = getIntentTrigger();
 
   const [savingGoal, setSavingGoalState] = useState(() => getSavingGoal());
+  const [goalBump, setGoalBump] = useState(0); // 충전 순간 게이지 출렁 — key 리마운트로 애니메이션 재발사
   const [goalForm, setGoalForm] = useState(false);
   const [goalName, setGoalName] = useState('');
   const [goalEmoji, setGoalEmoji] = useState('✈️');
@@ -144,7 +145,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
   useEffect(() => {
     const handleJellyUpdate = (e: any) => { if (e.detail !== undefined) setJellyBalance(e.detail); };
     const handleEquipUpdate = () => setEquippedItems(getEquippedItems());
-    const handleGoalUpdate = () => setSavingGoalState(getSavingGoal());
+    const handleGoalUpdate = () => { setSavingGoalState(getSavingGoal()); setGoalBump(b => b + 1); };
     const handleEntropyUpdate = () => setEntropy(getBudgetEntropy());
     const handleRelUpdate = () => setTopRel(getTopRelations(1)[0] ?? null);
     window.addEventListener('savelog_jelly_updated', handleJellyUpdate as EventListener);
@@ -321,7 +322,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
         </div>
         <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', cursor: 'pointer' }} onClick={() => setShowGoalModal(true)}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🎯" /> 목표</p>
-          <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: goalPct !== null ? 'var(--primary)' : 'var(--text-mute)' }}>{goalPct !== null ? `${goalPct}%` : '미설정'}</p>
+          <p key={goalBump} className={goalBump > 0 ? 'goal-bump' : undefined} style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: goalPct !== null ? 'var(--primary)' : 'var(--text-mute)' }}>{goalPct !== null ? `${goalPct}%` : '미설정'}</p>
           {goalPct === null && (
             <button style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#F5F3EF', color: 'var(--text-main)', cursor: 'pointer' }}>설정</button>
           )}

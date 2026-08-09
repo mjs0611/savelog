@@ -1,4 +1,5 @@
 import { getWeekRange } from './utils';
+import { hapticForAmount } from './haptics';
 
 const USER_ID_KEY = 'savelog_user_id';
 const USER_KEY_KEY = 'savelog_user_key';
@@ -780,6 +781,7 @@ export function addToGoal(amount: number): number {
   if (!g || amount <= 0 || g.saved >= g.target) return 0;
   const charged = Math.min(amount, g.target - g.saved);
   setSavingGoal({ ...g, saved: g.saved + charged });
+  hapticForAmount(charged); // 돈의 무게 — 모든 충전 경로(기록·위시 참기·딜레마 승리)가 여기로 수렴
   return charged;
 }
 
