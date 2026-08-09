@@ -23,7 +23,6 @@ import {
   getLastEmotion,
   getBudgetEntropy,
   getSystemTemperature,
-  getRestoringAdjustment,
   getFollowedUsers,
   getNickname,
   getWishlist,
@@ -286,7 +285,6 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
   const condition = Math.max(0, Math.min(100, 100 - entropy));
   const conditionColor = condition >= 70 ? 'var(--primary)' : condition >= 30 ? '#fbbf24' : '#ff4d4f';
   const conditionLabel = condition >= 70 ? '쾌적' : condition >= 30 ? '보통' : '어수선';
-  const entropyThrottled = entropy >= 70; // App 기록 보상/목표 충전이 절반으로 깎이는 구간
   // 담금질 온도 → 습관(=요정) 성숙 단계
   const temp = getSystemTemperature();
   const habitStage = temp >= 0.8
@@ -296,8 +294,6 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
       : temp >= 0.4
         ? { label: '단단한 습관', emoji: '🌳' }
         : { label: '마스터 습관', emoji: '🏆' };
-  // 훅의 법칙 복원 보정 (어제 절약/초과의 오늘 영향)
-  const restoringAdjustment = getRestoringAdjustment();
 
   return (
     <div className="my-cockpit">
@@ -511,19 +507,9 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                     <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: done ? '#fbbf24' : 'var(--text-sub)', lineHeight: 1.5 }}>
                       {done ? '🎉 목표 달성! 잠재에너지가 가득 찼어요. 이제 방출할 시간!' : '오늘 안 쓴 돈이 잠재에너지로 차곡차곡 충전돼요 ⚡'}
                     </p>
-                    {!done && entropyThrottled && (
-                      <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#ff4d4f', fontWeight: 700, lineHeight: 1.5 }}>
-                        <CustomIcon emoji="⚠️" /> 요정 컨디션이 어수선해(엔트로피 {entropy}%) 충전·젤리가 절반으로 줄어요. 오늘 기록으로 회복하세요
-                      </p>
-                    )}
-                    {!done && !entropyThrottled && restoringAdjustment > 0 && (
+                    {!done && (
                       <p style={{ margin: '0 0 10px', fontSize: '12px', color: 'var(--primary)', fontWeight: 700, lineHeight: 1.5 }}>
-                        <CustomIcon emoji="🎉" /> 어제 절약 복원력으로 오늘 예산에 {formatAmount(restoringAdjustment)} 여유가 생겨, 목표 충전이 더 잘 붙어요
-                      </p>
-                    )}
-                    {!done && !entropyThrottled && restoringAdjustment < 0 && (
-                      <p style={{ margin: '0 0 10px', fontSize: '12px', color: '#fbbf24', fontWeight: 700, lineHeight: 1.5 }}>
-                        <CustomIcon emoji="⚖️" /> 어제 초과로 오늘 예산이 {formatAmount(Math.abs(restoringAdjustment))} 타이트해요. 아낄수록 목표가 빨리 차요
+                        <CustomIcon emoji="🌱" /> 오늘 배달·커피·택시를 참아 지킨 돈이 생기면 바로 목표 저금통에 적립돼요!
                       </p>
                     )}
                   </>

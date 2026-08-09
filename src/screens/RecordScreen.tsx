@@ -5,25 +5,33 @@ import { formatAmount, getTodayStr } from '../lib/utils';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 import { setLastEmotion } from '../lib/storage';
 
-const UNIFIED_CATEGORIES = [
+const SPEND_CATEGORIES = [
   { label: '식비/식품', emoji: '🍚' },
-  { label: '생활/배달', emoji: '🏠' },
-  { label: '교통/차량', emoji: '🚇' },
+  { label: '배달/외식', emoji: '🛵' },
   { label: '카페/간식', emoji: '☕' },
+  { label: '교통/차량', emoji: '🚇' },
   { label: '쇼핑/패션', emoji: '🛍️' },
   { label: '취미/여가', emoji: '🎮' },
-  { label: '혜택/이벤트', emoji: '🎁' },
-  { label: '짠테크/적금', emoji: '💰' },
+  { label: '생활/잡화', emoji: '🏠' },
   { label: '기타', emoji: '📦' },
 ];
 
-// 모은 돈·보유 자산 — 지출의 반대편. 원장이 아니라 인증/판정 소재로 얹는다
-const ASSET_CATEGORIES = [
-  { label: '저축/적금', emoji: '🏦' },
-  { label: '주식', emoji: '📈' },
-  { label: '코인', emoji: '🪙' },
-  { label: '부동산', emoji: '🏠' },
-  { label: '기타 자산', emoji: '📦' },
+const DEFENSE_CATEGORIES = [
+  { label: '배달·외식 방어', emoji: '🍳' },
+  { label: '카페·음료 방어', emoji: '☕' },
+  { label: '택시·교통 방어', emoji: '🚇' },
+  { label: '충동쇼핑 방어', emoji: '🛡️' },
+  { label: '구독·고정비 절감', emoji: '✂️' },
+  { label: '기타 방어', emoji: '🌿' },
+];
+
+const DILEMMA_CATEGORIES = [
+  { label: '전자·IT기기', emoji: '📱' },
+  { label: '패션·뷰티', emoji: '👗' },
+  { label: '취미·게임·굿즈', emoji: '🎮' },
+  { label: '가구·인테리어', emoji: '🛋️' },
+  { label: '외식·배달', emoji: '🍕' },
+  { label: '기타 고민', emoji: '⚖️' },
 ];
 
 interface Props {
@@ -33,28 +41,34 @@ interface Props {
   isAdditional?: boolean;
 }
 
+type RecordMode = 'spend' | 'save' | 'dilemma';
+
 export default function RecordScreen({ onSubmit, onClose, submitting, isAdditional = false }: Props) {
-  // 지출 자백 vs 모은 돈 인증 — 자산 차원을 인증 소재로 (원장 아님)
-  const [mode, setMode] = useState<'spend' | 'save'>('spend');
-  const [selCat, setSelCat] = useState(UNIFIED_CATEGORIES[0]);
-  const [selAsset, setSelAsset] = useState(ASSET_CATEGORIES[0]);
+  const [mode, setMode] = useState<RecordMode>('spend');
+  const [selCat, setSelCat] = useState(SPEND_CATEGORIES[0]);
+  const [selDefCat, setSelDefCat] = useState(DEFENSE_CATEGORIES[0]);
+  const [selDilemmaCat, setSelDilemmaCat] = useState(DILEMMA_CATEGORIES[0]);
+
   const [amountStr, setAmountStr] = useState('');
   const [dailyNote, setDailyNote] = useState('');
   const [image, setImage] = useState<string | null>(null);
   const [imageError, setImageError] = useState<string | null>(null);
-  // 💭 소비 감정 태그 (돈 멘탈 케어)
+
+  // 💭 소비 감정 태그 (지출 자백 전용)
   const [emotion, setEmotion] = useState<string | null>(null);
-  const EMOTIONS = ['😌 필요했어', '😅 충동이었어', '😤 홧김에', '🙂 후회없어'];
+  const EMOTIONS = ['😌 꼭 필요했어', '😅 충동이었어', '😤 홧김/스트레스', '🙂 후회없어'];
 
-  const isSave = mode === 'save';
   const amount = parseInt(amountStr.replace(/,/g, ''), 10) || 0;
-  const isFoodCategory = ['식비/식품', '카페/간식'].includes(selCat.label);
-  const isNoteValid = isAdditional || dailyNote.trim().length >= 5;
+  const isFoodCategory = ['식비/식품', '배달/외식', '카페/간식'].includes(selCat.label);
+  const isNoteValid = isAdditional || dailyNote.trim().length >= 4;
 
-  function switchMode(m: 'spend' | 'save') {
+  function switchMode(m: RecordMode) {
     setMode(m);
     setAmountStr('');
     setEmotion(null);
+    setDailyNote('');
+    setImage(null);
+    setImageError(null);
   }
 
   function handleAmountChange(val: string) {
@@ -124,22 +138,47 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   async function handleSubmit() {
     if (!isNoteValid) return;
     if (isAdditional && amount <= 0) return;
+    if (mode === 'save' && amount <= 0) return;
 
     try {
       let finalItems: SpendingItem[] = [];
       const noteItem: SpendingItem = { category: '한마디', emoji: '💬', amount: 0, comment: dailyNote.trim() };
-      if (isSave && amount > 0) {
-        // 모은 돈·자산 인증 — saved_amount로 담아 피드에서 플러스로 렌더·판정
-        const assetItem: SpendingItem = { category: selAsset.label, emoji: selAsset.emoji, amount: 0, saved_amount: amount };
-        finalItems = isAdditional ? [assetItem] : [noteItem, assetItem];
-      } else if (amount > 0) {
-        if (emotion) setLastEmotion(getTodayStr(), emotion);
-        const item: SpendingItem = { category: selCat.label, emoji: selCat.emoji, amount, ...(emotion ? { comment: `[${emotion}]` } : {}) };
-        finalItems = isAdditional ? [item] : [noteItem, item];
+
+      if (mode === 'save') {
+        // 🛡️ 지킨 돈 (방어 머니): saved_amount로 피드에 플러스(+) 표시 & 저금통 충전
+        const defenseItem: SpendingItem = {
+          category: '절약 방어',
+          emoji: selDefCat.emoji,
+          amount: 0,
+          saved_amount: amount,
+          comment: `[${selDefCat.label}] ${dailyNote.trim()}`,
+        };
+        finalItems = isAdditional ? [defenseItem] : [noteItem, defenseItem];
+      } else if (mode === 'dilemma') {
+        // ⚖️ 살까 말까? 디인플루언싱 투표 생성
+        const dilemmaItem: SpendingItem = {
+          category: '소비 고민',
+          emoji: selDilemmaCat.emoji,
+          amount: amount,
+          comment: `[${selDilemmaCat.label}] ${dailyNote.trim()}`,
+        };
+        finalItems = [dilemmaItem];
       } else {
-        // 금액 없음 = 무지출 인증
-        finalItems = [noteItem];
+        // 💸 지출 자백 (0원이면 무지출)
+        if (amount > 0) {
+          if (emotion) setLastEmotion(getTodayStr(), emotion);
+          const item: SpendingItem = {
+            category: selCat.label,
+            emoji: selCat.emoji,
+            amount,
+            ...(emotion ? { comment: `[${emotion}]` } : {}),
+          };
+          finalItems = isAdditional ? [item] : [noteItem, item];
+        } else {
+          finalItems = [noteItem];
+        }
       }
+
       await onSubmit(finalItems, image || undefined);
     } catch (e) {
       console.error(e);
@@ -153,43 +192,83 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
         <div className="modal-header">
           <button className="modal-close-btn" onClick={onClose} disabled={submitting}>✕</button>
           <h2 className="modal-title">
-            {isAdditional ? '추가 지출 자백' : '오늘의 인증'}
+            {isAdditional ? '추가 지출 자백' : '오늘의 인증 & 자백'}
           </h2>
           <div className="modal-header-spacer" />
         </div>
 
-        <div className="modal-body" style={{ paddingTop: '12px' }}>
-
-          {/* 0. 기록 종류 — 지출 자백 / 모은 돈 인증 */}
+        <div className="modal-body" style={{ paddingTop: '8px' }}>
+          {/* 0. 3대 모드 탭 세그먼트 */}
           {!isAdditional && (
-            <div className="record-mode-seg">
-              <button className={`record-mode-btn${mode === 'spend' ? ' record-mode-btn--active' : ''}`} onClick={() => switchMode('spend')} disabled={submitting}>지출 자백</button>
-              <button className={`record-mode-btn${mode === 'save' ? ' record-mode-btn--active' : ''}`} onClick={() => switchMode('save')} disabled={submitting}>모은 돈</button>
+            <div className="record-mode-seg" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '4px', marginBottom: '16px' }}>
+              <button
+                className={`record-mode-btn${mode === 'spend' ? ' record-mode-btn--active' : ''}`}
+                onClick={() => switchMode('spend')}
+                disabled={submitting}
+              >
+                💸 지출 자백
+              </button>
+              <button
+                className={`record-mode-btn${mode === 'save' ? ' record-mode-btn--active' : ''}`}
+                onClick={() => switchMode('save')}
+                disabled={submitting}
+              >
+                🛡️ 지킨 돈 (+)
+              </button>
+              <button
+                className={`record-mode-btn${mode === 'dilemma' ? ' record-mode-btn--active' : ''}`}
+                onClick={() => switchMode('dilemma')}
+                disabled={submitting}
+              >
+                ⚖️ 살까 말까?
+              </button>
             </div>
           )}
 
-          {/* 1. 한 줄 메모 (가장 먼저, 가볍게) */}
+          {/* 1. 한 줄 메모 (모드별 안내) */}
           {!isAdditional && (
             <div className="daily-note-section">
-              <p className="form-label">{isSave ? '무슨 자산이에요?' : '오늘 어땠어요?'}</p>
-              <p className="daily-note-desc">{isSave ? '주식·적금·코인… 모은 얘기 한 줄. 짠친들이 판정해줘요.' : '한 줄이면 충분해요. 금액은 아래에 적어도 돼요.'}</p>
+              <p className="form-label">
+                {mode === 'spend' && '오늘의 솔직한 자백 한 줄'}
+                {mode === 'save' && '어떻게 지갑을 지켰어요?'}
+                {mode === 'dilemma' && '살까 말까 고민 중인 내용'}
+              </p>
+              <p className="daily-note-desc">
+                {mode === 'spend' && '0원이면 무지출! 쓴 돈은 털어놓고 위로받아요.'}
+                {mode === 'save' && '배달·택시·카페 참은 썰! 굳은 돈이 저금통에 쌓여요.'}
+                {mode === 'dilemma' && '결제 직전 짠친들에게 물어보세요. 팩폭 투표를 올려드려요.'}
+              </p>
               <textarea
                 className={`daily-note-textarea${isNoteValid ? ' daily-note-textarea--valid' : ''}`}
                 value={dailyNote}
                 onChange={e => setDailyNote(e.target.value)}
-                placeholder={isSave ? '예) 삼성전자 물타기 했다 📉 / 적금 만기 300만원! 🏦' : '예) 오늘 도시락 싸왔어요 🌿 / 오랜만에 좋아하는 카페 ☕'}
+                placeholder={
+                  mode === 'spend'
+                    ? '예) 오늘 도시락 싸서 0원 방어! / 야근하고 홧김에 마라탕 18,000원 🥲'
+                    : mode === 'save'
+                    ? '예) 택시 타려다 지하철 탐 🚇 / 배달앱 지우고 냉파 성공 🍳'
+                    : '예) 에어팟 4세대 노캔 26만원 살까말까? 지금 쓰는 거 살짝 끊김 🎧'
+                }
                 maxLength={120}
                 rows={3}
                 disabled={submitting}
                 autoFocus
               />
-              <p className="daily-note-char-count">{dailyNote.length}/120 · 5자 이상</p>
+              <p className="daily-note-char-count">{dailyNote.length}/120 · 4자 이상</p>
             </div>
           )}
 
-          {/* 2. 금액 (선택) */}
-          <div className="custom-input-wrapper" style={{ marginTop: !isAdditional ? '16px' : '0' }}>
-            <p className="form-label">{isAdditional ? '추가 지출 금액' : isSave ? '모은 금액' : '금액 (안 적어도 OK)'}</p>
+          {/* 2. 금액 입력 */}
+          <div className="custom-input-wrapper" style={{ marginTop: !isAdditional ? '14px' : '0' }}>
+            <p className="form-label">
+              {isAdditional
+                ? '추가 지출 금액'
+                : mode === 'spend'
+                ? '쓴 금액 (0원이면 무지출)'
+                : mode === 'save'
+                ? '지킨 금액 (아낀 돈)'
+                : '예상 가격 (고민 중인 금액)'}
+            </p>
             <div className="custom-input-box">
               <input
                 className="custom-input-field"
@@ -204,28 +283,45 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
             </div>
           </div>
 
-          {/* 3. 카테고리 (선택) */}
-          <div style={{ marginTop: '16px' }}>
-            <p className="form-label" style={{ marginBottom: '8px' }}>{isSave ? '자산 종류' : '카테고리'} {amount === 0 && !isSave && <span className="daily-note-desc" style={{ display: 'inline', marginLeft: 4 }}>(선택)</span>}</p>
+          {/* 3. 카테고리 선택 */}
+          <div style={{ marginTop: '14px' }}>
+            <p className="form-label" style={{ marginBottom: '8px' }}>
+              {mode === 'spend' ? '소비 카테고리' : mode === 'save' ? '방어 항목' : '고민 분야'}
+            </p>
             <div className="cat-grid">
-              {(isSave ? ASSET_CATEGORIES : UNIFIED_CATEGORIES).map((c) => (
-                <button
-                  key={c.label}
-                  className={`cat-btn ${(isSave ? selAsset.label : selCat.label) === c.label ? 'cat-btn--active' : ''}`}
-                  onClick={() => (isSave ? setSelAsset(c) : setSelCat(c))}
-                  disabled={submitting}
-                >
-                  <span className="cat-btn-emoji"><CustomIcon emoji={c.emoji} /></span>
-                  <span className="cat-btn-label">{c.label}</span>
-                </button>
-              ))}
+              {(mode === 'spend' ? SPEND_CATEGORIES : mode === 'save' ? DEFENSE_CATEGORIES : DILEMMA_CATEGORIES).map((c) => {
+                const isSelected =
+                  mode === 'spend'
+                    ? selCat.label === c.label
+                    : mode === 'save'
+                    ? selDefCat.label === c.label
+                    : selDilemmaCat.label === c.label;
+
+                return (
+                  <button
+                    key={c.label}
+                    className={`cat-btn ${isSelected ? 'cat-btn--active' : ''}`}
+                    onClick={() => {
+                      if (mode === 'spend') setSelCat(c);
+                      else if (mode === 'save') setSelDefCat(c);
+                      else setSelDilemmaCat(c);
+                    }}
+                    disabled={submitting}
+                  >
+                    <span className="cat-btn-emoji"><CustomIcon emoji={c.emoji} /></span>
+                    <span className="cat-btn-label">{c.label}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
-          {/* 4. 소비 감정 태그 (돈 멘탈 케어) — 지출 자백에만 */}
-          {!isSave && amount > 0 && (
-            <div style={{ marginTop: '16px' }}>
-              <p className="form-label" style={{ marginBottom: '8px' }}>이 소비, 지금 마음은? <span className="daily-note-desc" style={{ display: 'inline', marginLeft: 4 }}>(선택)</span></p>
+          {/* 4. 감정 태그 (지출 자백에만) */}
+          {mode === 'spend' && amount > 0 && (
+            <div style={{ marginTop: '14px' }}>
+              <p className="form-label" style={{ marginBottom: '8px' }}>
+                이 소비, 지금 마음은? <span className="daily-note-desc" style={{ display: 'inline', marginLeft: 4 }}>(선택)</span>
+              </p>
               <div className="emotion-select-container">
                 {EMOTIONS.map(e => {
                   let btnClass = '';
@@ -249,10 +345,10 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
             </div>
           )}
 
-          {/* 5. 인증 사진 첨부 (선택) */}
-          <div className="image-upload-section">
+          {/* 5. 사진 첨부 */}
+          <div className="image-upload-section" style={{ marginTop: '14px' }}>
             <p className="form-label">사진 첨부 (선택)</p>
-            {!isSave && isFoodCategory && !image && (
+            {mode === 'spend' && isFoodCategory && !image && (
               <div className="food-photo-notice">
                 <span className="food-photo-notice-icon"><CustomIcon emoji="🍔" /></span>
                 <span className="food-photo-notice-text">
@@ -275,9 +371,11 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
                 </button>
               </div>
             ) : (
-              <label className={`image-upload-label${isFoodCategory ? ' image-upload-label--highlighted' : ''}`}>
+              <label className="image-upload-label">
                 <CustomIcon emoji="📸" />
-                <span>기록 인증샷 / 영수증 첨부</span>
+                <span>
+                  {mode === 'dilemma' ? '상품 캡처 / 장바구니 사진' : '기록 인증샷 / 영수증 첨부'}
+                </span>
                 <input
                   type="file"
                   accept="image/*"
@@ -290,10 +388,10 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
           </div>
         </div>
 
-        {/* 6. 제출 — 화면당 primary CTA 하나 */}
+        {/* 6. 제출 버튼 */}
         <div className="modal-footer" style={{ flexDirection: 'column', gap: '8px' }}>
           {!isNoteValid && !isAdditional && (
-            <p className="submit-hint submit-hint--mb">내용을 5자 이상 입력해 주세요</p>
+            <p className="submit-hint submit-hint--mb">내용을 4자 이상 입력해 주세요</p>
           )}
           <Button
             size="xlarge"
@@ -302,18 +400,21 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
             variant="fill"
             onClick={handleSubmit}
             loading={submitting}
-            disabled={!isNoteValid || submitting || (isAdditional && amount <= 0) || (isSave && amount <= 0)}
+            disabled={!isNoteValid || submitting || (isAdditional && amount <= 0) || (mode === 'save' && amount <= 0)}
           >
             {isAdditional
               ? '추가 지출 자백하기'
-              : isSave
-                ? (amount > 0 ? `모은 돈 인증하기 (${formatAmount(amount)})` : '금액을 입력해 주세요')
-                : amount > 0
-                  ? `지출 자백하기 (${formatAmount(amount)})`
-                  : '무지출 인증하기 🌿'}
+              : mode === 'save'
+              ? (amount > 0 ? `🛡️ ${formatAmount(amount)} 지킨 돈 저금하기` : '지킨 금액을 입력해 주세요')
+              : mode === 'dilemma'
+              ? (amount > 0 ? `⚖️ ${formatAmount(amount)} 살까말까 투표 올리기` : '⚖️ 살까말까 투표 올리기')
+              : amount > 0
+              ? `💸 ${formatAmount(amount)} 지출 자백하기`
+              : '🌿 오늘 무지출 인증하기'}
           </Button>
         </div>
       </div>
     </div>
   );
 }
+

@@ -10,6 +10,7 @@
 
   /* 인주 레드 — 지출 자백·판정·응원 (도장의 붉은 인주) */
   --ink-red: #E14B3B;
+  --ink-red-strong: #C0392B;   /* 흰 글자 채움/고강조용 — 흰 텍스트 대비 5.4:1 (AA) */
   --ink-red-bg: rgba(225, 75, 59, 0.08);
   --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
 
@@ -149,10 +150,9 @@ input { font: inherit; outline: none; border: none; }
   width: 100%;
   max-width: 480px;
   height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
-  background: rgba(255, 255, 255, 0.72);
-  backdrop-filter: blur(24px) saturate(180%);
-  -webkit-backdrop-filter: blur(24px) saturate(180%);
-  border-top: 1px solid rgba(255, 255, 255, 0.65); /* 유리 상단에 빛이 걸리는 엣지 */
+  background: rgba(255, 255, 255, 0.94);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
   border-top: 1.5px solid var(--glass-border);
   display: flex;
   align-items: flex-start;
@@ -172,8 +172,8 @@ input { font: inherit; outline: none; border: none; }
   padding: 8px 0;
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.tab-btn--active { 
-  color: var(--primary-dark); 
+.tab-btn--active {
+  color: var(--ink-red-strong);
   font-weight: 900;
   transform: scale(1.06);
 }
@@ -7130,10 +7130,10 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   .point-toast { background: #1C1E21 !important; }
 }
 
-/* TDS fill CTA(토스 블루)를 브랜드 에메랄드로 통일 — weak 변형은 인라인 변수값이 달라 제외됨 */
+/* TDS fill CTA를 브랜드 인주 레드로 통일 — 잉크+인주 듀오톤의 액션 색면. weak 변형은 인라인 변수값이 달라 제외됨 */
 .tds-mobile-button[style*="--button-background-color: #3182f6"] {
-  --button-background-color: var(--primary) !important;
-  --button-gradient-color: var(--primary) !important;
+  --button-background-color: var(--ink-red-strong) !important;
+  --button-gradient-color: var(--ink-red-strong) !important;
 }
 
 /* ── 짠친 판결 도장 — 제품 시그니처 (잉크 스탬프 미학) ──────────────────── */
@@ -7221,7 +7221,7 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   flex: 1; padding: 11px; border-radius: 12px; border: 1px solid var(--divider);
   background: #fff; color: var(--text-main); font-weight: 800; font-size: 13px; cursor: pointer;
 }
-.judge-btn--primary { border: none; background: var(--primary); color: #fff; }
+.judge-btn--primary { border: none; background: var(--ink-red-strong); color: #fff; }
 .judge-skip { flex-shrink: 0; background: none; border: none; font-size: 12px; color: var(--text-mute); cursor: pointer; padding: 6px; }
 
 /* ── 발견 랜덤 컨트롤 (고요한 브라우징 — 알고리즘 없음) ─────────────────── */

@@ -97,17 +97,18 @@ interface Props {
 }
 
 
-// ── 한 줄 기록 파서 — 거지방식 "커피 4500" 입력을 기록으로 (진입 마찰 최소화) ──
+// ── 한 줄 기록 파서 — 거지방/스레드식 1초 퀵 인풋 파서 ──
 const QUICK_CATEGORY_RULES: { re: RegExp; category: string; emoji: string }[] = [
   { re: /커피|카페|라떼|스벅|스타벅스|아메리카노|음료|버블티|주스/, category: '카페', emoji: '☕' },
   { re: /밥|점심|저녁|아침|식사|국밥|치킨|피자|버거|배달|야식|간식|빵|편의점|김밥|라면|샐러드|도시락/, category: '식비', emoji: '🍚' },
   { re: /버스|지하철|택시|기차|주유|교통|톨비|주차/, category: '교통', emoji: '🚇' },
-  { re: /쇼핑|옷|신발|쿠팡|무신사|화장품|올리브영|악세|가방/, category: '쇼핑', emoji: '🛍️' },
+  { re: /쇼핑|옷|신발|쿠팡|무신사|화장품|올리브영|악세|가방|패션/, category: '쇼핑', emoji: '🛍️' },
+  { re: /게임|영화|공연|취미|책|도서|굿즈/, category: '취미', emoji: '🎮' },
 ];
 
 export function parseQuickRecord(text: string): SpendingItem[] {
   const t = text.trim();
-  // 마지막 금액 토큰 추출 (4500 / 4,500 / 4500원 / 1만원 / 3천원)
+  // 마지막 또는 문장 내 금액 토큰 추출 (4500 / 4,500 / 4500원 / 1만원 / 3천원 / 2.5만)
   const matches = [...t.matchAll(/([0-9][\d,\.]*)\s*(만원|천원|원)?/g)].filter(m => m[1]);
   let amount = 0;
   let amountToken = '';
@@ -122,10 +123,35 @@ export function parseQuickRecord(text: string): SpendingItem[] {
   }
   const comment = (amountToken ? t.replace(amountToken, '') : t).replace(/\s+/g, ' ').trim();
 
-  if (amount <= 0) {
-    // 금액 없는 한 줄 = 오늘의 무지출 한마디
-    return [{ category: '한마디', emoji: '💬', amount: 0, comment: comment || '오늘도 지갑 수비 성공' }];
+  // 1. 지킨 돈 (방어 머니) 감지: "참음", "안 씀", "방어", "아낌", "굳음", "냉파"
+  const isDefense = /참음|안씀|안 씀|방어|아낌|굳음|냉파|포기|세이브|절약/.test(t);
+  if (isDefense && amount > 0) {
+    return [{
+      category: '절약 방어',
+      emoji: '🛡️',
+      amount: 0,
+      saved_amount: amount,
+      comment: comment || '오늘 지갑 수비 성공 🛡️',
+    }];
   }
+
+  // 2. 살까 말까 고민 감지: "살까", "말까", "고민", "어떰", "사도됨", "살말"
+  const isDilemma = /살까|말까|살말|고민|어떰|사도|바꿀까/.test(t);
+  if (isDilemma) {
+    return [{
+      category: '소비 고민',
+      emoji: '⚖️',
+      amount: amount,
+      comment: comment || t,
+    }];
+  }
+
+  // 3. 금액 없는 한 줄 = 무지출 한마디
+  if (amount <= 0) {
+    return [{ category: '한마디', emoji: '💬', amount: 0, comment: comment || '오늘도 지갑 수비 성공 🌿' }];
+  }
+
+  // 4. 일반 지출 자백
   const rule = QUICK_CATEGORY_RULES.find(r => r.re.test(comment || t));
   return [{
     category: rule?.category ?? '기타',
@@ -134,6 +160,7 @@ export function parseQuickRecord(text: string): SpendingItem[] {
     comment: comment || (rule?.category ?? '오늘의 지출'),
   }];
 }
+
 
 
 export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onClaimPending, onNavigateToMyLog }: Props) {

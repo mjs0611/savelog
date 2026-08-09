@@ -626,13 +626,14 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                   else if (emotionTag.includes('후회')) emotionClass = 'emotion-badge--no-regret';
                 }
 
+                const savedAmt = item.saved_amount ?? 0;
                 return (
                   <div key={idx} className="timeline-item">
                     <span className="timeline-item-emoji"><CustomIcon emoji={item.emoji} /></span>
                     <div className="timeline-item-info">
                       <span className="timeline-item-cat">
-                        {item.category === '절약 방어' ? (
-                          <span><CustomIcon emoji="🌱" /> 지킨 돈</span>
+                        {item.category === '절약 방어' || savedAmt > 0 ? (
+                          <span style={{ color: '#059669', fontWeight: 800 }}><CustomIcon emoji="🛡️" /> 지킨 돈</span>
                         ) : item.category === '무지출' ? (
                           <span><CustomIcon emoji="🌿" /> 무지출</span>
                         ) : (
@@ -646,12 +647,13 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                       </span>
                       {commentText && <span className="timeline-item-comment">{commentText}</span>}
                     </div>
-                    <span className={`timeline-item-amount ${item.amount === 0 ? 'timeline-item-amount--zero' : ''}`}>
-                      {item.amount > 0 ? formatAmount(item.amount) : ''}
+                    <span className={`timeline-item-amount ${savedAmt > 0 ? 'timeline-item-amount--saved' : item.amount === 0 ? 'timeline-item-amount--zero' : ''}`} style={savedAmt > 0 ? { color: '#059669', fontWeight: 800 } : {}}>
+                      {savedAmt > 0 ? `+${formatAmount(savedAmt)}` : item.amount > 0 ? `−${formatAmount(item.amount)}` : ''}
                     </span>
                   </div>
                 );
               })}
+
             </div>
           </div>
         );
