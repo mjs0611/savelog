@@ -4,6 +4,7 @@ import type { SpendingItem } from '../lib/supabase';
 import { formatAmount, getTodayStr } from '../lib/utils';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
 import { setLastEmotion } from '../lib/storage';
+import { haptic } from '../lib/haptics';
 
 const SPEND_CATEGORIES = [
   { label: '식비/식품', emoji: '🍚' },
@@ -63,6 +64,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
   const isNoteValid = isAdditional || dailyNote.trim().length >= 4;
 
   function switchMode(m: RecordMode) {
+    haptic('tickWeak'); // 서류철 폴더 탭 넘김
     setMode(m);
     setAmountStr('');
     setEmotion(null);

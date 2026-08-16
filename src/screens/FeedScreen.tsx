@@ -784,6 +784,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     // 파티클 생성
     spawnParticles(type === 'trust' ? '💖' : '🤔', e);
 
+    haptic(entry.my_reaction === type ? 'tickWeak' : 'basicWeak'); // 판정 압인 — optimistic 갱신과 같은 프레임 (취소는 가볍게)
+
     // 관계 자본 적립 + 글쓴이 알림 — 새 리액션을 누를 때만(취소·변경 제외)
     if (entry.my_reaction !== type) {
       recordInteraction(entry.user_id, entry.nickname || undefined);
@@ -1024,6 +1026,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     return sorted;
   }, [entries, feedTab, circleMemberIdSet, shuffleKey]);
 
+  // 사건 번호 — 엔트리별 결정론 4자리 (사건 파일 탭에 찍힌다)
+  const caseNo = (id: string) => {
+    let h = 0;
+    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0x7fffffff;
+    return String(h % 10000).padStart(4, '0');
+  };
+
   const renderFeedCard = (entry: EntryWithReactions) => {
     const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
     const p = personaKey ? PERSONAS[personaKey] : null;
@@ -1061,6 +1070,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       <div
         key={entry.id}
         className={`feed-card-ig ${cardModifier}`}
+        data-case={`사건 NO.${caseNo(entry.id)}`}
       >
         {/* 짠친 판결 도장 — 같은 스탬프 2표면 잉크 도장이 찍힌다 (제품 시그니처) */}
         {(() => {
@@ -1529,7 +1539,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <span className={`story-avatar ${recordedTodayFlag ? 'story-ring' : 'story-ring--empty'}`}>
                 {myPersona ? <img src={PERSONAS[myPersona].icon} alt="" /> : <CustomIcon emoji="🐷" />}
                 {streak.streak > 0 && <span className="story-badge">🔥{streak.streak}</span>}
-                {recordedTodayFlag && rouletteSpins > 0 && <span className="story-badge" style={{ left: '-4px', right: 'auto', color: '#b45309' }}>🎰{rouletteSpins}</span>}
+                {recordedTodayFlag && rouletteSpins > 0 && <span className="story-badge" style={{ left: '-4px', right: 'auto', color: '#8A6A1E' }}>🎰{rouletteSpins}</span>}
               </span>
               <span className="story-name">{recordedTodayFlag ? '나' : '인증하기'}</span>
             </button>
@@ -1549,7 +1559,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <button className="story-item" onClick={() => setShowBossSheet(true)}>
                 <span className="story-avatar story-ring--boss">
                   <CustomIcon emoji={weeklyBoss.boss_emoji || '🐲'} />
-                  <span className="story-badge" style={{ color: '#a855f7' }}>{weeklyBoss.hp <= 0 ? '처치' : `${bossPct}%`}</span>
+                  <span className="story-badge" style={{ color: '#C93A2B' }}>{weeklyBoss.hp <= 0 ? '처치' : `${bossPct}%`}</span>
                 </span>
                 <span className="story-name">주간 보스</span>
               </button>
@@ -1565,7 +1575,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
       {welcomeBack && (
         <div
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(31, 30, 28, 0.25)', background: 'rgba(31, 30, 28, 0.06)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(33, 30, 24, 0.25)', background: 'rgba(33, 30, 24, 0.06)' }}
         >
           <IconHeart filled size={18} className="" />
           <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
@@ -1577,7 +1587,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             return mine ? (
               <button
                 onClick={() => { handleBragShare(mine); setWelcomeBack(null); }}
-                style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: 'var(--text-main)', color: 'var(--bg-base, #FAF8F4)', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+                style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: 'var(--text-main)', color: 'var(--bg-base, #F6F0E0)', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
               >
                 자랑하기
               </button>
@@ -1629,7 +1639,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <button
                 onClick={handleQuickSubmit}
                 disabled={!quickText.trim() || submitting}
-                style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: (!quickText.trim() || submitting) ? '#ECE7DE' : 'var(--primary)', color: (!quickText.trim() || submitting) ? 'var(--text-mute)' : '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s, color 0.2s' }}
+                style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: (!quickText.trim() || submitting) ? '#E7DCC2' : 'var(--primary)', color: (!quickText.trim() || submitting) ? 'var(--text-mute)' : '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s, color 0.2s' }}
               >
                 {submitting ? '...' : '인증'}
               </button>
@@ -1677,7 +1687,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
           <div className="judge-prompt">
-            <p className="judge-prompt-eyebrow">판정을 기다려요 · {judgeQueue.length}건</p>
+            <p className="judge-prompt-eyebrow">오늘의 배심 · 판정 대기 {judgeQueue.length}건</p>
             <p className="judge-prompt-snippet"><strong>{e.nickname}</strong> · {judgeSnippet(e)}</p>
             <div className="judge-prompt-actions">
               {isDilemma ? (
@@ -1997,7 +2007,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>우리 서클의 주간 보스</p>
                 {dead ? (
                   <>
-                    <p style={{ margin: '0 0 14px', fontSize: '13.5px', fontWeight: 800, color: '#b45309' }}>처치 완료! 우리 서클의 절약이 보스를 쓰러뜨렸어요 🎉</p>
+                    <p style={{ margin: '0 0 14px', fontSize: '13.5px', fontWeight: 800, color: '#8A6A1E' }}>처치 완료! 우리 서클의 절약이 보스를 쓰러뜨렸어요 🎉</p>
                     <button onClick={handleClaimBossReward} disabled={bossRewardClaimed} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: bossRewardClaimed ? 'var(--surface-dim)' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '13px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}>
                       {bossRewardClaimed ? '보상 수령 완료 ✓' : '젤리 50개 받기'}
                     </button>
@@ -2005,11 +2015,11 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 ) : (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, marginBottom: '4px' }}>
-                      <span style={{ color: '#a855f7' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
+                      <span style={{ color: '#C93A2B' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
                       <span style={{ color: 'var(--text-sub)' }}>{pct}%</span>
                     </div>
                     <div style={{ height: '10px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden', marginBottom: '12px' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: '#a855f7', transition: 'width 0.5s' }} />
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: '#C93A2B', transition: 'width 0.5s' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
                       멤버의 하루 첫 기록이 공격이 됩니다. 무지출 30 · 절약 방어 20 · 기록 10. 이번 주 안에 처치하면 <strong style={{ color: 'var(--primary)' }}>전원 젤리 50개</strong>.
@@ -2064,7 +2074,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                 <div style={{ flex: 1, background: 'rgba(251,191,36,0.12)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                   <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>교류 스트릭</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: '#d97706' }}><CustomIcon emoji="🔥" /> {relStreak}일</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: '#96701F' }}><CustomIcon emoji="🔥" /> {relStreak}일</p>
                 </div>
                 <div style={{ flex: 1, background: 'var(--primary-light)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                   <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>누적 교류</p>
@@ -2099,7 +2109,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                     handleToggleFollow(f.id, f.nickname);
                     setQuickMenuFriend(null);
                   }}
-                  style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(255, 77, 79, 0.08)', border: '1px solid rgba(255, 77, 79, 0.15)', color: 'var(--error)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
+                  style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(201, 58, 43, 0.08)', border: '1px solid rgba(201, 58, 43, 0.15)', color: 'var(--error)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
                 >
                   {renderTextWithEmoji('👥 팔로우 취소 (언팔로우)')}
                 </button>

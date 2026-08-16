@@ -395,7 +395,7 @@ export default function CommunityScreen({ userId }: Props) {
                 onClick={() => openDetail(post)}
               >
                 <div className="community-post-meta-row">
-                  <span className="community-post-cat" style={{ background: '#3182F61F', color: '#3182F6' }}>
+                  <span className="community-post-cat" style={{ background: '#3182F61F', color: '#2F5A83' }}>
                     <CustomIcon emoji={meta.emoji} /> {meta.label}
                   </span>
                   <span className="community-post-time">{timeAgo(post.created_at)}</span>
@@ -504,7 +504,7 @@ export default function CommunityScreen({ userId }: Props) {
         <div className="modal-overlay" onClick={closeDetail}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
-              <span className="community-post-cat" style={{ background: '#3182F61F', color: '#3182F6', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+              <span className="community-post-cat" style={{ background: '#3182F61F', color: '#2F5A83', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 <CustomIcon emoji={categoryMeta(detailPost.category).emoji} /> {categoryMeta(detailPost.category).label}
               </span>
               <button className="modal-close-btn" onClick={closeDetail}>✕</button>

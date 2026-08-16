@@ -87,14 +87,14 @@ export default function RouletteModal({ open, onClose, onPrize }: Props) {
             width: '210px',
             padding: '22px 12px',
             borderRadius: '18px',
-            border: result?.jackpot ? '2.5px solid #f59e0b' : '2px solid var(--primary-glow)',
+            border: result?.jackpot ? '2.5px solid #A9822F' : '2px solid var(--primary-glow)',
             background: result?.jackpot ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(255,222,104,0.2))' : 'var(--primary-light)',
             transition: 'all 0.25s',
           }}>
             <div style={{ fontSize: '38px', lineHeight: 1.2, filter: rolling ? 'blur(1.5px)' : 'none', transform: rolling ? 'scale(0.96)' : 'scale(1)', transition: 'transform 0.1s' }}>
               <CustomIcon emoji={display?.emoji ?? '🎰'} />
             </div>
-            <p style={{ margin: '8px 0 0', fontSize: '14.5px', fontWeight: 800, color: result?.jackpot ? '#b45309' : 'var(--text-main)' }}>
+            <p style={{ margin: '8px 0 0', fontSize: '14.5px', fontWeight: 800, color: result?.jackpot ? '#8A6A1E' : 'var(--text-main)' }}>
               {display ? display.label : '돌려서 확인!'}
             </p>
           </div>
