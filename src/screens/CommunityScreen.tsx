@@ -194,7 +194,7 @@ export default function CommunityScreen({ userId }: Props) {
       const compressed = await compressImage(file, 1600, 0.85);
       setComposeImage(compressed);
     } catch {
-      setComposeImageError('이미지를 불러오지 못했습니다.');
+      setComposeImageError('이미지를 불러오지 못했어요. 다른 파일을 골라주세요.');
       e.target.value = '';
     }
   }
@@ -389,38 +389,43 @@ export default function CommunityScreen({ userId }: Props) {
             const meta = categoryMeta(post.category);
             const p = post.persona ? PERSONAS[post.persona] : null;
             return (
-              <button
+              <div
                 key={post.id}
-                className="community-post-card"
+                className="community-thread-card"
                 onClick={() => openDetail(post)}
               >
-                <div className="community-post-meta-row">
-                  <span className="community-post-cat" style={{ background: '#3182F61F', color: '#2F5A83' }}>
+                <div className="community-post-meta-row" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
+                  <span className={`community-tag-chip community-tag-chip--${post.category}`}>
                     <CustomIcon emoji={meta.emoji} /> {meta.label}
                   </span>
-                  <span className="community-post-time">{timeAgo(post.created_at)}</span>
+                  <span className="community-post-time" style={{ fontSize: '11.5px', color: 'var(--text-mute)' }}>{timeAgo(post.created_at)}</span>
                 </div>
-                <h3 className="community-post-title">{post.title}</h3>
-                <p className="community-post-content">{post.content}</p>
+                <h3 className="community-post-title" style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.4 }}>{post.title}</h3>
+                <p className="community-post-content" style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-sub)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.content}</p>
                 {post.image && (
-                  <div className="community-post-image-wrap">
-                    <img src={post.image} alt="" className="community-post-image" />
+                  <div className="community-post-image-wrap" style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
+                    <img src={post.image} alt="" className="community-post-image" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
                   </div>
                 )}
-                <div className="community-post-footer">
-                  <span className="community-post-author">
-                    {p ? <img src={p.icon} alt="" className="custom-icon--sm" /> : <CustomIcon emoji="🐷" className="custom-icon--sm" />} {post.nickname}
+                <div className="community-post-footer" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: '8px', borderTop: '1px solid #F3F4F6' }}>
+                  <span className="community-post-author" style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', fontSize: '12px', fontWeight: 700, color: 'var(--text-main)' }}>
+                    {p ? <img src={p.icon} alt="" style={{ width: '18px', height: '18px', borderRadius: '50%' }} /> : <CustomIcon emoji="🐷" />} {post.nickname}
                   </span>
-                  <span className="community-post-stats">
-                    <span className={`community-stat ${post.liked_by_me ? 'community-stat--liked' : ''}`}
+                  <span className="community-post-stats" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                    <button
+                      type="button"
+                      className={`community-stat ${post.liked_by_me ? 'community-stat--liked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleToggleLike(post); }}
+                      style={{ background: 'none', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: post.liked_by_me ? '#FF4842' : 'var(--text-mute)', cursor: 'pointer' }}
                     >
-                      <CustomIcon emoji={post.liked_by_me ? '💖' : '🤍'} /> {post.like_count > 0 ? `${post.like_count}명의 응원` : '응원하기'}
+                      <CustomIcon emoji={post.liked_by_me ? '❤️' : '🤍'} /> {post.like_count > 0 ? post.like_count : '응원'}
+                    </button>
+                    <span className="community-stat" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--text-mute)' }}>
+                      <CustomIcon emoji="💬" /> {post.comment_count}
                     </span>
-                    <span className="community-stat"><CustomIcon emoji="💬" /> {post.comment_count}</span>
                   </span>
                 </div>
-              </button>
+              </div>
             );
           })
         )}
@@ -489,7 +494,7 @@ export default function CommunityScreen({ userId }: Props) {
 
             <div className="modal-footer">
               <div className="community-compose-actions">
-                <Button display="full" size="large" color="dark" variant="weak" onClick={() => setComposeOpen(false)} disabled={submitting}>취소</Button>
+                <Button display="full" size="large" color="dark" variant="weak" onClick={() => setComposeOpen(false)} disabled={submitting}>닫기</Button>
                 <Button display="full" size="large" color="primary" variant="fill" onClick={handleSubmitPost} disabled={submitting || composeTitle.trim().length < 2 || composeContent.trim().length < 5}>
                   {submitting ? '등록 중...' : '등록'}
                 </Button>

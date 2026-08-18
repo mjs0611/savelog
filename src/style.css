@@ -1,56 +1,61 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
 
 :root {
-  /* 사건 서류 아이덴티티 — 마닐라 서류 위 먹 잉크, 인주(자백·판정)와 청인(인증·승인) 이중 도장 */
-  --primary: #211E18; /* 먹 잉크 — 브랜드·버튼·활성 */
+  /* 현대적 라이프스타일 SNS & 머니 스토리텔링 토큰 */
+  --primary: #121316; /* 옵시디언 블랙 — 브랜드·핵심 액션 */
   --primary-dark: #000000;
-  --primary-light: rgba(33, 30, 24, 0.06);
-  --primary-glow: rgba(33, 30, 24, 0.16);
+  --primary-light: rgba(18, 19, 22, 0.05);
+  --primary-glow: rgba(18, 19, 22, 0.12);
+  --primary-accent: #2563EB; /* 일렉트릭 울트라마린 */
 
-  /* 인주 — 지출 자백·판정·하트 (개인 도장의 붉은 인주) */
-  --ink-red: #C93A2B;
-  --ink-red-strong: #A62E20;   /* 흰 글자 채움/고강조용 (AA) */
-  --ink-red-bg: rgba(201, 58, 43, 0.08);
+  /* 비비드 코랄 — 솔직 소비 자백·하트·화제 투표 */
+  --ink-red: #FF4842;
+  --ink-red-strong: #E53935;
+  --ink-red-bg: rgba(255, 72, 66, 0.08);
 
-  /* 청인 — 지킨 돈·무지출·승인 (공문서의 푸른 검인) */
-  --ink-blue: #2F5A83;
-  --ink-blue-strong: #24476A;
-  --ink-blue-bg: rgba(47, 90, 131, 0.08);
+  /* 에메랄드 그린 — 지킨 돈·무지출 영웅담·승인 도장 */
+  --ink-blue: #00B96B;
+  --ink-blue-strong: #059669;
+  --ink-blue-bg: rgba(0, 185, 107, 0.08);
 
-  /* 브라스 — 마일스톤·트로피·관인 링 */
-  --brass: #A9822F;
-  --brass-bg: rgba(169, 130, 47, 0.10);
+  /* 허니 앰버 — 꿀팁·마일스톤·트로피·골드 */
+  --brass: #F59E0B;
+  --brass-bg: rgba(245, 158, 11, 0.12);
 
   --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
 
-  --accent-pink: #C93A2B; /* 하트도 인주 계열 */
-  --accent-cyan: #2F5A83;
-  --accent-lime: #A9822F; /* (구 골드 토큰 별칭) */
+  --accent-pink: #FF4842;
+  --accent-cyan: #06B6D4;
+  --accent-lime: #10B981;
 
-  --success: #2F5A83;
-  --error: #C93A2B;
-  --warning: #A9822F;
-  --zero: #2F5A83; /* 무지출 = 청인 (무죄 도장) */
+  --success: #00B96B;
+  --error: #FF4842;
+  --warning: #F59E0B;
+  --zero: #00B96B;
 
-  --bg: #F4EDDC; /* 마닐라 페이퍼 — 사건 서류 봉투 위에 용지가 놓인다 */
-  --card-bg: #FFFDF6; /* 서류 용지 */
-  --manila: #E4CE9C; /* 폴더 탭·서류 하이라이트 */
-  --text-main: #1D1A14; /* 잉크 블랙 (웜) */
-  --text-sub: #59523F; /* 잉크 그레이 */
-  --text-mute: #93876B; /* 뮤트 마닐라 그레이 */
+  --bg: #F7F8FA; /* 화사하고 맑은 스튜디오 캔버스 */
+  --card-bg: #FFFFFF; /* 순백 크리스탈 카드 */
+  --manila: #E2E8F0;
+  --text-main: #111827; /* 또렷한 옵시디언 */
+  --text-sub: #4B5563; /* 세련된 슬레이트 그레이 */
+  --text-mute: #9CA3AF; /* 은은한 쿨 그레이 */
 
-  --glass: rgba(255, 253, 246, 0.85);
-  --glass-border: rgba(60, 48, 20, 0.08);
-  --divider: #E3D8BC; /* 크라프트 헤어라인 */
-  --surface-dim: #EDE4CC; /* 마닐라 딤 서피스 */
-  --surface-faint: #FAF5E7; /* 마닐라 근백색 서피스 */
+  --glass: rgba(255, 255, 255, 0.88);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --divider: #E5E7EB; /* 소프트 헤어라인 */
+  --surface-dim: #F3F4F6;
+  --surface-faint: #FAFAFA;
 
-  --shadow-sm: 0 4px 18px rgba(74, 58, 22, 0.07);
-  --shadow-md: 0 14px 32px rgba(74, 58, 22, 0.11);
-  --radius-sm: 16px;
-  --radius-md: 24px;
-  --radius-lg: 32px;
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.09);
+  --radius-sm: 14px;
+  --radius-md: 20px;
+  --radius-lg: 28px;
 
+  /* 토스 플로팅 탭바 — 알약 높이 + 하단 띄움 = 하단 점유 높이(--tab-h) */
+  --tab-pill-h: 58px;
+  --tab-pill-gap: 10px;
   --tab-h: 68px;
 }
 
@@ -89,50 +94,40 @@ input { font: inherit; outline: none; border: none; }
   margin: 0 auto;
   position: relative;
   background: var(--bg);
-  border-left: 1px solid var(--glass-border);
-  border-right: 1px solid var(--glass-border);
-  box-shadow: 0 0 40px rgba(139, 115, 85, 0.06);
+  border-left: 1px solid rgba(0, 0, 0, 0.05);
+  border-right: 1px solid rgba(0, 0, 0, 0.05);
+  box-shadow: 0 0 50px rgba(0, 0, 0, 0.04);
   overflow: hidden;
-}
-
-/* 종이 그레인 — 인쇄물의 결. 전 화면 고정 오버레이 (정적 1회 컴포짓, blur·애니메이션 없음) */
-body::after {
-  content: '';
-  position: fixed;
-  inset: 0;
-  z-index: 100000;
-  pointer-events: none;
-  opacity: 0.05;
-  mix-blend-mode: multiply;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='160' height='160' filter='url(%23n)'/%3E%3C/svg%3E");
-  background-size: 160px 160px;
 }
 
 .tab-content {
   flex: 1;
   overflow-y: auto;
-  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
+  padding-bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 24px);
 }
 .tab-panel--hidden { display: none; }
 
 /* ── Bottom Nav ─────────────────────────────────────────────────────────────── */
+/* 앱인토스 UI/UX 가이드 — 탭바는 반드시 토스가 제공하는 "플로팅 형태"를 따라야 한다.
+   화면 폭을 꽉 채운 border-top 바는 토스 메인의 기본 하단 탭과 형태가 겹쳐 금지.
+   → 좌우 여백 + 완전 라운드(캡슐) + 그림자로 떠 있는 흰 알약. 탭 개수는 2~5개.
+   --tab-h(68px)는 알약 높이(--tab-pill-h) + 하단 띄움(--tab-pill-gap)의 점유 높이로,
+   본문 패딩·플로팅 버튼 앵커가 그대로 이 값을 재사용한다. */
 
 .bottom-nav {
   position: fixed;
-  bottom: 0;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + var(--tab-pill-gap));
   left: 50%;
   transform: translateX(-50%);
-  width: 100%;
-  max-width: 480px;
-  height: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px));
-  background: rgba(255, 255, 255, 0.94);
-  backdrop-filter: blur(16px);
-  -webkit-backdrop-filter: blur(16px);
-  border-top: 1.5px solid var(--glass-border);
+  width: calc(100% - 48px);
+  max-width: 432px;
+  height: var(--tab-pill-h);
+  background: #FFFFFF;
+  border-radius: 999px;
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.10), 0 1px 3px rgba(0, 0, 0, 0.06);
   display: flex;
-  align-items: flex-start;
-  padding-top: 0;
-  padding-bottom: env(safe-area-inset-bottom, 0px);
+  align-items: center;
+  padding: 0 6px;
   z-index: 100;
 }
 
@@ -142,55 +137,54 @@ body::after {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
-  color: var(--text-sub);
-  padding: 8px 0;
-  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  gap: 2px;
+  color: var(--text-mute);
+  height: 100%;
+  border-radius: 999px;
+  transition: color 0.2s cubic-bezier(0.16, 1, 0.3, 1), transform 0.15s ease;
 }
 .tab-btn--active {
-  color: var(--ink-red-strong);
-  font-weight: 900;
-  transform: scale(1.06);
+  color: var(--primary);
 }
 .tab-btn:active {
   transform: scale(0.92);
 }
 .tab-emoji { font-size: 22px; transition: transform 0.2s; }
-.tab-btn--active .tab-emoji { transform: translateY(-1px); }
-.tab-label { font-size: 11px; font-weight: 800; white-space: nowrap; }
+.tab-label { font-size: 11px; font-weight: 600; white-space: nowrap; letter-spacing: -0.02em; }
+.tab-btn--active .tab-label { font-weight: 700; }
 
 /* ── Screen base ────────────────────────────────────────────────────────────── */
 
 .screen {
-  padding: 12px 16px; /* 수평 거터는 화면 컨테이너가 단독 소유 — 컴포넌트는 수평 마진 금지 */
+  padding: 12px 16px;
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 12px;
   min-height: calc(100dvh - var(--tab-h));
-  animation: fadeIn 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: fadeIn 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; transform: translateY(12px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Cozy White Card ───────────────────────────────────────────────────────── */
+/* ── Crisp Tactile Card ───────────────────────────────────────────────────────── */
 
 .glass-card {
-  background: #FFFDF6;
-  border: 1px solid var(--divider); /* 헤어라인 */
-  border-radius: 16px;
-  padding: 10px 12px;
-  box-shadow: none;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03), 0 8px 20px rgba(0, 0, 0, 0.03);
   width: 100%;
   position: relative;
   overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
 }
 .glass-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--primary);
-  box-shadow: var(--shadow-md);
+  border-color: rgba(0, 0, 0, 0.12);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05), 0 12px 28px rgba(0, 0, 0, 0.05);
 }
 
 /* ── Dev Banner ─────────────────────────────────────────────────────────────── */
@@ -5769,7 +5763,7 @@ body::after {
   box-shadow: 0 1px 2px rgba(74, 58, 22, 0.03);
 }
 .feed-card-ig--mine {
-  background: var(--card-bg); /* 내 사건 파일도 용지다 — 투명이면 서류 뭉치가 깨진다 */
+  background: var(--card-bg); /* 내 기록도 용지다 — 투명이면 서류 뭉치가 깨진다 */
 }
 .feed-card-ig-header {
   display: flex;
@@ -7099,7 +7093,8 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 
 /* 접근성 — 투명도 축소: 유리를 서리로 (§reduced-transparency) */
 @media (prefers-reduced-transparency: reduce) {
-  .bottom-nav, .modal-sheet, .feed-appbar, .point-toast {
+  /* .bottom-nav는 불투명 흰 알약이라 제외 (토스 플로팅 탭바 형태 유지) */
+  .modal-sheet, .feed-appbar, .point-toast {
     background: #FFFDF6 !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
@@ -7285,93 +7280,641 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 .scrapbook-item-amount--saved { color: var(--ink-blue); }
 .scrapbook-gone { font-size: 11px; color: var(--text-mute); text-align: center; margin: 4px 0 0; }
 
-/* ── 사건 서류 물성 패스 (2026-08-17) — 카드=사건 파일, 인주·청인 이중 도장, 종이 결 ── */
+/* ── 극단적 물성 & MZ 머니 라이프스타일 SNS 비주얼 시스템 (2026-08) ── */
 
-/* 사건 파일 카드 — 마닐라 탭(사건 번호)이 위로 솟고, 밑장 두 장이 겹쳐 서류 뭉치가 된다 */
-.feed-card-ig { margin-top: 14px; }
-.feed-card-ig[data-case] {
-  border-radius: 4px 16px 16px 16px; /* 탭이 붙는 좌상단만 각지게 — 폴더의 결합부 */
-  box-shadow:
-    0 1px 2px rgba(74, 58, 22, 0.05),
-    0 3px 0 -1px #EFE7D2,
-    0 5px 0 -2px #E0D4B4,
-    0 8px 12px -6px rgba(74, 58, 22, 0.12);
+/* 1. 피드 카드 — 맑고 깊이감 있는 3D 글래스 엣지 & 럭셔리 섀도우 */
+.feed-card-ig {
+  margin-top: 10px;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 16px 18px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: visible;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
-.feed-card-ig[data-case]::before {
-  content: attr(data-case);
+.feed-card-ig:hover {
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.05), 0 12px 32px rgba(0, 0, 0, 0.06);
+}
+.feed-card-ig--mine {
+  background: linear-gradient(180deg, #FFFFFF 0%, #F9FAFB 100%);
+  border: 1px solid rgba(0, 0, 0, 0.08);
+}
+.feed-card-ig--dilemma {
+  border: 1px solid rgba(255, 72, 66, 0.22);
+  box-shadow: 0 4px 20px rgba(255, 72, 66, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.feed-card-ig--zero {
+  border: 1px solid rgba(0, 185, 107, 0.22);
+  box-shadow: 0 4px 20px rgba(0, 185, 107, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.feed-card-ig--tip {
+  border: 1px solid rgba(245, 158, 11, 0.22);
+  box-shadow: 0 4px 20px rgba(245, 158, 11, 0.06), 0 1px 3px rgba(0, 0, 0, 0.02);
+}
+.feed-card-ig--milestone {
+  background: linear-gradient(135deg, #FFFBEB 0%, #FFFFFF 100%);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  box-shadow: 0 6px 24px rgba(245, 158, 11, 0.1);
+}
+
+/* 2. 3D 키 트래블 물리 버튼 (Tactile Push Buttons) */
+.tactile-btn {
+  position: relative;
+  border: none;
+  background: var(--primary);
+  color: #FFFFFF;
+  font-weight: 800;
+  border-radius: 14px;
+  padding: 12px 18px;
+  box-shadow: 0 4px 0 #000000, 0 6px 14px rgba(0, 0, 0, 0.12);
+  transform: translateY(0);
+  transition: transform 0.08s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.08s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+.tactile-btn:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #000000, 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+
+.tactile-btn--emerald {
+  background: #00B96B;
+  box-shadow: 0 4px 0 #059669, 0 6px 14px rgba(0, 185, 107, 0.2);
+}
+.tactile-btn--emerald:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #059669, 0 2px 6px rgba(0, 185, 107, 0.1);
+}
+
+.tactile-btn--coral {
+  background: #FF4842;
+  box-shadow: 0 4px 0 #D32F2F, 0 6px 14px rgba(255, 72, 66, 0.2);
+}
+.tactile-btn--coral:active {
+  transform: translateY(3px);
+  box-shadow: 0 1px 0 #D32F2F, 0 2px 6px rgba(255, 72, 66, 0.1);
+}
+
+/* 3. 고무 도장 압인 바운스 & 잉크 텍스처 (Rubber Stamp Bounce) */
+@keyframes stampBounceAnim {
+  0% { transform: scale(2.4) rotate(var(--stamp-tilt, -4deg)); opacity: 0; }
+  50% { transform: scale(0.92) rotate(var(--stamp-tilt, -4deg)); opacity: 0.95; }
+  75% { transform: scale(1.05) rotate(var(--stamp-tilt, -4deg)); opacity: 1; }
+  100% { transform: scale(1) rotate(var(--stamp-tilt, -4deg)); opacity: 1; }
+}
+
+.verdict-stamp {
   position: absolute;
-  top: -13px;
-  left: -1px;
-  padding: 2px 12px 1px;
-  background: var(--manila);
-  color: #6E5B26;
-  border: 1px solid #D3BB80;
-  border-bottom: none;
-  border-radius: 6px 6px 0 0;
-  font-family: var(--font-mono);
-  font-size: 9px;
-  font-weight: 700;
-  letter-spacing: 0.8px;
-  line-height: 1.45;
+  top: 14px;
+  right: 14px;
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px dashed #FF4842;
+  color: #FF4842;
+  border-radius: 10px;
+  padding: 4px 10px;
+  font-weight: 900;
+  animation: stampBounceAnim 0.35s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+  background: rgba(255, 72, 66, 0.07);
+  backdrop-filter: blur(4px);
+  z-index: 2;
+  pointer-events: none;
 }
-.feed-card-ig--mine[data-case]::before { background: var(--surface-dim); color: var(--text-mute); border-color: var(--divider); }
+.verdict-stamp-label { font-size: 13px; font-weight: 900; letter-spacing: 0.5px; }
+.verdict-stamp-count { font-size: 9.5px; font-weight: 700; opacity: 0.85; margin-top: 1px; }
 
-/* 기록 모드 — 서류철 폴더 탭 3개. 활성 탭은 먹 잉크 스탬프 패드 */
-.record-mode-seg { background: transparent; padding: 0 0 0; border-radius: 0; border-bottom: 2px solid var(--primary); }
-.record-mode-btn {
-  border: 1px solid var(--divider);
-  border-bottom: none;
-  border-radius: 9px 9px 0 0;
+.verdict-stamp--ok {
+  border-color: #00B96B;
+  color: #00B96B;
+  background: rgba(0, 185, 107, 0.07);
+}
+
+/* 4. 피드 히어로 컴포저 & 1-Tap 퀵 프롬프트 칩 (Proactive Input Lounge) */
+.feed-composer {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.07);
+  border-radius: 20px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.04);
+  position: relative;
+  overflow: hidden;
+}
+.feed-composer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #FF4842, #F59E0B, #00B96B, #2563EB);
+  opacity: 0.85;
+}
+.feed-composer-avatar {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   background: var(--surface-dim);
-  color: var(--text-mute);
-  padding: 10px 2px 9px;
+  border: 1.5px solid rgba(0, 0, 0, 0.06);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+}
+.feed-composer-avatar img { width: 100%; height: 100%; object-fit: cover; }
+
+.quick-input {
+  flex: 1;
+  background: #F4F5F7;
+  border: 1.5px solid transparent;
+  border-radius: 14px;
+  padding: 10px 14px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-main);
+  transition: all 0.2s ease;
+}
+.quick-input:focus {
+  background: #FFFFFF;
+  border-color: var(--primary-accent);
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.12);
+}
+
+/* 1-Tap 퀵 프롬프트 칩 바 */
+.prompt-chips-rail {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 4px 0 2px;
+  scrollbar-width: none;
+}
+.prompt-chips-rail::-webkit-scrollbar { display: none; }
+
+.prompt-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: #F3F4F6;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 100px;
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+.prompt-chip:hover {
+  background: #E5E7EB;
+  color: var(--text-main);
+}
+.prompt-chip:active {
+  transform: scale(0.94);
+  background: var(--primary);
+  color: #FFFFFF;
+}
+.prompt-chip--coral { background: rgba(255, 72, 66, 0.08); color: #E53935; border-color: rgba(255, 72, 66, 0.15); }
+.prompt-chip--emerald { background: rgba(0, 185, 107, 0.08); color: #059669; border-color: rgba(0, 185, 107, 0.15); }
+.prompt-chip--amber { background: rgba(245, 158, 11, 0.08); color: #D97706; border-color: rgba(245, 158, 11, 0.15); }
+.prompt-chip--indigo { background: rgba(37, 99, 235, 0.08); color: #2563EB; border-color: rgba(37, 99, 235, 0.15); }
+
+/* 5. 플로팅 퀵 작성 캡슐 (Floating Action Button / Capsule) */
+.floating-compose-capsule {
+  position: fixed;
+  bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 16px);
+  right: 18px;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  background: #111827;
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  padding: 11px 18px;
+  font-size: 13.5px;
+  font-weight: 800;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.22), 0 8px 28px rgba(0, 0, 0, 0.15);
+  cursor: pointer;
+  z-index: 90;
+  backdrop-filter: blur(12px);
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  animation: floatInAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.floating-compose-capsule:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28), 0 12px 36px rgba(0, 0, 0, 0.18);
+}
+.floating-compose-capsule:active {
+  transform: translateY(2px) scale(0.96);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+@keyframes floatInAnim {
+  from { opacity: 0; transform: translateY(16px) scale(0.85); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+/* 6. 인피드 오늘의 소비 질문 토크 카드 (In-Feed Daily Social Prompt) */
+.daily-question-card {
+  background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
+  color: #FFFFFF;
+  border-radius: 20px;
+  padding: 16px 18px;
+  margin: 12px 0;
+  box-shadow: 0 4px 20px rgba(30, 27, 75, 0.25);
+  position: relative;
+  overflow: hidden;
+  text-align: left;
+}
+.daily-question-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(255, 255, 255, 0.12);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #A5B4FC;
+  margin-bottom: 8px;
+}
+.daily-question-title {
+  font-size: 15px;
+  font-weight: 800;
+  line-height: 1.45;
+  color: #FFFFFF;
+  margin-bottom: 12px;
+}
+.daily-question-input-row {
+  display: flex;
+  gap: 8px;
+}
+.daily-question-input {
+  flex: 1;
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  border-radius: 12px;
+  padding: 9px 12px;
+  font-size: 13px;
+  color: #FFFFFF;
+  outline: none;
+}
+.daily-question-input::placeholder { color: rgba(255, 255, 255, 0.45); }
+.daily-question-btn {
+  flex-shrink: 0;
+  background: #6366F1;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 12px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+.daily-question-btn:active { transform: scale(0.95); background: #4F46E5; }
+
+/* 7. 살까말까 투표 바 & 버튼 (Dilemma Live Vote Bar) */
+.dilemma-post-body {
+  margin: 6px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.dilemma-amount-box {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 12px;
+  padding: 10px 14px;
+}
+.dilemma-amount-label { font-size: 12px; font-weight: 700; color: var(--text-sub); }
+.dilemma-amount-value { font-size: 17px; font-weight: 900; color: var(--text-main); font-family: var(--font-mono); }
+
+.dilemma-vote-btns {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+.balance-vote-card {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 12px;
+  border-radius: 14px;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  font-weight: 800;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.balance-vote-card--over {
+  background: rgba(255, 72, 66, 0.08);
+  color: #E53935;
+  border-color: rgba(255, 72, 66, 0.2);
+}
+.balance-vote-card--over:active {
+  transform: scale(0.96);
+  background: #FF4842;
+  color: #FFFFFF;
+}
+.balance-vote-card--ok {
+  background: rgba(0, 185, 107, 0.08);
+  color: #059669;
+  border-color: rgba(0, 185, 107, 0.2);
+}
+.balance-vote-card--ok:active {
+  transform: scale(0.96);
+  background: #00B96B;
+  color: #FFFFFF;
+}
+
+.dilemma-result-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  background: #F8FAFC;
+  border-radius: 14px;
+  padding: 12px 14px;
+  border: 1px solid #E2E8F0;
+}
+.dilemma-result-labels {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-size: 12.5px;
+  font-weight: 800;
+}
+.dilemma-result-over { color: #E53935; display: flex; align-items: center; gap: 4px; }
+.dilemma-result-ok { color: #059669; display: flex; align-items: center; gap: 4px; }
+.dilemma-result-total { font-size: 11px; font-weight: 600; color: var(--text-mute); }
+
+.dilemma-bar {
+  height: 10px;
+  border-radius: 100px;
+  background: #E2E8F0;
+  display: flex;
+  overflow: hidden;
+}
+.dilemma-bar-over {
+  background: #FF4842;
+  height: 100%;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.dilemma-bar-ok {
+  background: #00B96B;
+  height: 100%;
+  transition: width 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* 8. 피드 탭 필터 칩 바 (SNS Explore Chips) */
+.feed-filter-bar {
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  padding: 6px 0 10px;
+  scrollbar-width: none;
+}
+.feed-filter-bar::-webkit-scrollbar { display: none; }
+
+.feed-filter-chip {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 7px 14px;
+  border-radius: 100px;
+  font-size: 12.5px;
+  font-weight: 800;
+  color: var(--text-sub);
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.08);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  cursor: pointer;
+  transition: all 0.15s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.feed-filter-chip--active {
+  background: #111827;
+  color: #FFFFFF;
+  border-color: #111827;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.12);
+}
+.feed-filter-chip:active { transform: scale(0.94); }
+
+/* 9. 모달 & 레코드 시트 세그먼트 */
+.record-mode-seg {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 4px;
+  background: #F3F4F6;
+  padding: 4px;
+  border-radius: 14px;
+  margin-bottom: 16px;
+}
+.record-mode-btn {
+  border: none;
+  border-radius: 10px;
+  background: transparent;
+  color: var(--text-sub);
+  padding: 9px 2px;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  text-align: center;
+  white-space: nowrap;
 }
 .record-mode-btn--active {
+  background: #FFFFFF;
+  color: var(--text-main);
+  font-weight: 800;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.06);
+}
+
+.amount-quick-chips {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.amount-quick-chip {
+  background: #F3F4F6;
+  border: 1px solid rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--text-sub);
+  cursor: pointer;
+}
+.amount-quick-chip:active {
   background: var(--primary);
-  color: #FFFDF6;
-  border-color: var(--primary);
-  box-shadow: none;
-  font-weight: 900;
+  color: #FFFFFF;
 }
 
-/* 자백서 용지 — 괘선 (줄노트 위에 쓴다) */
-.daily-note-textarea {
-  background-color: var(--card-bg);
-  background-image: repeating-linear-gradient(to bottom, transparent 0 21px, rgba(60, 48, 20, 0.12) 21px 22px);
-  background-origin: content-box;
-  background-attachment: local;
-  line-height: 22px;
-}
-
-/* 무지출·모음 뱃지 — 미니 청인 (둥근 캡슐이 아니라 찍힌 직인) */
-.feed-badge--ink {
-  border: 1.5px solid rgba(47, 90, 131, 0.6);
-  border-radius: 4px;
-  color: var(--ink-blue-strong);
-  font-weight: 900;
-  letter-spacing: 0.6px;
-  transform: rotate(-1deg);
-  mix-blend-mode: multiply;
-}
-
-/* 판정 프롬프트 — 배심 소환장의 관인 아이브로 */
-.judge-prompt-eyebrow {
-  color: var(--ink-red-strong);
-  font-family: var(--font-mono);
-  letter-spacing: 1.2px;
-}
-
-/* 절취선 — 마이로그 Outcome 스트립은 영수증 절취부 */
-.mylog-outcome-strip { border-top: 1.5px dashed #CBB98D; }
-
-/* 종이 눌림 — 판정·팔로우 버튼은 눌리면 그림자가 죽고 살짝 가라앉는다 (키 트래블) */
-.judge-btn:active, .feed-card-ig-follow:active { transform: translateY(1px) scale(0.97); box-shadow: none; }
-
-/* 타임라인 무지출 금액 — 청인 */
-.timeline-item-amount--zero { color: var(--ink-blue); }
-
-/* 접수인 토스트 — 잉크판 위 서류 접수 도장 (인주 씰 한 점) */
+/* 10. 포인트 토스트 */
 .point-toast {
-  border: 1px solid rgba(255, 253, 246, 0.16);
-  box-shadow: inset 0 0 0 3px rgba(255, 253, 246, 0.06), 0 10px 24px rgba(20, 15, 5, 0.28);
+  position: fixed;
+  bottom: calc(var(--tab-h) + env(safe-area-inset-bottom, 0px) + 20px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(17, 24, 39, 0.94);
+  color: #FFFFFF;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 100px;
+  padding: 10px 20px;
+  font-size: 13px;
+  font-weight: 700;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(16px);
+  z-index: 1000;
+  animation: toastPopAnim 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
 }
+@keyframes toastPopAnim {
+  from { opacity: 0; transform: translate(-50%, 12px) scale(0.92); }
+  to { opacity: 1; transform: translate(-50%, 0) scale(1); }
+}
+
+/* 11. 영수증 절취선 & 물리적 지그재그 하단 (Thermal Receipt Jagged Edge) */
+.receipt-paper-edge {
+  position: relative;
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px 20px 6px 6px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.03), 0 10px 24px rgba(0, 0, 0, 0.04);
+}
+.receipt-perforation {
+  margin: 14px -16px 10px;
+  height: 1px;
+  border-bottom: 2px dashed #E5E7EB;
+  position: relative;
+}
+.receipt-perforation::before, .receipt-perforation::after {
+  content: '';
+  position: absolute;
+  top: -6px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--bg);
+}
+.receipt-perforation::before { left: -6px; box-shadow: inset -1px 0 2px rgba(0,0,0,0.06); }
+.receipt-perforation::after { right: -6px; box-shadow: inset 1px 0 2px rgba(0,0,0,0.06); }
+
+/* 12. 스토리 레일 글로잉 라이브 링 (Live Shimmer Rings) */
+@keyframes ringShimmer {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.story-ring--flame {
+  background: linear-gradient(135deg, #FF4842, #F59E0B, #FF4842) !important;
+  box-shadow: 0 0 12px rgba(255, 72, 66, 0.35);
+}
+.story-ring--emerald {
+  background: linear-gradient(135deg, #00B96B, #10B981, #00B96B) !important;
+  box-shadow: 0 0 12px rgba(0, 185, 107, 0.35);
+}
+.story-ring--gold {
+  background: linear-gradient(135deg, #F59E0B, #FBBF24, #D97706) !important;
+  box-shadow: 0 0 12px rgba(245, 158, 11, 0.35);
+}
+
+/* 13. 피드 카드 인라인 원클릭 댓글 바 (Inline 1-Tap Quick Comment) */
+.feed-card-inline-comment {
+  margin-top: 10px;
+  padding-top: 10px;
+  border-top: 1px solid #F1F3F5;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.feed-card-inline-comment-input {
+  flex: 1;
+  background: #F8FAFC;
+  border: 1px solid #E2E8F0;
+  border-radius: 100px;
+  padding: 8px 14px;
+  font-size: 12.5px;
+  color: var(--text-main);
+  outline: none;
+  transition: all 0.2s ease;
+}
+.feed-card-inline-comment-input:focus {
+  background: #FFFFFF;
+  border-color: #6366F1;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.12);
+}
+.feed-card-inline-comment-btn {
+  flex-shrink: 0;
+  background: #111827;
+  color: #FFFFFF;
+  border: none;
+  border-radius: 100px;
+  padding: 7px 13px;
+  font-size: 11.5px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.feed-card-inline-comment-btn:active { transform: scale(0.92); }
+
+/* 14. 라이프스타일 해시태그 & 무드 뱃지 (Lifestyle Mood Badges) */
+.vibe-tag-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  padding: 3px 8px;
+  border-radius: 8px;
+  font-size: 11px;
+  font-weight: 700;
+  background: #F3F4F6;
+  color: var(--text-sub);
+  margin-right: 4px;
+}
+.vibe-tag-pill--spend { background: rgba(255, 72, 66, 0.08); color: #E53935; }
+.vibe-tag-pill--save { background: rgba(0, 185, 107, 0.08); color: #059669; }
+.vibe-tag-pill--dilemma { background: rgba(99, 102, 241, 0.08); color: #4F46E5; }
+.vibe-tag-pill--tip { background: rgba(245, 158, 11, 0.08); color: #D97706; }
+
+/* 15. 커뮤니티 스레드 카드 리파인 (Community Modern Layout) */
+.community-thread-card {
+  background: #FFFFFF;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 18px;
+  padding: 16px;
+  margin-bottom: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.02), 0 6px 18px rgba(0, 0, 0, 0.03);
+  text-align: left;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+}
+.community-thread-card:active {
+  transform: scale(0.985);
+}
+.community-tag-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 100px;
+  font-size: 11px;
+  font-weight: 800;
+  margin-bottom: 8px;
+}
+.community-tag-chip--daily { background: rgba(0, 185, 107, 0.1); color: #059669; }
+.community-tag-chip--question { background: rgba(99, 102, 241, 0.1); color: #4F46E5; }
+.community-tag-chip--together { background: rgba(255, 72, 66, 0.1); color: #E53935; }
+.community-tag-chip--tip { background: rgba(245, 158, 11, 0.1); color: #D97706; }
+.community-tag-chip--recipe { background: rgba(16, 185, 129, 0.1); color: #059669; }
+.community-tag-chip--invest { background: rgba(59, 130, 246, 0.1); color: #2563EB; }
+.community-tag-chip--free { background: rgba(107, 114, 128, 0.1); color: #4B5563; }
+
+

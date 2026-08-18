@@ -749,11 +749,15 @@ export default function App() {
         </div>
       )}
 
-      {/* 하단 탭바 */}
-      <nav className="bottom-nav">
+      {/* 하단 탭바 — 앱인토스 가이드상 토스 제공 "플로팅 형태" 필수, 탭 2~5개 (현재 3개).
+          TDS 웹(@toss/tds-mobile)에는 하단 탭바 컴포넌트가 없어 형태만 맞춰 직접 구현하고,
+          접근성 계약(tablist/tab/aria-selected)은 TDS Tab과 동일하게 맞춘다. */}
+      <nav className="bottom-nav" role="tablist">
         {TABS.map((t) => (
           <button
             key={t.key}
+            role="tab"
+            aria-selected={tab === t.key}
             className={`tab-btn ${tab === t.key ? 'tab-btn--active bottom-nav-item--active' : ''}`}
             onClick={() => navigateTo(t.key)}
           >

@@ -479,7 +479,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           </div>
         </div>
         <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
-          <Button display="full" size="large" color="dark" variant="weak" onClick={() => setReplyModalOpen(false)}>취소</Button>
+          <Button display="full" size="large" color="dark" variant="weak" onClick={() => setReplyModalOpen(false)}>닫기</Button>
           <Button display="full" size="large" color="primary" variant="fill" onClick={handleSendReply} disabled={!replyText.trim()}>보내기</Button>
         </div>
       </SimpleModal>

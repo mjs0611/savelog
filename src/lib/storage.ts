@@ -589,19 +589,19 @@ export function updateGroupRaidAction(
     
     if (actionType === 'zero') {
       damage = 300;
-      logMessage = `🛡️ ${nickname}님이 오늘 무지출 인증에 성공해 보스에게 300 데미지를 입혔습니다!`;
+      logMessage = `🛡️ ${nickname}님이 오늘 무지출 인증에 성공해 보스에게 300 데미지를 입혔어요!`;
     } else if (actionType === 'save') {
       damage = Math.max(50, Math.round(amount / 50));
-      logMessage = `⚔️ ${nickname}님이 ${amount}원 절약을 인증하여 보스에게 ${damage} 데미지를 입혔습니다!`;
+      logMessage = `⚔️ ${nickname}님이 ${amount}원 절약을 인증해 보스에게 ${damage} 데미지를 입혔어요!`;
     } else if (actionType === 'spend') {
       const cleanCat = category.split('/')[0];
       const cleanWeakness = raid.bossWeaknessCategory.split('/')[0];
       if (cleanCat === cleanWeakness) {
         heal = Math.max(50, Math.round(amount / 50));
-        logMessage = `⚠️ ${nickname}님이 약점 카테고리(${raid.bossWeaknessEmoji} ${category})에서 지출하여 보스가 ${heal} HP를 치유했습니다!`;
+        logMessage = `⚠️ ${nickname}님이 약점 카테고리(${raid.bossWeaknessEmoji} ${category})에서 지출해 보스가 ${heal} HP를 회복했어요!`;
       } else {
         heal = Math.max(20, Math.round(amount / 100));
-        logMessage = `💨 ${nickname}님이 지출하여 보스가 ${heal} HP를 회복했습니다.`;
+        logMessage = `💨 ${nickname}님이 지출해 보스가 ${heal} HP를 회복했어요.`;
       }
     }
     
@@ -619,7 +619,7 @@ export function updateGroupRaidAction(
 
       if (raid.bossHp === 0) {
         raid.raidCompleted = true;
-        logMessage = `🎉 축하합니다! ${nickname}님의 일격으로 보스 [${raid.bossName}] 퇴치에 대성공했습니다!`;
+        logMessage = `🎉 축하해요! ${nickname}님의 일격으로 보스 [${raid.bossName}] 퇴치에 성공했어요!`;
       }
     } else if (heal > 0) {
       raid.bossHp = Math.min(raid.bossMaxHp, raid.bossHp + heal);

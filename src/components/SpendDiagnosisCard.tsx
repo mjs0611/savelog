@@ -60,7 +60,7 @@ export default function SpendDiagnosisCard({ thisWeek, lastWeek }: Props) {
           </div>
           <p className="diagnosis-flag-desc">
             줄일 여지가 가장 큰 곳은 <b>{top.category.split('/')[0]}</b>예요.<br />
-            지난주보다 <b>{formatAmount(top.current - top.previous)}</b> 더 소비했습니다.
+            지난주보다 <b>{formatAmount(top.current - top.previous)}</b> 더 썼어요.
           </p>
         </div>
       )}

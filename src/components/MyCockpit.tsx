@@ -536,7 +536,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                 style={{ width: '100%', boxSizing: 'border-box', padding: '10px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '14px', marginBottom: '16px' }} />
               <div style={{ display: 'flex', gap: '8px' }}>
                 <Button size="medium" display="full" color="primary" disabled={!goalName.trim() || !parseInt(goalTarget.replace(/[^0-9]/g,''),10)} onClick={handleSaveGoal}>저장</Button>
-                <Button size="medium" display="full" color="dark" variant="weak" onClick={() => { if (savingGoal) { setGoalForm(false); } else { setShowGoalModal(false); } }}>취소</Button>
+                <Button size="medium" display="full" color="dark" variant="weak" onClick={() => { if (savingGoal) { setGoalForm(false); } else { setShowGoalModal(false); } }}>닫기</Button>
               </div>
             </>
           )}

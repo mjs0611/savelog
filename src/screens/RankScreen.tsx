@@ -257,7 +257,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
       <div className="glass-card" style={{ padding: '16px', background: 'var(--surface-dim)', borderRadius: '20px', border: '1px solid var(--divider)', marginBottom: '20px', textAlign: 'left' }}>
         <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}><CustomIcon emoji="💡" /> savelog 하이브리드 점수제</h4>
         <p style={{ margin: 0, fontSize: '11px', lineHeight: '1.5', color: 'var(--text-sub)' }}>
-          기록 성실도(최대 5,600점)와 주간 예산 절약비율(최대 4,400점)을 합산하여 <strong>10,000점 만점</strong>으로 공정하게 평가합니다. 지출이 있어도 성실하게 기록하면 높은 점수를 얻을 수 있습니다!
+          기록 성실도(최대 5,600점)와 주간 예산 절약비율(최대 4,400점)을 합산하여 <strong>10,000점 만점</strong>으로 공정하게 평가해요. 지출이 있어도 성실하게 기록하면 높은 점수를 얻을 수 있어요!
         </p>
       </div>
 

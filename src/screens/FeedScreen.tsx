@@ -98,6 +98,16 @@ interface Props {
 }
 
 
+// ── 1-Tap 퀵 액션 프롬프트 칩 — 직관적 입력 유도 ──
+export const PROMPT_CHIPS = [
+  { label: '☕ 커피 4.5천', text: '스타벅스 아메리카노 4500', tone: 'amber' },
+  { label: '🍚 점심 9천', text: '점심 식사 9000', tone: 'coral' },
+  { label: '🛡️ 배달 참음!', text: '배달 참음 20000원 방어', tone: 'emerald' },
+  { label: '⚖️ 살까말까?', text: '에어팟 노캔 살까말까 고민 260000', tone: 'indigo' },
+  { label: '🌿 0원 무지출', text: '오늘 냉파 성공 0원 무지출 방어', tone: 'emerald' },
+  { label: '💡 다이소 득템', text: '다이소 꿀템 발견 3000', tone: 'amber' },
+];
+
 // ── 한 줄 기록 파서 — 거지방/스레드식 1초 퀵 인풋 파서 ──
 const QUICK_CATEGORY_RULES: { re: RegExp; category: string; emoji: string }[] = [
   { re: /커피|카페|라떼|스벅|스타벅스|아메리카노|음료|버블티|주스/, category: '카페', emoji: '☕' },
@@ -231,6 +241,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   // ── 충동 대기방 및 소비 칼로리 관련 상태/핸들러 ──
   const [wishlist, setWishlistState] = useState(() => getWishlist());
 
+  // ── SNS 탐색 필터 탭 (전체 / 살까말까 / 솔직지출 / 지킨돈 / 꿀팁 / 서클) ──
+  const [socialFilter, setSocialFilter] = useState<'all' | 'dilemma' | 'spend' | 'save' | 'tip' | 'circle'>('all');
+
   // 한 줄 기록 — 파싱 후 즉시 게시 (첫 글 비용: 폼 5탭 → 텍스트 1줄)
   const [quickText, setQuickText] = useState('');
   // 스탬프 피커 (카드당 온디맨드)
@@ -238,6 +251,46 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
   // 발견 랜덤 — 알고리즘 없이 무작위로 흘려보기 (내 클릭 반영 안 함). 0=최신순
   const [shuffleKey, setShuffleKey] = useState(0);
+
+  // ── 오늘의 소비 토크 (인피드 질문 & 1탭 인터랙션) ──
+  const [dailyQAnswer, setDailyQAnswer] = useState('');
+  const [dailyQSubmitting, setDailyQSubmitting] = useState(false);
+  const [dailyQSubmitted, setDailyQSubmitted] = useState(false);
+
+  const todayPrompt = React.useMemo(() => {
+    const list = [
+      { q: '오늘 가장 만족스러웠던 소비나 지출은?', tag: '✨ 행복소비', cat: '한마디' },
+      { q: '요즘 장바구니에 며칠째 잠들어 있는 물건은? 살말?', tag: '⚖️ 살까말까', cat: '소비 고민' },
+      { q: '오늘 지갑을 지키기 위해 무엇을 참았나요?', tag: '🛡️ 지갑수비', cat: '절약 방어' },
+      { q: '최근에 발견한 나만의 가성비 꿀템/꿀팁 하나는?', tag: '💡 꿀템추천', cat: '꿀팁' },
+      { q: '오늘 나에게 주는 작은 셀프 힐링 지출은?', tag: '☕ 소확행', cat: '한마디' },
+    ];
+    const d = new Date();
+    const hash = Math.abs((d.getFullYear() * 1000 + (d.getMonth() + 1) * 31 + d.getDate()) % list.length);
+    return list[hash];
+  }, []);
+
+  async function handleDailyQSubmit() {
+    const ans = dailyQAnswer.trim();
+    if (!ans || dailyQSubmitting) return;
+    setDailyQSubmitting(true);
+    try {
+      const item: SpendingItem = {
+        category: todayPrompt.cat,
+        emoji: '💬',
+        amount: 0,
+        comment: `[${todayPrompt.tag}] ${ans}`,
+      };
+      await onQuickRecord([item]);
+      setDailyQAnswer('');
+      setDailyQSubmitted(true);
+      showFeedToast('💬 오늘의 소비 토크에 참여했어요! 젤리 +10 🐹');
+    } catch {
+      showFeedToast('전송에 실패했어요. 잠시 후 다시 시도해 주세요.');
+    } finally {
+      setDailyQSubmitting(false);
+    }
+  }
 
   // 내 기록 외부 자랑 — 성취 피크 순간에 바이럴 접점 (딥링크 by/bn = 수신자 자동 맞팔)
   async function handleBragShare(entry: EntryWithReactions) {
@@ -250,8 +303,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   // 스토리 레일 시트
   const [showCircleSheet, setShowCircleSheet] = useState(false);
   const [showBossSheet, setShowBossSheet] = useState(false);
-  async function handleQuickSubmit() {
-    const t = quickText.trim();
+  async function handleQuickSubmit(presetText?: string) {
+    const t = (presetText || quickText).trim();
     if (!t || submitting) return;
     const items = parseQuickRecord(t);
     setQuickText('');
@@ -644,8 +697,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     createBattle(userId, myNick, oppId, oppNick, getTodayStr()).then(b => {
       if (b) {
         setTodayBattle(b);
-        sendCheerNotification(userId, oppId, myNick, `⚔️ ${myNick}님이 '오늘 하루 덜 쓰기 배틀'을 신청했어요! 자정에 정산됩니다`).catch(() => {});
-        showFeedToast(`⚔️ ${oppNick}님에게 도전장을 보냈어요! 오늘 밤 정산됩니다`);
+        sendCheerNotification(userId, oppId, myNick, `⚔️ ${myNick}님이 '오늘 하루 덜 쓰기 배틀'을 신청했어요! 자정에 정산돼요`).catch(() => {});
+        showFeedToast(`⚔️ ${oppNick}님에게 도전장을 보냈어요! 오늘 밤 정산돼요`);
       } else {
         showFeedToast('배틀 신청에 실패했어요. 잠시 후 다시 시도해 주세요.');
       }
@@ -1008,15 +1061,25 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   }, [entries]);
 
   const displayedEntries = React.useMemo(() => {
-    const sorted = entries.slice().sort((a, b) =>
+    let sorted = entries.slice().sort((a, b) =>
       new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
     );
-    if (feedTab === 'circle') {
-      // 서클 = 사람 필터 — 멤버들의 글만 (내 글 포함)
-      return sorted.filter(e => circleMemberIdSet.has(e.user_id));
+
+    if (socialFilter === 'circle' || feedTab === 'circle') {
+      // 서클 = 멤버들의 글만
+      sorted = sorted.filter(e => circleMemberIdSet.has(e.user_id));
+    } else if (socialFilter === 'dilemma') {
+      sorted = sorted.filter(e => e.is_balance_game || e.items.some(it => it.category === '소비 고민'));
+    } else if (socialFilter === 'spend') {
+      sorted = sorted.filter(e => (e.total_amount ?? 0) > 0 && !e.items.some(it => it.category === '꿀팁' || it.category === '소비 고민'));
+    } else if (socialFilter === 'save') {
+      sorted = sorted.filter(e => e.items.some(it => it.category === '절약 방어' || it.category === '무지출' || (it.amount === 0 && it.category !== '마일스톤')));
+    } else if (socialFilter === 'tip') {
+      sorted = sorted.filter(e => e.items.some(it => it.category === '꿀팁'));
     }
+
     // 발견 랜덤: 시드 기반 결정적 셔플 (내 취향·인기 반영 없음)
-    if (feedTab === 'all' && shuffleKey > 0) {
+    if (feedTab === 'all' && shuffleKey > 0 && socialFilter === 'all') {
       const arr = sorted.slice();
       let seed = shuffleKey;
       const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
@@ -1024,14 +1087,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       return arr;
     }
     return sorted;
-  }, [entries, feedTab, circleMemberIdSet, shuffleKey]);
-
-  // 사건 번호 — 엔트리별 결정론 4자리 (사건 파일 탭에 찍힌다)
-  const caseNo = (id: string) => {
-    let h = 0;
-    for (let i = 0; i < id.length; i++) h = (h * 31 + id.charCodeAt(i)) & 0x7fffffff;
-    return String(h % 10000).padStart(4, '0');
-  };
+  }, [entries, feedTab, socialFilter, circleMemberIdSet, shuffleKey]);
 
   const renderFeedCard = (entry: EntryWithReactions) => {
     const personaKey = entry.persona || (entry.user_id === userId ? myPersonaKey : null);
@@ -1070,21 +1126,19 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       <div
         key={entry.id}
         className={`feed-card-ig ${cardModifier}`}
-        data-case={`사건 NO.${caseNo(entry.id)}`}
       >
-        {/* 짠친 판결 도장 — 같은 스탬프 2표면 잉크 도장이 찍힌다 (제품 시그니처) */}
+        {/* 짠친 판결 도장 — 같은 스탬프 2표면 잉크 도장이 찍힌다 */}
         {(() => {
           const verdict = topStamp(entry.stamp_counts || {});
-          // 실제 도장은 매번 똑같이 안 찍힌다 — 엔트리별 고정 기울기 4~10도 (재렌더 시 흔들리지 않게 결정론)
           const tilt = 4 + ((entry.id.charCodeAt(0) * 7 + entry.id.charCodeAt(entry.id.length - 1) * 13) % 7);
           return verdict ? (
             <span
               className={`verdict-stamp${verdict.stamp.key === 'approve' ? ' verdict-stamp--ok' : ''}`}
               style={{ '--stamp-tilt': `${tilt}deg` } as React.CSSProperties}
-              aria-label={`짠친 판결: ${verdict.stamp.label} ${verdict.count}표`}
+              aria-label={`짠친 반응: ${verdict.stamp.label} ${verdict.count}표`}
             >
               <span className="verdict-stamp-label">{verdict.stamp.label}</span>
-              <span className="verdict-stamp-count">짠친 판결 · {verdict.count}표</span>
+              <span className="verdict-stamp-count">짠친 공감 · {verdict.count}표</span>
             </span>
           ) : null;
         })()}
@@ -1519,7 +1573,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         <span className="feed-appbar-logo">savelog</span>
         {pendingPoints > 0 ? (
           <button className="feed-point-chip" onClick={onClaimPending} disabled={pendingClaiming} style={{ opacity: pendingClaiming ? 0.6 : 1 }}>
-            {pendingClaiming ? '광고 시청 중...' : `${pendingPoints}원 받기`}
+            {/* CTA만 보고 다음 행동을 알 수 있어야 한다 — 광고가 뜬다는 사실을 라벨에 명시 (앱인토스 다크패턴 정책 4·5) */}
+            {pendingClaiming ? '광고 시청 중...' : `광고 보고 ${pendingPoints}원`}
           </button>
         ) : (
           <button onClick={onNavigateToMyLog} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}>마이 ›</button>
@@ -1606,7 +1661,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         <p className="social-pulse">이번 주 짠친들의 인증 {globalStats.weekRecords.toLocaleString('ko-KR')}개</p>
       )}
 
-      {/* 📝 인라인 포스트 컴포저 (기록 CTA) — 피드 최상단 */}
+      {/* 📝 인라인 포스트 컴포저 (기록 CTA & 1-Tap 퀵 프롬프트 칩) — 피드 최상단 */}
       <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {daily.recorded && daily.date === getTodayStr() ? (
           <div className="feed-composer-done">
@@ -1618,39 +1673,104 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             {rouletteSpins > 0 && (
               <button className="feed-composer-add-btn" onClick={() => setShowRoulette(true)} style={{ marginRight: '6px' }}>🎰 {rouletteSpins}</button>
             )}
-            <button className="feed-composer-add-btn" onClick={onRecord}>추가 자백</button>
+            <button className="feed-composer-add-btn" onClick={onRecord}>추가 털어놓기</button>
           </div>
         ) : (
           <>
-            {/* 거지방식 한 줄 기록 — "커피 4500" 치면 끝. 폼은 '자세히'로 강등 */}
             <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
               <span className="feed-composer-avatar" style={{ flexShrink: 0 }}>
                 {(() => { const p = getPersona(); return p ? <img src={PERSONAS[p].icon} alt="" className="custom-icon" /> : <CustomIcon emoji="🐷" className="custom-icon" />; })()}
               </span>
-              <button onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '34px', height: '34px', borderRadius: '50%', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
+              <button onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
               <input
                 value={quickText}
                 onChange={e => setQuickText(e.target.value.slice(0, 60))}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSubmit(); } }}
-                placeholder='오늘 뭐 썼어요?'
+                placeholder='오늘 뭐 사셨어요? 솔직하게 한 줄 자백'
                 maxLength={60}
                 className="quick-input"
               />
               <button
-                onClick={handleQuickSubmit}
+                onClick={() => handleQuickSubmit()}
                 disabled={!quickText.trim() || submitting}
-                style={{ flexShrink: 0, padding: '13px 16px', borderRadius: '14px', background: (!quickText.trim() || submitting) ? '#E7DCC2' : 'var(--primary)', color: (!quickText.trim() || submitting) ? 'var(--text-mute)' : '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s, color 0.2s' }}
+                style={{ flexShrink: 0, padding: '11px 16px', borderRadius: '14px', background: (!quickText.trim() || submitting) ? '#E5E7EB' : 'var(--primary)', color: (!quickText.trim() || submitting) ? 'var(--text-mute)' : '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s, color 0.2s' }}
               >
                 {submitting ? '...' : '인증'}
               </button>
             </div>
+
+            {/* 1-Tap 퀵 프롬프트 칩 바 */}
+            <div className="prompt-chips-rail">
+              {PROMPT_CHIPS.map(chip => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  className={`prompt-chip prompt-chip--${chip.tone}`}
+                  onClick={() => {
+                    haptic('tickWeak');
+                    handleQuickSubmit(chip.text);
+                  }}
+                >
+                  {renderTextWithEmoji(chip.label)}
+                </button>
+              ))}
+            </div>
+
             {streak.totalDays === 0 && (
-              <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-mute)', textAlign: 'left' }}>
-                닉네임만 보여요 · 금액 없이 써도 무지출 인증이 돼요
+              <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-mute)', textAlign: 'left' }}>
+                닉네임만 보여요 · 0원으로 무지출 인증도 바로 가능해요
               </p>
             )}
           </>
         )}
+      </div>
+
+      {/* 💬 인피드 오늘의 소비 토크 카드 (1탭 인터랙션 & 소셜 대화) */}
+      {!dailyQSubmitted && (
+        <div className="daily-question-card">
+          <span className="daily-question-tag">{renderTextWithEmoji(todayPrompt.tag)} · 오늘의 토크</span>
+          <p className="daily-question-title">{todayPrompt.q}</p>
+          <div className="daily-question-input-row">
+            <input
+              value={dailyQAnswer}
+              onChange={e => setDailyQAnswer(e.target.value.slice(0, 80))}
+              onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleDailyQSubmit(); } }}
+              placeholder="내 생각이나 경험을 한 줄로 남겨보세요..."
+              className="daily-question-input"
+              maxLength={80}
+            />
+            <button
+              onClick={handleDailyQSubmit}
+              disabled={!dailyQAnswer.trim() || dailyQSubmitting}
+              className="daily-question-btn"
+            >
+              {dailyQSubmitting ? '...' : '답변'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 🧭 SNS 탐색 필터 바 */}
+      <div className="feed-filter-bar">
+        {[
+          { key: 'all' as const, label: '🔥 전체' },
+          { key: 'dilemma' as const, label: '⚖️ 살까말까' },
+          { key: 'spend' as const, label: '💸 솔직지출' },
+          { key: 'save' as const, label: '🛡️ 지킨돈·0원' },
+          { key: 'tip' as const, label: '💡 꿀템·꿀팁' },
+          ...(myCircle ? [{ key: 'circle' as const, label: `🔒 ${myCircle.circle.name}` }] : []),
+        ].map(filter => (
+          <button
+            key={filter.key}
+            className={`feed-filter-chip ${socialFilter === filter.key ? 'feed-filter-chip--active' : ''}`}
+            onClick={() => {
+              haptic('tickWeak');
+              setSocialFilter(filter.key);
+            }}
+          >
+            {renderTextWithEmoji(filter.label)}
+          </button>
+        ))}
       </div>
 
       {/* 시스템 한 줄 — 넛지·정산·결정은 조용한 회색 행으로 */}
@@ -1687,7 +1807,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
           <div className="judge-prompt">
-            <p className="judge-prompt-eyebrow">오늘의 배심 · 판정 대기 {judgeQueue.length}건</p>
+            <p className="judge-prompt-eyebrow">오늘의 판정 · 대기 {judgeQueue.length}건</p>
             <p className="judge-prompt-snippet"><strong>{e.nickname}</strong> · {judgeSnippet(e)}</p>
             <div className="judge-prompt-actions">
               {isDilemma ? (
@@ -1779,7 +1899,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <input value={circleNameInput} onChange={e => setCircleNameInput(e.target.value)} maxLength={16} placeholder="서클 이름 (예: 월급사수대)" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--divider)', fontSize: '13px', background: 'rgba(255,255,255,0.8)' }} />
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={handleCreateCircle} disabled={!circleNameInput.trim() || circleBusy} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !circleNameInput.trim() || circleBusy ? 0.5 : 1 }}>{circleBusy ? '만드는 중...' : '만들기'}</button>
-                  <button onClick={() => setCircleFormMode('none')} style={{ flexShrink: 0, padding: '11px 14px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-sub)', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>취소</button>
+                  <button onClick={() => setCircleFormMode('none')} style={{ flexShrink: 0, padding: '11px 14px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-sub)', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>닫기</button>
                 </div>
               </div>
             ) : circleFormMode === 'join' ? (
@@ -1787,7 +1907,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <input value={circleJoinInput} onChange={e => setCircleJoinInput(e.target.value.toUpperCase())} maxLength={6} placeholder="초대 코드 6자리" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--divider)', fontSize: '13px', letterSpacing: '2px', background: 'rgba(255,255,255,0.8)' }} />
                 <div style={{ display: 'flex', gap: '8px' }}>
                   <button onClick={handleJoinCircleCode} disabled={!circleJoinInput.trim() || circleBusy} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !circleJoinInput.trim() || circleBusy ? 0.5 : 1 }}>{circleBusy ? '참여 중...' : '참여하기'}</button>
-                  <button onClick={() => setCircleFormMode('none')} style={{ flexShrink: 0, padding: '11px 14px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-sub)', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>취소</button>
+                  <button onClick={() => setCircleFormMode('none')} style={{ flexShrink: 0, padding: '11px 14px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-sub)', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>닫기</button>
                 </div>
               </div>
             ) : (
@@ -1913,7 +2033,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
             <div className="story-modal-footer">
               <div>
-                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setMessageRecipientEntry(null)}>취소</Button>
+                <Button size="large" display="full" color="dark" variant="weak" onClick={() => setMessageRecipientEntry(null)}>닫기</Button>
               </div>
               <div>
                 <Button size="large" display="full" color="primary" variant="fill" disabled={!messageText.trim()} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
@@ -2121,6 +2241,19 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         </SimpleModal>
         );
       })()}
+
+      {/* ✏️ 플로팅 퀵 작성 캡슐 (FAB) */}
+      <button
+        type="button"
+        className="floating-compose-capsule"
+        onClick={() => {
+          haptic('tickWeak');
+          onRecord();
+        }}
+        aria-label="1초 기록하기"
+      >
+        <CustomIcon emoji="✏️" /> 1초 기록
+      </button>
 
       <div className="rank-bottom-spacer" />
     </div>

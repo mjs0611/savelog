@@ -101,7 +101,7 @@ export default function RouletteModal({ open, onClose, onPrize }: Props) {
 
           {result && !rolling && (
             <p style={{ margin: '0 0 12px', fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}>
-              {result.jackpot ? renderTextWithEmoji('👑 잭팟!! 젤리 150개 획득 — 피드에 자동 자랑됩니다 🎉') : renderTextWithEmoji(`🐹 젤리 ${result.jelly}개 획득!`)}
+              {result.jackpot ? renderTextWithEmoji('👑 잭팟!! 젤리 150개 획득 — 피드에 자동으로 자랑돼요') : renderTextWithEmoji(`🐹 젤리 ${result.jelly}개 획득!`)}
             </p>
           )}
 
