@@ -780,7 +780,8 @@ input { font: inherit; outline: none; border: none; }
 
 .screen-rank { gap: 16px; }
 .rank-header { padding: 8px 0; }
-.rank-bottom-spacer { height: 24px; }
+/* 플로팅 캡슐(1초 기록) 높이+여백만큼 확보 — 안 그러면 마지막 카드가 캡슐에 가려 못 누른다 */
+.rank-bottom-spacer { height: 76px; }
 .rank-title  { font-size: 22px; font-weight: 900; }
 .rank-title .custom-icon { margin-left: 5px; }
 .my-rank-pos--zero { font-size: 13px; }
@@ -1402,8 +1403,10 @@ input { font: inherit; outline: none; border: none; }
   50%       { opacity: 1; }
 }
 
-.empty-state { text-align: center; padding: 48px 20px; color: var(--text-sub); font-size: 16px; font-weight: 700; }
+/* 위쪽 블록(판정 카드·서클 배너)이 이미 자리를 차지하므로 48px 여백은 안내를 화면 밖으로 밀어냈다 */
+.empty-state { text-align: center; padding: 28px 20px 20px; color: var(--text-sub); font-size: 16px; font-weight: 700; }
 .empty-sub { font-size: 13px; color: var(--text-mute); margin-top: 8px; font-weight: 400; }
+.empty-state .rank-empty-retry-btn { margin-top: 14px; }
 
 /* ── 오늘의 짠물 미션 ───────────────────────────────────────────────────────── */
 .daily-mission-card {
@@ -4049,34 +4052,49 @@ input { font: inherit; outline: none; border: none; }
 .feed-composer-action-btn span {
   color: var(--text-sub);
 }
+/* 375pt에서 아이콘+문구+버튼 2개가 서로 밀어내며 제목이 3줄로 깨지던 행.
+   버튼은 줄지 않게 고정하고, 문구 열만 줄어들며 필요하면 말줄임 처리한다. */
 .feed-composer-done {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
 }
 .feed-composer-done-icon {
+  flex-shrink: 0;
   font-size: 24px;
+  line-height: 1;
 }
 .feed-composer-done-info {
   flex: 1;
+  min-width: 0; /* flex 아이템 기본 min-width:auto 때문에 안 줄어들던 것 해제 */
   display: flex;
   flex-direction: column;
+  gap: 1px;
+}
+.feed-composer-done-text,
+.feed-composer-done-amount {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 .feed-composer-done-text {
   font-weight: 700;
   color: var(--primary);
   font-size: 15px;
+  letter-spacing: -0.02em;
 }
 .feed-composer-done-amount {
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text-sub);
 }
 .feed-composer-add-btn {
-  padding: 8px 16px;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 8px 12px;
   background: var(--primary-light);
   color: var(--primary);
   border-radius: 20px;
-  font-size: 13px;
+  font-size: 12.5px;
   font-weight: 700;
 }
 .feed-composer-onboarding-hint {
@@ -7402,16 +7420,8 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   position: relative;
   overflow: hidden;
 }
-.feed-composer::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, #FF4842, #F59E0B, #00B96B, #2563EB);
-  opacity: 0.85;
-}
+/* 4색 무지개 띠는 의미 없는 장식이라 제거 (앱인토스 그래픽 규정: 과한 그라데이션·장식 이펙트 금지).
+   카드를 구분하는 일은 이미 그림자와 라운드가 하고 있다. */
 .feed-composer-avatar {
   width: 36px;
   height: 36px;
@@ -7504,6 +7514,8 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s cubic-bezier(0.16, 1, 0.3, 1);
   animation: floatInAnim 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
+/* display:inline-flex가 [hidden]의 UA 규칙을 이기므로 명시적으로 꺼준다 */
+.floating-compose-capsule[hidden] { display: none; }
 .floating-compose-capsule:hover {
   transform: translateY(-2px) scale(1.03);
   box-shadow: 0 6px 20px rgba(0, 0, 0, 0.28), 0 12px 36px rgba(0, 0, 0, 0.18);
@@ -7518,13 +7530,16 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 }
 
 /* 6. 인피드 오늘의 소비 질문 토크 카드 (In-Feed Daily Social Prompt) */
+/* 인디고→네이비 그라데이션은 앱 팔레트에 없는 색이고 "AI가 만든 화면"의 대표 신호라 폐기.
+   피드에서 유일한 어두운 면이라는 역할(오늘의 질문 = 하나뿐인 앵커)은 유지하되,
+   색은 앱의 잉크(--primary)로 통일하고 그라데이션 대신 평면으로 둔다. */
 .daily-question-card {
-  background: linear-gradient(135deg, #1E1B4B 0%, #0F172A 100%);
+  background: var(--primary);
   color: #FFFFFF;
   border-radius: 20px;
   padding: 16px 18px;
   margin: 12px 0;
-  box-shadow: 0 4px 20px rgba(30, 27, 75, 0.25);
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.10), 0 8px 24px rgba(0, 0, 0, 0.08);
   position: relative;
   overflow: hidden;
   text-align: left;
@@ -7566,7 +7581,7 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 .daily-question-input::placeholder { color: rgba(255, 255, 255, 0.45); }
 .daily-question-btn {
   flex-shrink: 0;
-  background: #6366F1;
+  background: var(--ink-red);
   color: #FFFFFF;
   border: none;
   border-radius: 12px;
@@ -7574,9 +7589,9 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   font-size: 12.5px;
   font-weight: 800;
   cursor: pointer;
-  transition: all 0.15s;
+  transition: background 0.15s ease-out, transform 0.15s ease-out;
 }
-.daily-question-btn:active { transform: scale(0.95); background: #4F46E5; }
+.daily-question-btn:active { transform: scale(0.95); background: var(--ink-red-strong); }
 
 /* 7. 살까말까 투표 바 & 버튼 (Dilemma Live Vote Bar) */
 .dilemma-post-body {
@@ -7675,13 +7690,18 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 }
 
 /* 8. 피드 탭 필터 칩 바 (SNS Explore Chips) */
+/* 넘칠 때 마지막 칩이 화면 끝에 딱 잘려 "깨진 것"처럼 보이던 문제 —
+   오른쪽 여백을 둬서 잘림이 "더 있다"는 신호로 읽히게 한다. */
 .feed-filter-bar {
   display: flex;
   gap: 6px;
   overflow-x: auto;
   padding: 6px 0 10px;
   scrollbar-width: none;
+  -webkit-overflow-scrolling: touch;
 }
+/* flex 스크롤 컨테이너는 padding-right가 스크롤 끝에서 무시되므로 스페이서로 여백을 만든다 */
+.feed-filter-bar::after { content: ''; flex: 0 0 14px; }
 .feed-filter-bar::-webkit-scrollbar { display: none; }
 
 .feed-filter-chip {

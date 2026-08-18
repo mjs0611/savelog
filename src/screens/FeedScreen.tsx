@@ -98,6 +98,15 @@ interface Props {
 }
 
 
+// 필터별 빈 상태 문구 — 무엇이 없는지와 다음 행동을 같이 준다
+const FILTER_EMPTY: Record<string, { title: string; sub: string }> = {
+  dilemma: { title: '아직 올라온 고민이 없어요', sub: '"살까말까" 모드로 물어보면 짠친들이 대신 골라줘요' },
+  spend: { title: '아직 올라온 지출 자백이 없어요', sub: '오늘 쓴 걸 한 줄 남기면 여기 바로 올라와요' },
+  save: { title: '아직 지킨 돈 인증이 없어요', sub: '참은 소비나 무지출을 남기면 첫 인증이 돼요' },
+  tip: { title: '아직 올라온 꿀팁이 없어요', sub: '아낀 방법을 공유하면 짠친들이 담아가요' },
+  circle: { title: '아직 우리 서클의 기록이 없어요', sub: '오늘 첫 기록을 남기거나 친구를 초대해 보세요' },
+};
+
 // ── 1-Tap 퀵 액션 프롬프트 칩 — 직관적 입력 유도 ──
 export const PROMPT_CHIPS = [
   { label: '☕ 커피 4.5천', text: '스타벅스 아메리카노 4500', tone: 'amber' },
@@ -1054,6 +1063,21 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
     }
   }
 
+  // 플로팅 캡슐은 "스크롤로 컴포저가 안 보일 때"의 대체 입구다.
+  // 컴포저가 화면에 있는 동안엔 같은 동작이 두 개 뜨면서 콘텐츠까지 가리므로 숨긴다.
+  // 로딩 중엔 스켈레톤만 렌더돼 컴포저가 없다 → useRef+useEffect는 null을 한 번 보고 끝난다.
+  // 콜백 ref는 노드가 실제로 붙는 순간 호출되므로 그 타이밍 문제가 없다.
+  const [showFab, setShowFab] = useState(false);
+  const fabObserverRef = useRef<IntersectionObserver | null>(null);
+  const composerRef = React.useCallback((node: HTMLDivElement | null) => {
+    fabObserverRef.current?.disconnect();
+    fabObserverRef.current = null;
+    if (!node || typeof IntersectionObserver === 'undefined') { setShowFab(true); return; }
+    fabObserverRef.current = new IntersectionObserver(([entry]) => setShowFab(!entry.isIntersecting));
+    fabObserverRef.current.observe(node);
+  }, []);
+  useEffect(() => () => fabObserverRef.current?.disconnect(), []);
+
   // 오늘 실기록한 유저 셋 — 스토리 레일 링의 데이터
   const recordedTodaySet = React.useMemo(() => {
     const today = getTodayStr();
@@ -1662,18 +1686,22 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       )}
 
       {/* 📝 인라인 포스트 컴포저 (기록 CTA & 1-Tap 퀵 프롬프트 칩) — 피드 최상단 */}
-      <div className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      <div ref={composerRef} className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {daily.recorded && daily.date === getTodayStr() ? (
           <div className="feed-composer-done">
             <span className="feed-composer-done-icon"><CustomIcon emoji="✅" /></span>
+            {/* 연속일은 둘째 줄로 — 좁은 폭에서 제목이 3줄로 깨지던 원인 */}
             <div className="feed-composer-done-info">
-              <span className="feed-composer-done-text">오늘 인증 완료!{streak.streak > 0 ? ` · 🔥${streak.streak}일` : ''}</span>
-              <span className="feed-composer-done-amount">{formatAmount(daily.spentAmount ?? 0)} 지출</span>
+              <span className="feed-composer-done-text">오늘 인증 완료!</span>
+              <span className="feed-composer-done-amount">
+                {formatAmount(daily.spentAmount ?? 0)} 지출{streak.streak > 0 ? ` · 🔥${streak.streak}일` : ''}
+              </span>
             </div>
             {rouletteSpins > 0 && (
               <button className="feed-composer-add-btn" onClick={() => setShowRoulette(true)} style={{ marginRight: '6px' }}>🎰 {rouletteSpins}</button>
             )}
-            <button className="feed-composer-add-btn" onClick={onRecord}>추가 털어놓기</button>
+            {/* 375pt에서 이 행에 4요소가 들어가야 해서 라벨을 줄임 — "털어놓기" 어휘는 유지 */}
+            <button className="feed-composer-add-btn" onClick={onRecord}>+ 털어놓기</button>
           </div>
         ) : (
           <>
@@ -1752,13 +1780,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
       {/* 🧭 SNS 탐색 필터 바 */}
       <div className="feed-filter-bar">
+        {/* 이모지 없이 — 라벨만으로 이미 명확하고, 칩 6개가 한 화면에 들어와야 가짜 캐러셀이 안 된다 */}
         {[
-          { key: 'all' as const, label: '🔥 전체' },
-          { key: 'dilemma' as const, label: '⚖️ 살까말까' },
-          { key: 'spend' as const, label: '💸 솔직지출' },
-          { key: 'save' as const, label: '🛡️ 지킨돈·0원' },
-          { key: 'tip' as const, label: '💡 꿀템·꿀팁' },
-          ...(myCircle ? [{ key: 'circle' as const, label: `🔒 ${myCircle.circle.name}` }] : []),
+          { key: 'all' as const, label: '전체' },
+          { key: 'dilemma' as const, label: '살까말까' },
+          { key: 'spend' as const, label: '솔직지출' },
+          { key: 'save' as const, label: '지킨돈·0원' },
+          { key: 'tip' as const, label: '꿀템·꿀팁' },
+          ...(myCircle ? [{ key: 'circle' as const, label: myCircle.circle.name }] : []),
         ].map(filter => (
           <button
             key={filter.key}
@@ -1959,6 +1988,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 )}
               </div>
             </>
+          ) : displayedEntries.length === 0 ? (
+            /* 필터 결과만 0건 — entries로 판정하면 카드도 안내도 없는 빈 화면이 된다 (필터가 고장난 것처럼 보임) */
+            <div className="empty-state">
+              <p>{FILTER_EMPTY[socialFilter]?.title ?? '해당하는 글이 아직 없어요'}</p>
+              <p className="empty-sub">{FILTER_EMPTY[socialFilter]?.sub ?? '첫 글을 남기면 여기 바로 올라와요'}</p>
+              <button onClick={() => setSocialFilter('all')} className="rank-empty-retry-btn">전체 보기</button>
+            </div>
           ) : (
             <div className="feed-list">
               {loadFailed && (
@@ -2246,6 +2282,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       <button
         type="button"
         className="floating-compose-capsule"
+        hidden={!showFab}
         onClick={() => {
           haptic('tickWeak');
           onRecord();
