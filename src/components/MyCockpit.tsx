@@ -131,7 +131,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
     if (!bought && item) {
       addToGoal(item.price);
       addJelly(15);
-      showToast(`👏 충동을 이겨냈어요! 목표에 ${formatAmount(item.price)} 충전 · +15 젤리`);
+      showToast(`👏 참았어요! 미래의 내 몫 +${formatAmount(item.price)} · 젤리 +15`);
     }
   };
   const [toast, setToast] = useState<string | null>(null);
@@ -318,13 +318,13 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
         <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🪙" /> 젤리</p>
           <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800 }}>{jellyBalance}</p>
-          <button onClick={() => setShowShopModal(true)} style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#EFE7D2', color: 'var(--text-main)', cursor: 'pointer' }}>꾸미기</button>
+          <button onClick={() => setShowShopModal(true)} style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-main)', cursor: 'pointer' }}>꾸미기</button>
         </div>
         <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', cursor: 'pointer' }} onClick={() => setShowGoalModal(true)}>
-          <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🎯" /> 목표</p>
+          <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🌱" /> 미래의 나</p>
           <p key={goalBump} className={goalBump > 0 ? 'goal-bump' : undefined} style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: goalPct !== null ? 'var(--primary)' : 'var(--text-mute)' }}>{goalPct !== null ? `${goalPct}%` : '미설정'}</p>
           {goalPct === null && (
-            <button style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: '#EFE7D2', color: 'var(--text-main)', cursor: 'pointer' }}>설정</button>
+            <button style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-main)', cursor: 'pointer' }}>설정</button>
           )}
         </div>
       </div>
@@ -369,7 +369,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
       <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }}>
           <span style={{ fontSize: '13px', fontWeight: 800 }}><CustomIcon emoji="🛒" /> 충동 대기방</span>
-          <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>48시간 참으면 목표 충전 +15젤리</span>
+          <span style={{ fontSize: '10.5px', color: 'var(--text-mute)', fontWeight: 700 }}>48시간 참으면 미래의 내 몫으로 +15젤리</span>
         </div>
         {wishlist.filter(isWishlistItemReady).map(it => (
           <div key={it.id} style={{ marginBottom: '8px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '8px', padding: '8px 10px', borderRadius: '10px', background: '#F3ECDA' }}>

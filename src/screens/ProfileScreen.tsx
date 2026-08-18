@@ -22,6 +22,7 @@ import { getPrevWeekKey } from '../lib/benchmark';
 import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
 import { IconFriends, IconTrophy, IconGear, IconBookmark } from '../components/Icons';
 import MoneyPattern from '../components/MoneyPattern';
+import BenefitLedger from '../components/BenefitLedger';
 import CustomIcon from '../components/CustomIcon';
 import MyCockpit from '../components/MyCockpit';
 import SpendDiagnosisCard from '../components/SpendDiagnosisCard';
@@ -283,11 +284,14 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         {/* 이번 달 성과 스트립 — 쌓인 결과가 보여야 다시 올 이유가 된다 */}
         {(monthSaved > 0 || monthZero > 0 || monthRecorded > 0) && (
           <p className="mylog-outcome-strip">
-            이번 달 {monthSaved > 0 && <>지킨 돈 <strong>+{formatAmount(monthSaved)}</strong> · </>}무지출 <strong>{monthZero}일</strong> · 기록 <strong>{monthRecorded}일</strong>
+            이번 달 {monthSaved > 0 && <>미래의 내 몫 <strong>+{formatAmount(monthSaved)}</strong> · </>}무지출 <strong>{monthZero}일</strong> · 기록 <strong>{monthRecorded}일</strong>
           </p>
         )}
 
       </div>
+
+      {/* 🧾 혜택 장부 — 내 기록의 수혜자를 이름으로 (미래의 나 · 내가 도운 짠친 · 나를 도운 짠친) */}
+      <BenefitLedger userId={userId} entries={allEntries.length > 0 ? allEntries : myEntries} />
 
       {/* 💠 돈 패턴 회고 — 재방문의 내재적 이유 (게임 대신 자기이해) */}
       <MoneyPattern entries={allEntries.length > 0 ? allEntries : myEntries} />

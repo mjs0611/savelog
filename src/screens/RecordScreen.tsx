@@ -281,8 +281,8 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               <p className="daily-note-desc" style={{ fontSize: '12px', color: 'var(--text-sub)', marginBottom: '8px' }}>
                 {mode === 'spend' && '0원이면 무지출 인증! 쓴 돈은 털어놓고 친구들의 위로와 공감을 받아요.'}
                 {mode === 'dilemma' && '결제 직전 짠친들에게 물어보세요. 실시간 팩폭 투표를 올려드려요.'}
-                {mode === 'save' && '배달·택시·카페 참은 썰! 굳은 돈만큼 목표 저금통이 차올라요.'}
-                {mode === 'tip' && '다이소 득템, 할인 꿀팁, 가성비템을 자랑해 보세요.'}
+                {mode === 'save' && '배달·택시·카페 참은 썰! 굳은 돈은 미래의 내 몫으로 쌓여요.'}
+                {mode === 'tip' && '내 꿀팁 하나가 짠친들의 다음 소비를 아껴줘요.'}
               </p>
               <textarea
                 className={`daily-note-textarea${isNoteValid ? ' daily-note-textarea--valid' : ''}`}
@@ -486,7 +486,7 @@ export default function RecordScreen({ onSubmit, onClose, submitting, isAddition
               : mode === 'dilemma'
               ? (amount > 0 ? `⚖️ ${formatAmount(amount)} 살까말까 투표 올리기` : '⚖️ 살까말까 투표 올리기')
               : mode === 'save'
-              ? (amount > 0 ? `🛡️ ${formatAmount(amount)} 지킨 돈 저금하기` : '지킨 금액을 입력해 주세요')
+              ? (amount > 0 ? `🌱 ${formatAmount(amount)} 미래의 내 몫으로 남기기` : '지킨 금액을 입력해 주세요')
               : mode === 'tip'
               ? '💡 꿀템·꿀팁 피드에 공유하기'
               : amount > 0

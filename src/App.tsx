@@ -397,7 +397,7 @@ export default function App() {
             {isMigration ? (
               <p className="setup-desc">기록과 포인트를 잃지 않게<br />토스 계정에 연결해 둘게요</p>
             ) : (
-              <p className="setup-desc">쓴 돈도 모은 돈도, 물타기까지<br />짠친들이 판정해주는 곳</p>
+              <p className="setup-desc">내 판정이 짠친의 결제를 멈추고<br />짠친의 판정이 내 돈을 지켜요</p>
             )}
             {!isMigration && globalStats !== null && globalStats.totalRecords >= 30 && (
               <p className="setup-proof">지금까지 쌓인 짠 인증 {globalStats.totalRecords.toLocaleString('ko-KR')}개</p>
@@ -565,7 +565,8 @@ export default function App() {
           attackWeeklyBoss(`${weekKey}__c__${bossCircleId}`, bossDamage).catch(() => {});
         }
 
-        const goalMsg = chargedToGoal > 0 ? ` · 🎯 목표에 ${formatAmount(chargedToGoal)} 충전` : '';
+        // 수혜자 명시 — 참은 돈은 "미래의 나"에게 쌓인 몫. 이체가 아니라 집계라서 이동 동사는 쓰지 않는다
+        const goalMsg = chargedToGoal > 0 ? ` · 🌱 미래의 내 몫 +${formatAmount(chargedToGoal)}` : '';
         // 생애 첫 기록(totalDays는 updateStreak 전 0)은 아하 카피 — 요정 판정으로 시선 유도
         const isVeryFirstEver = newStreak.totalDays === 1;
         const toastMsg = isVeryFirstEver

@@ -418,7 +418,7 @@ export default function CommunityScreen({ userId }: Props) {
                       onClick={(e) => { e.stopPropagation(); handleToggleLike(post); }}
                       style={{ background: 'none', border: 'none', display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: post.liked_by_me ? '#FF4842' : 'var(--text-mute)', cursor: 'pointer' }}
                     >
-                      <CustomIcon emoji={post.liked_by_me ? '❤️' : '🤍'} /> {post.like_count > 0 ? post.like_count : '응원'}
+                      <CustomIcon emoji={post.liked_by_me ? '❤️' : '🤍'} /> {post.like_count > 0 ? post.like_count : '도움됐어요'}
                     </button>
                     <span className="community-stat" style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 700, color: 'var(--text-mute)' }}>
                       <CustomIcon emoji="💬" /> {post.comment_count}
@@ -538,7 +538,7 @@ export default function CommunityScreen({ userId }: Props) {
                   className={`community-stat ${detailPost.liked_by_me ? 'community-stat--liked' : ''}`}
                   onClick={() => handleToggleLike(detailPost)}
                 >
-                  <CustomIcon emoji={detailPost.liked_by_me ? '💖' : '🤍'} /> {detailPost.like_count > 0 ? `${detailPost.like_count}명의 응원` : '응원하기'}
+                  <CustomIcon emoji={detailPost.liked_by_me ? '💖' : '🤍'} /> {detailPost.like_count > 0 ? `${detailPost.like_count}명이 도움받음` : '도움됐어요'}
                 </button>
                 <span className="community-stat"><CustomIcon emoji="💬" /> {detailPost.comment_count}</span>
                 {detailPost.user_id === userId && (

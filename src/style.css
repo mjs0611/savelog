@@ -4141,7 +4141,7 @@ input { font: inherit; outline: none; border: none; }
 .mylog-profile-header {
   padding: 16px;
   margin-bottom: 16px;
-  background: #FFFDF6 !important;
+  background: var(--card-bg) !important;
   border: 1px solid var(--divider) !important;
   box-shadow: none !important;
 }
@@ -7225,7 +7225,7 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 .mylog-summary-value { font-family: var(--font-mono); font-variant-numeric: tabular-nums; }
 
 /* ── 판정 프롬프트 — 카드가 아닌 피드 흐름의 일부 (보더리스, 하단 헤어라인) ── */
-.judge-prompt { padding: 16px; background: #FFFDF6; border: 1px solid var(--divider); border-radius: 16px; margin: 0 -2px; text-align: left; box-shadow: 0 1px 2px rgba(74, 58, 22, 0.03); }
+.judge-prompt { padding: 16px; background: var(--card-bg); border: 1px solid var(--divider); border-radius: 16px; margin: 0 -2px; text-align: left; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03); }
 .judge-prompt-eyebrow { margin: 0 0 6px; font-size: 11px; font-weight: 800; color: var(--text-mute); letter-spacing: 0.3px; }
 .judge-prompt-snippet {
   margin: 0 0 14px; font-size: 15px; font-weight: 500; color: var(--text-main); line-height: 1.45;
@@ -7250,7 +7250,7 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 
 /* ── 돈 패턴 회고 — 에디토리얼 카드 (아레나의 큐레이션=자기이해) ────────── */
 .money-pattern {
-  background: #FFFDF6; border: 1px solid var(--divider); border-radius: 18px;
+  background: var(--card-bg); border: 1px solid var(--divider); border-radius: 18px;
   padding: 22px 20px; margin-bottom: 16px; text-align: left;
 }
 .money-pattern-eyebrow {
@@ -7938,3 +7938,79 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 .community-tag-chip--free { background: rgba(107, 114, 128, 0.1); color: #4B5563; }
 
 
+
+/* ── 혜택 장부 — 수혜자를 이름으로 (2026-08-19) ────────────────────────────── */
+.benefit-ledger {
+  background: var(--card-bg);
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  border-radius: 20px;
+  padding: 18px 18px 16px;
+  margin-bottom: 12px;
+  text-align: left;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03), 0 8px 24px rgba(0, 0, 0, 0.04);
+}
+.benefit-ledger-eyebrow {
+  margin: 0 0 4px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.4px;
+  color: var(--text-mute);
+}
+.benefit-ledger-title {
+  margin: 0 0 14px;
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-main);
+}
+.benefit-ledger-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 1px;
+  background: var(--divider);
+  border: 1px solid var(--divider);
+  border-radius: 14px;
+  overflow: hidden;
+}
+.benefit-ledger-cell {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 2px 8px;
+  padding: 11px 13px;
+  background: var(--card-bg);
+}
+.benefit-ledger-who {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  min-width: 104px;
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-sub);
+}
+.benefit-ledger-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: 15px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  color: var(--text-main);
+}
+.benefit-ledger-value--saved { color: var(--ink-blue); }
+.benefit-ledger-value--received { color: var(--ink-red); }
+.benefit-ledger-note {
+  flex-basis: 100%;
+  padding-left: 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-mute);
+  line-height: 1.45;
+}
+.benefit-ledger-foot {
+  margin: 12px 0 0;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-mute);
+  line-height: 1.45;
+}

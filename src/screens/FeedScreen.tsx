@@ -390,8 +390,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       const bonus = 10 + Math.floor(Math.random() * 21); // 짠친 응원 가변 보너스 10~30
       addJelly(bonus);
       showFeedToast(charged > 0
-        ? `👏 짠친들과 함께 참았어요! 목표에 ${formatAmount(charged)} 충전 · +${bonus} 젤리 🐹`
-        : `👏 짠친들과 함께 참았어요! +${bonus} 젤리 🐹`);
+        ? `👏 짠친 덕분에 참았어요! 미래의 내 몫 +${formatAmount(charged)} · 젤리 +${bonus} 🐹`
+        : `👏 짠친 덕분에 참았어요! 젤리 +${bonus} 🐹`);
     } else {
       showFeedToast('기록 완료! 다음엔 짠친들이 또 막아줄게요 💪');
     }
@@ -855,6 +855,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       if (entry.my_reaction === null) {
         const label = type === 'trust' ? '👏 짠내난다' : '🤔 진짜야?';
         sendCheerNotification(userId, entry.user_id, getNickname() || '짠친', `${label} 반응이 회원님의 기록에 도착했어요!`).catch(() => {});
+        // 수혜자 피드백 — 아무 반응 없던 기록이면 내 판정이 그 사람의 첫 반응이 된다 (실제로 그럴 때만)
+        if ((entry.human_reaction_count ?? 0) === 0) {
+          showFeedToast(`내 판정이 ${entry.nickname || '짠친'}님이 받은 첫 반응이 됐어요`);
+        }
       }
     }
 
@@ -1658,7 +1662,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         >
           <IconHeart filled size={18} className="" />
           <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
-            자리 비운 사이 내 인증에 반응 {welcomeBack.reactions + welcomeBack.comments}개가 달렸어요
+            자리 비운 사이 짠친들이 내 기록에 판정 {welcomeBack.reactions + welcomeBack.comments}개를 남겨줬어요
           </span>
           {/* 피크-엔드: 반응 받은 걸 안 직후가 공유 유도 최적점 */}
           {(() => {
@@ -1836,7 +1840,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
           <div className="judge-prompt">
-            <p className="judge-prompt-eyebrow">오늘의 판정 · 대기 {judgeQueue.length}건</p>
+            <p className="judge-prompt-eyebrow">내 판정을 기다리는 기록 {judgeQueue.length}건</p>
             <p className="judge-prompt-snippet"><strong>{e.nickname}</strong> · {judgeSnippet(e)}</p>
             <div className="judge-prompt-actions">
               {isDilemma ? (

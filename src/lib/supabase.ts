@@ -385,6 +385,31 @@ export async function fetchReceivedReputation(userId: string): Promise<{ trust: 
   };
 }
 
+// 내가 남긴 판정·도장 수 — "내 판정으로 덕 본 짠친"의 실측치. 요정 계정은 사람이 아니라 제외.
+// 빈약속 방지: 이 숫자는 전부 서버 실데이터이고, 0이면 UI가 숫자 대신 초대 문구를 띄운다.
+export async function fetchGivenJudgments(userId: string): Promise<{ count: number; people: number }> {
+  if (!supabase || !userId || userId === FAIRY_USER_ID) return { count: 0, people: 0 };
+  try {
+    const { data } = await supabase
+      .from('reactions')
+      .select('entry_id')
+      .eq('user_id', userId);
+    const rows = (data ?? []) as { entry_id: string }[];
+    if (rows.length === 0) return { count: 0, people: 0 };
+    // 판정을 받은 글의 주인 수 = 실제로 덕 본 사람 수 (같은 사람 여러 글은 1명으로)
+    // PostgREST는 GET URL에 id를 나열하므로 중복 제거 + 상한을 둔다 (URL 길이 초과 방지)
+    const uniqueEntryIds = [...new Set(rows.map(r => r.entry_id))].slice(0, 300);
+    const { data: owners } = await supabase
+      .from('entries')
+      .select('user_id')
+      .in('id', uniqueEntryIds);
+    const ids = new Set((owners ?? []).map((e: { user_id: string }) => e.user_id).filter(id => id !== userId));
+    return { count: rows.length, people: ids.size };
+  } catch {
+    return { count: 0, people: 0 };
+  }
+}
+
 // 나를 팔로우하는 사람들의 id (상호 짝꿍 도출용). 닉네임은 내가 팔로우하는 쪽(fetchFollows)에서 채운다.
 export async function fetchFollowerIds(userId: string): Promise<string[]> {
   if (!supabase) return [];
