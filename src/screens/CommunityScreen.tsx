@@ -344,7 +344,7 @@ export default function CommunityScreen({ userId }: Props) {
         const tq = todayQuestion();
         return (
           <div className="glass-card" style={{ padding: '14px 16px', margin: '4px 0 0', textAlign: 'left' }}>
-            <p style={{ margin: 0, fontSize: '10.5px', fontWeight: 800, color: 'var(--primary)', letterSpacing: '0.3px' }}>
+            <p className="y2k-titlebar">
               오늘의 질문{questionAnswers >= 1 ? ` · ${questionAnswers}명이 답했어요` : ''}
             </p>
             <p style={{ margin: '4px 0 10px', fontSize: '14.5px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.45 }}>{tq.q}</p>

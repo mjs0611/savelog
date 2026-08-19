@@ -1,57 +1,70 @@
 @import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
 
 :root {
-  /* 현대적 라이프스타일 SNS & 머니 스토리텔링 토큰 */
-  --primary: #121316; /* 옵시디언 블랙 — 브랜드·핵심 액션 */
-  --primary-dark: #000000;
-  --primary-light: rgba(18, 19, 22, 0.05);
-  --primary-glow: rgba(18, 19, 22, 0.12);
-  --primary-accent: #2563EB; /* 일렉트릭 울트라마린 */
+  /* Y2K / 레트로 퓨처리즘 — 2000년대 데스크톱 OS 창 (크롬 베벨 + 라벤더 실버)
+     원칙: Y2K를 장식이 아니라 구조로 낸다. 창 크롬·베벨·인셋이 문법이고,
+     보라→핑크 그라데이션은 화면당 히어로 하나에만 (앱인토스 그래픽 규정: 과한 그라데이션·파티클 금지) */
+  --primary: #1A1533; /* 바이올렛 잉크 블랙 — 탭바 active는 grey900이어야 하므로 브랜드 보라를 쓰지 않는다 */
+  --primary-dark: #0D0A1C;
+  --primary-light: rgba(26, 21, 51, 0.05);
+  --primary-glow: rgba(26, 21, 51, 0.12);
+  --primary-accent: #6E4CF5; /* 일렉트릭 바이올렛 */
 
-  /* 비비드 코랄 — 솔직 소비 자백·하트·화제 투표 */
-  --ink-red: #FF4842;
-  --ink-red-strong: #E53935;
-  --ink-red-bg: rgba(255, 72, 66, 0.08);
+  /* 크롬 — 금속 표면의 하이라이트/그림자/외곽 (베벨의 3요소) */
+  --chrome-hi: #FFFFFF;
+  --chrome-lo: rgba(60, 45, 120, 0.13);
+  --chrome-edge: #B9B2D6;
+  --chrome-rail: linear-gradient(180deg, #FBFAFF 0%, #E6E2F5 100%);
 
-  /* 에메랄드 그린 — 지킨 돈·무지출 영웅담·승인 도장 */
-  --ink-blue: #00B96B;
-  --ink-blue-strong: #059669;
-  --ink-blue-bg: rgba(0, 185, 107, 0.08);
+  --violet: #6E4CF5;
+  --violet-deep: #4A26C4;
+  --magenta: #FF3D9A;
+  --aqua: #00C2D6;
 
-  /* 허니 앰버 — 꿀팁·마일스톤·트로피·골드 */
-  --brass: #F59E0B;
-  --brass-bg: rgba(245, 158, 11, 0.12);
+  /* 핫 마젠타 — 지출 자백·하트·화제 투표 */
+  --ink-red: #FF3D9A;
+  --ink-red-strong: #C4106B; /* 흰 글자 채움/본문용 (AA) */
+  --ink-red-bg: rgba(255, 61, 154, 0.08);
+
+  /* 일렉트릭 민트 — 지킨 돈·무지출·승인 도장 */
+  --ink-blue: #00C48A;
+  --ink-blue-strong: #00806A; /* 본문 대비용 */
+  --ink-blue-bg: rgba(0, 196, 138, 0.08);
+
+  /* 크롬 골드 — 꿀팁·마일스톤·트로피 */
+  --brass: #DDA92F;
+  --brass-bg: rgba(221, 169, 47, 0.12);
 
   --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
 
-  --accent-pink: #FF4842;
-  --accent-cyan: #06B6D4;
-  --accent-lime: #10B981;
+  --accent-pink: #FF3D9A;
+  --accent-cyan: #00C2D6;
+  --accent-lime: #00C48A;
 
-  --success: #00B96B;
-  --error: #FF4842;
-  --warning: #F59E0B;
-  --zero: #00B96B;
+  --success: #00C48A;
+  --error: #FF3D9A;
+  --warning: #DDA92F;
+  --zero: #00C48A;
 
-  --bg: #F7F8FA; /* 화사하고 맑은 스튜디오 캔버스 */
-  --card-bg: #FFFFFF; /* 순백 크리스탈 카드 */
-  --manila: #E2E8F0;
-  --text-main: #111827; /* 또렷한 옵시디언 */
-  --text-sub: #4B5563; /* 세련된 슬레이트 그레이 */
-  --text-mute: #9CA3AF; /* 은은한 쿨 그레이 */
+  --bg: #E9E7F3; /* 라벤더 실버 데스크톱 바탕 — 창이 그 위에 떠 있다 */
+  --card-bg: #FDFDFF; /* 창 안쪽 */
+  --manila: #DDD8EE;
+  --text-main: #1A1533; /* 바이올렛 잉크 */
+  --text-sub: #514A73;
+  --text-mute: #8B84AC;
 
-  --glass: rgba(255, 255, 255, 0.88);
-  --glass-border: rgba(0, 0, 0, 0.06);
-  --divider: #E5E7EB; /* 소프트 헤어라인 */
-  --surface-dim: #F3F4F6;
-  --surface-faint: #FAFAFA;
+  --glass: rgba(253, 253, 255, 0.90);
+  --glass-border: rgba(90, 75, 150, 0.14);
+  --divider: #DDD8EE;
+  --surface-dim: #EDEAF8;
+  --surface-faint: #F8F7FD;
 
-  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.04);
-  --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.09);
-  --radius-sm: 14px;
-  --radius-md: 20px;
-  --radius-lg: 28px;
+  --shadow-sm: 0 2px 8px rgba(60, 45, 120, 0.08);
+  --shadow-md: 0 8px 24px rgba(60, 45, 120, 0.11);
+  --shadow-lg: 0 16px 40px rgba(60, 45, 120, 0.15);
+  --radius-sm: 10px;
+  --radius-md: 14px;
+  --radius-lg: 18px;
 
   /* 토스 플로팅 탭바 — 알약 높이 + 하단 띄움 = 하단 점유 높이(--tab-h) */
   --tab-pill-h: 58px;
@@ -8013,4 +8026,358 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   font-weight: 600;
   color: var(--text-mute);
   line-height: 1.45;
+}
+
+/* ══════════════════════════════════════════════════════════════════════════════
+   Y2K / 레트로 퓨처리즘 레이어 (2026-08-20)
+   컨셉: savelog가 2000년대 데스크톱 OS의 창 안에서 돌아간다.
+   Y2K를 장식이 아니라 구조로 낸다 — 크롬 베벨·창 크롬·인셋 웰이 문법.
+   앱인토스 그래픽 규정 준수: 파티클·과한 그라데이션 없음, 보라 그라데이션은
+   화면당 히어로 1개(주 CTA)에만. 탭바(흰 캡슐·grey900 active)는 건드리지 않는다.
+   ══════════════════════════════════════════════════════════════════════════════ */
+
+/* ── 1. 창(window) — 모든 카드는 금속 테두리를 두른 패널 ───────────────────── */
+.feed-card-ig,
+.glass-card,
+.benefit-ledger,
+.money-pattern,
+.judge-prompt,
+.community-thread-card,
+.feed-composer,
+.daily-question-card,
+.scrapbook-card,
+.mylog-profile-header {
+  background: var(--card-bg);
+  border: 1px solid var(--chrome-edge);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 var(--chrome-hi),
+    inset 0 -1px 0 var(--chrome-lo),
+    0 2px 6px rgba(60, 45, 120, 0.10);
+}
+.mylog-profile-header {
+  background: var(--card-bg) !important;
+  border: 1px solid var(--chrome-edge) !important;
+  box-shadow:
+    inset 0 1px 0 var(--chrome-hi),
+    inset 0 -1px 0 var(--chrome-lo),
+    0 2px 6px rgba(60, 45, 120, 0.10) !important;
+}
+/* 카드 종류별 색 배경·컬러 테두리(구 SNS 레이어)는 크롬으로 통일 — 화면당 그래픽 1개 원칙 */
+.feed-card-ig--mine,
+.feed-card-ig--dilemma,
+.feed-card-ig--zero,
+.feed-card-ig--tip,
+.feed-card-ig--milestone {
+  background: var(--card-bg);
+  border: 1px solid var(--chrome-edge);
+  box-shadow:
+    inset 0 1px 0 var(--chrome-hi),
+    inset 0 -1px 0 var(--chrome-lo),
+    0 2px 6px rgba(60, 45, 120, 0.10);
+}
+/* 종류는 색면 대신 좌측 잉크 라인 한 줄로 (구조로 구분) */
+.feed-card-ig--dilemma { border-left: 3px solid var(--magenta); }
+.feed-card-ig--zero { border-left: 3px solid var(--ink-blue); }
+.feed-card-ig--tip { border-left: 3px solid var(--brass); }
+.feed-card-ig--milestone { border-left: 3px solid var(--violet); }
+.feed-card-ig--mine { border-left: 3px solid var(--chrome-edge); }
+
+/* ── 2. 창 타이틀바 — 카드의 eyebrow를 그대로 크롬 레일로 승격 (마크업 변경 0) ── */
+.judge-prompt { padding: 16px; }
+.benefit-ledger { padding: 16px; }
+.money-pattern { padding: 16px; }
+
+.judge-prompt-eyebrow,
+.benefit-ledger-eyebrow,
+.money-pattern-eyebrow {
+  position: relative;
+  margin: -16px -16px 13px;
+  padding: 7px 40px 7px 11px;
+  background: var(--chrome-rail);
+  border-bottom: 1px solid var(--chrome-edge);
+  border-radius: 11px 11px 0 0;
+  box-shadow: inset 0 1px 0 var(--chrome-hi);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-sub);
+  text-align: left;
+  text-transform: none;
+}
+/* 우측 창 버튼 3점 — 2000년대 창 크롬의 서명 */
+.judge-prompt-eyebrow::after,
+.benefit-ledger-eyebrow::after,
+.money-pattern-eyebrow::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 27px;
+  height: 7px;
+  background:
+    radial-gradient(circle 3.5px at 3.5px 3.5px, #FFF 0 40%, var(--chrome-edge) 42% 100%, transparent 0),
+    radial-gradient(circle 3.5px at 13.5px 3.5px, #FFF 0 40%, var(--chrome-edge) 42% 100%, transparent 0),
+    radial-gradient(circle 3.5px at 23.5px 3.5px, #FFF 0 40%, var(--chrome-edge) 42% 100%, transparent 0);
+  background-repeat: no-repeat;
+}
+.money-pattern--teaser .money-pattern-eyebrow { text-align: left; }
+
+/* ── 3. 크롬 버튼 — 눌리는 금속 (하이라이트 위·그림자 아래, 누르면 인셋) ──── */
+.judge-btn,
+.feed-card-ig-follow,
+.feed-filter-chip,
+.prompt-chip,
+.amount-quick-chip,
+.record-mode-btn,
+.discover-sort,
+.feed-composer-add-btn,
+.scrapbook-remove {
+  background: var(--chrome-rail);
+  border: 1px solid var(--chrome-edge);
+  border-radius: 999px;
+  color: var(--text-sub);
+  box-shadow: inset 0 1px 0 var(--chrome-hi), 0 1px 1.5px rgba(60, 45, 120, 0.14);
+  transition: box-shadow 0.08s ease, transform 0.08s ease;
+}
+.judge-btn:active,
+.feed-card-ig-follow:active,
+.feed-filter-chip:active,
+.prompt-chip:active,
+.amount-quick-chip:active,
+.record-mode-btn:active,
+.discover-sort:active,
+.feed-composer-add-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 3px rgba(60, 45, 120, 0.24);
+}
+.prompt-chip--coral, .prompt-chip--emerald, .prompt-chip--amber, .prompt-chip--indigo {
+  background: var(--chrome-rail);
+  border-color: var(--chrome-edge);
+  color: var(--text-sub);
+}
+
+/* 히어로 액션 — 화면당 하나만 보라 그라데이션을 입는다 */
+.judge-btn--primary,
+.feed-filter-chip--active,
+.record-mode-btn--active,
+.discover-sort--active,
+.daily-question-btn,
+.tds-mobile-button[style*="--button-background-color: #3182f6"] {
+  background: linear-gradient(180deg, #8F74FF 0%, #5B34E8 100%);
+  border: 1px solid var(--violet-deep);
+  color: #FFFFFF;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.5), 0 2px 6px rgba(91, 52, 232, 0.32);
+}
+.tds-mobile-button[style*="--button-background-color: #3182f6"] {
+  --button-background-color: #6E4CF5 !important;
+  --button-gradient-color: #5B34E8 !important;
+}
+.judge-btn--primary:active,
+.daily-question-btn:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(40, 15, 110, 0.4);
+}
+
+/* ── 4. 인셋 웰 — 입력은 금속 안으로 파인 홈 ──────────────────────────────── */
+.quick-input,
+.daily-note-textarea,
+.custom-input-field,
+.daily-question-input,
+.feed-card-inline-comment-input,
+.amount-input-wrap {
+  background: #FFFFFF;
+  border: 1px solid var(--chrome-edge);
+  border-radius: 8px;
+  box-shadow: inset 0 2px 3px rgba(60, 45, 120, 0.13);
+  color: var(--text-main);
+}
+.quick-input:focus,
+.daily-note-textarea:focus,
+.daily-question-input:focus,
+.feed-card-inline-comment-input:focus {
+  background: #FFFFFF;
+  border-color: var(--violet);
+  box-shadow: inset 0 2px 3px rgba(60, 45, 120, 0.13), 0 0 0 3px rgba(110, 76, 245, 0.18);
+}
+.daily-note-textarea { background-image: none; }
+
+/* ── 5. 앱바 = 창 제목 표시줄, 로고 = 크롬 각인 (화면의 유일한 그래픽) ───── */
+.feed-appbar {
+  background: var(--chrome-rail);
+  border-bottom: 1px solid var(--chrome-edge);
+  box-shadow: inset 0 1px 0 var(--chrome-hi);
+}
+.feed-appbar::after { display: none; }
+.feed-appbar-logo,
+.setup-title {
+  background: linear-gradient(180deg, #FFFFFF 0%, #B9AEE6 38%, #2E2358 52%, #6E5FA8 68%, #EFEBFF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 0.6px #2E2358;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  letter-spacing: -0.01em;
+  font-weight: 900;
+}
+
+/* ── 6. 수치는 계기판 폰트 — 영수증 모노를 Y2K 계량기로 계승 ────────────── */
+.feed-item-amount,
+.mylog-summary-value,
+.benefit-ledger-value,
+.money-pattern-stat-value,
+.timeline-item-amount,
+.dilemma-amount-value {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -0.02em;
+}
+
+/* ── 7. 판정 도장 — 인주에서 네온 각인으로 (형태 유지, 색만 Y2K) ─────────── */
+.verdict-stamp {
+  border: 2px solid var(--magenta);
+  color: var(--ink-red-strong);
+  background: rgba(255, 61, 154, 0.06);
+  border-radius: 8px;
+  backdrop-filter: none;
+}
+.verdict-stamp--ok {
+  border-color: var(--ink-blue);
+  color: var(--ink-blue-strong);
+  background: rgba(0, 196, 138, 0.07);
+}
+
+/* ── 8. 오늘의 토크 — 어두운 카드에서 시스템 대화상자로 ─────────────────── */
+.daily-question-card {
+  background: var(--card-bg);
+  color: var(--text-main);
+}
+.daily-question-tag {
+  background: var(--surface-dim);
+  border: 1px solid var(--chrome-edge);
+  color: var(--violet-deep);
+}
+.daily-question-title { color: var(--text-main); }
+.daily-question-input::placeholder { color: var(--text-mute); }
+
+/* ── 9. 게이지 — 인셋 홈 안을 채우는 바 ──────────────────────────────────── */
+.dilemma-bar {
+  background: var(--surface-dim);
+  border: 1px solid var(--chrome-edge);
+  box-shadow: inset 0 1px 2px rgba(60, 45, 120, 0.18);
+  height: 12px;
+}
+.dilemma-bar-over { background: linear-gradient(180deg, #FF6FB4 0%, #E01F80 100%); }
+.dilemma-bar-ok { background: linear-gradient(180deg, #3FE0AE 0%, #00A377 100%); }
+
+/* ── 10. 시스템 알림 — 토스트도 창이다 ───────────────────────────────────── */
+.point-toast {
+  background: rgba(26, 21, 51, 0.95);
+  border: 1px solid var(--violet-deep);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.18), 0 8px 24px rgba(30, 15, 80, 0.35);
+  backdrop-filter: none;
+}
+
+/* ── 11. 시트/모달 — 창 프레임 + 상단 크롬 레일 ─────────────────────────── */
+.modal-sheet {
+  border: 1px solid var(--chrome-edge);
+  border-bottom: none;
+  box-shadow: inset 0 1px 0 var(--chrome-hi), 0 -8px 30px rgba(40, 25, 90, 0.18);
+}
+.record-mode-seg {
+  background: var(--surface-dim);
+  border: 1px solid var(--chrome-edge);
+  border-radius: 12px;
+  box-shadow: inset 0 2px 3px rgba(60, 45, 120, 0.12);
+}
+.record-mode-btn { border-radius: 9px; }
+.record-mode-btn--active { border-radius: 9px; }
+
+/* ── 12. 뱃지·칩 — 얇은 금속 태그 ────────────────────────────────────────── */
+.feed-badge--ink {
+  background: var(--surface-faint);
+  border: 1px solid var(--chrome-edge);
+  border-radius: 5px;
+  color: var(--ink-blue-strong);
+  box-shadow: inset 0 1px 0 var(--chrome-hi);
+  transform: none;
+}
+.community-tag-chip {
+  border: 1px solid var(--chrome-edge);
+  box-shadow: inset 0 1px 0 var(--chrome-hi);
+}
+
+/* ── 13. 플로팅 작성 캡슐 — 크롬 알약 ────────────────────────────────────── */
+.floating-compose-capsule {
+  background: linear-gradient(180deg, #8F74FF 0%, #5B34E8 100%);
+  border: 1px solid var(--violet-deep);
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 4px 14px rgba(60, 30, 160, 0.35);
+  backdrop-filter: none;
+}
+
+/* ── 14. 장부 격자 — 창 안의 인셋 테이블 ─────────────────────────────────── */
+.benefit-ledger-grid {
+  border: 1px solid var(--chrome-edge);
+  border-radius: 8px;
+  background: var(--chrome-edge);
+  box-shadow: inset 0 1px 2px rgba(60, 45, 120, 0.14);
+}
+.benefit-ledger-cell { background: var(--surface-faint); }
+
+/* 요정 카드 — 구 페이퍼 크림 잔재를 크롬 창으로 (라벤더 월드 정합) */
+.pet-card {
+  background: var(--card-bg);
+  border: 1px solid var(--chrome-edge);
+  border-radius: 12px;
+  box-shadow:
+    inset 0 1px 0 var(--chrome-hi),
+    inset 0 -1px 0 var(--chrome-lo),
+    0 2px 6px rgba(60, 45, 120, 0.10);
+}
+.pet-card:hover { transform: none; }
+
+/* 범용 창 제목 표시줄 — glass-card(패딩 14/16) 안에서 쓰는 버전 */
+.y2k-titlebar {
+  position: relative;
+  margin: -14px -16px 11px;
+  padding: 7px 40px 7px 11px;
+  background: var(--chrome-rail);
+  border-bottom: 1px solid var(--chrome-edge);
+  border-radius: 11px 11px 0 0;
+  box-shadow: inset 0 1px 0 var(--chrome-hi);
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  color: var(--text-sub);
+  text-align: left;
+}
+.y2k-titlebar::after {
+  content: '';
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 27px;
+  height: 7px;
+  background:
+    radial-gradient(circle 3.5px at 3.5px 3.5px, #FFF 0 40%, var(--chrome-edge) 42% 100%, transparent 0),
+    radial-gradient(circle 3.5px at 13.5px 3.5px, #FFF 0 40%, var(--chrome-edge) 42% 100%, transparent 0),
+    radial-gradient(circle 3.5px at 23.5px 3.5px, #FFF 0 40%, var(--chrome-edge) 42% 100%, transparent 0);
+  background-repeat: no-repeat;
+}
+
+/* 광장 작성 버튼 — 구 코랄 글로우 잔재를 바이올렛 크롬으로 */
+.community-fab {
+  background: linear-gradient(180deg, #8F74FF 0%, #5B34E8 100%);
+  border: 1px solid var(--violet-deep);
+  color: #FFFFFF;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.45), 0 6px 18px rgba(60, 30, 160, 0.38);
+}
+.community-fab:active {
+  transform: translateY(1px);
+  box-shadow: inset 0 2px 4px rgba(40, 15, 110, 0.4);
 }
