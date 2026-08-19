@@ -143,7 +143,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         id: `notif-${n.id}`,
         senderNickname: n.sender_nickname,
         senderPersonaEmoji: n.type === 'follow' ? '👥' : '💌',
-        senderPersonaColor: n.type === 'follow' ? '#211E18' : '#C93A2B', // 먹 잉크 / 인주
+        senderPersonaColor: n.type === 'follow' ? '#1A1533' : '#C4106B', // 리터럴 hex — 알파 결합(`${color}15`)에 쓰인다
         text: n.type === 'follow' ? `${n.sender_nickname}님이 회원님을 팔로우했어요!` : (n.message || ''),
         timestamp: timeAgo(n.created_at),
         created_at: n.created_at,
@@ -465,8 +465,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               minHeight: '80px',
               padding: '12px',
               borderRadius: '12px',
-              background: '#EFE7D2',
-              border: '1px solid #EFE7D2',
+              background: 'var(--surface-dim)',
+              border: '1px solid var(--surface-dim)',
               color: '#fff',
               fontSize: '13px',
               resize: 'none',
@@ -606,7 +606,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                     className="timeline-share-btn" 
                     title="짠톡방에 공유하기" 
                     onClick={() => onShareToChat(entryForDate)}
-                    style={{ background: '#EFE7D2', border: '1px solid var(--divider)', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
+                    style={{ background: 'var(--surface-dim)', border: '1px solid var(--divider)', borderRadius: '100px', padding: '2px 8px', color: 'var(--text-sub)', fontSize: '10px', cursor: 'pointer', fontWeight: 800 }}
                   >
                     <CustomIcon emoji="👥" /> 공유
                   </button>
@@ -637,7 +637,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                     <div className="timeline-item-info">
                       <span className="timeline-item-cat">
                         {item.category === '절약 방어' || savedAmt > 0 ? (
-                          <span style={{ color: '#2F5A83', fontWeight: 800 }}><CustomIcon emoji="🛡️" /> 지킨 돈</span>
+                          <span style={{ color: 'var(--ink-blue-strong)', fontWeight: 800 }}><CustomIcon emoji="🛡️" /> 지킨 돈</span>
                         ) : item.category === '무지출' ? (
                           <span><CustomIcon emoji="🌿" /> 무지출</span>
                         ) : (
@@ -651,7 +651,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
                       </span>
                       {commentText && <span className="timeline-item-comment">{commentText}</span>}
                     </div>
-                    <span className={`timeline-item-amount ${savedAmt > 0 ? 'timeline-item-amount--saved' : item.amount === 0 ? 'timeline-item-amount--zero' : ''}`} style={savedAmt > 0 ? { color: '#2F5A83', fontWeight: 800 } : {}}>
+                    <span className={`timeline-item-amount ${savedAmt > 0 ? 'timeline-item-amount--saved' : item.amount === 0 ? 'timeline-item-amount--zero' : ''}`} style={savedAmt > 0 ? { color: 'var(--ink-blue-strong)', fontWeight: 800 } : {}}>
                       {savedAmt > 0 ? `+${formatAmount(savedAmt)}` : item.amount > 0 ? `−${formatAmount(item.amount)}` : ''}
                     </span>
                   </div>
@@ -934,14 +934,14 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
                 const isPeak = i === peakDow && v > 0;
                 return (
                   <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px', height: '100%', justifyContent: 'flex-end' }}>
-                    <div style={{ width: '100%', height: `${h}%`, borderRadius: '6px 6px 0 0', background: isPeak ? 'linear-gradient(180deg,#C93A2B,#A9822F)' : 'var(--divider)' }} />
-                    <span style={{ fontSize: '10px', fontWeight: isPeak ? 800 : 500, color: isPeak ? '#A9822F' : 'var(--text-sub)' }}>{dayNames[i]}</span>
+                    <div style={{ width: '100%', height: `${h}%`, borderRadius: '6px 6px 0 0', background: isPeak ? 'linear-gradient(180deg,var(--ink-red-strong),var(--brass))' : 'var(--divider)' }} />
+                    <span style={{ fontSize: '10px', fontWeight: isPeak ? 800 : 500, color: isPeak ? 'var(--brass)' : 'var(--text-sub)' }}>{dayNames[i]}</span>
                   </div>
                 );
               })}
             </div>
             <p style={{ margin: '14px 0 0', fontSize: '12px', lineHeight: 1.5, color: 'var(--text-sub)', textAlign: 'center' }}>
-              지름신은 <strong style={{ color: '#A9822F' }}>{dayNames[peakDow]}요일 {hourLabels[peakHour]}</strong>에 공명해요.<br />그 시간대엔 지갑을 한 번 더 단속해보세요 🛡️
+              지름신은 <strong style={{ color: 'var(--brass)' }}>{dayNames[peakDow]}요일 {hourLabels[peakHour]}</strong>에 공명해요.<br />그 시간대엔 지갑을 한 번 더 단속해보세요 🛡️
             </p>
           </>
         )}
@@ -1026,9 +1026,9 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
             })}
             {[0, 1, 2, 3, 4].map((i) => {
               const pt = getPoint(100, i);
-              return <line key={i} x1="100" y1="92" x2={pt.split(',')[0]} y2={pt.split(',')[1]} stroke="#EFE7D2" strokeWidth="1" />;
+              return <line key={i} x1="100" y1="92" x2={pt.split(',')[0]} y2={pt.split(',')[1]} stroke="var(--surface-dim)" strokeWidth="1" />;
             })}
-            <polygon points={myPoints} fill="rgba(201, 58, 43, 0.28)" stroke="#C93A2B" strokeWidth="2" className="radar-polygon" />
+            <polygon points={myPoints} fill="rgba(255, 61, 154, 0.28)" stroke="var(--ink-red-strong)" strokeWidth="2" className="radar-polygon" />
             {labels.map((lbl, i) => (
               <text key={i} x={lbl.x} y={lbl.y} fill="#fff" fontSize="10" fontWeight="900" textAnchor={lbl.align} style={{ fill: i === 4 && p ? p.color : i === 0 ? 'var(--ink-red)' : 'var(--text-sub)' }}>
                 {lbl.name}
@@ -1072,7 +1072,7 @@ function MailboxTab({ messages, handleClearAllMessages, clearConfirm, handleRepl
                 <div className="mailbox-msg-meta">
                   <div className="mailbox-msg-from">
                     {!isSent && (
-                      <span className="mailbox-sender-badge" style={{ background: `${msg.senderPersonaColor || '#C93A2B'}15`, color: msg.senderPersonaColor || '#C93A2B' }}>
+                      <span className="mailbox-sender-badge" style={{ background: `${msg.senderPersonaColor || '#C4106B'}15`, color: msg.senderPersonaColor || '#C4106B' }}>
                         <CustomIcon emoji={msg.senderPersonaEmoji || '🐷'} className="custom-icon--sm" /> {msg.senderNickname}
                       </span>
                     )}

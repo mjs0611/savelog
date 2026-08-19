@@ -18,7 +18,7 @@ class ErrorBoundary extends React.Component<
       return (
         <div style={{ padding: 24, fontFamily: 'sans-serif', color: '#191F28', background: '#ffffff', minHeight: '100dvh' }}>
           <h2 style={{ fontSize: 18, marginBottom: 12 }}>앱 오류</h2>
-          <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: '#C93A2B' }}>
+          <pre style={{ fontSize: 12, whiteSpace: 'pre-wrap', color: 'var(--ink-red-strong)' }}>
             {this.state.error.message}
           </pre>
         </div>

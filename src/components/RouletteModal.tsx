@@ -87,7 +87,7 @@ export default function RouletteModal({ open, onClose, onPrize }: Props) {
             width: '210px',
             padding: '22px 12px',
             borderRadius: '18px',
-            border: result?.jackpot ? '2.5px solid #A9822F' : '2px solid var(--primary-glow)',
+            border: result?.jackpot ? '2.5px solid var(--brass)' : '2px solid var(--primary-glow)',
             background: result?.jackpot ? 'linear-gradient(135deg, rgba(245,158,11,0.15), rgba(255,222,104,0.2))' : 'var(--primary-light)',
             transition: 'all 0.25s',
           }}>

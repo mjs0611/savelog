@@ -171,7 +171,7 @@ export default function MoneyPattern({ entries }: { entries: Entry[] }) {
             {a.persona.title}
           </h3>
         </div>
-        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', background: 'rgba(33, 30, 24, 0.08)', color: 'var(--primary)' }}>
+        <span style={{ fontSize: '11px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', background: 'rgba(26, 21, 51, 0.08)', color: 'var(--primary)' }}>
           {a.persona.badge}
         </span>
       </div>
@@ -182,7 +182,7 @@ export default function MoneyPattern({ entries }: { entries: Entry[] }) {
       <div className="money-pattern-stats">
         <div className="money-pattern-stat">
           <span className="money-pattern-stat-label">그동안 지킨 돈</span>
-          <span className="money-pattern-stat-value" style={{ color: a.savedTotal > 0 ? '#2F5A83' : 'inherit' }}>
+          <span className="money-pattern-stat-value" style={{ color: a.savedTotal > 0 ? 'var(--ink-blue-strong)' : 'inherit' }}>
             {a.savedTotal > 0 ? `+${formatAmount(a.savedTotal)}` : '0원'}
           </span>
         </div>
@@ -211,7 +211,7 @@ export default function MoneyPattern({ entries }: { entries: Entry[] }) {
           width: '100%',
           padding: '9px',
           borderRadius: '12px',
-          background: 'rgba(33, 30, 24, 0.06)',
+          background: 'rgba(26, 21, 51, 0.06)',
           border: '1px solid var(--divider)',
           color: 'var(--text-main)',
           fontSize: '12px',

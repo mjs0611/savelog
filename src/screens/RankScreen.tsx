@@ -95,7 +95,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           if (dow !== 0 && dow !== 6) return null;
           const label = dow === 0 ? '오늘 밤 마감' : '내일 마감';
           return (
-            <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 800, color: 'var(--accent, #C93A2B)' }}>
+            <p style={{ margin: '4px 0 0', fontSize: '12px', fontWeight: 800, color: 'var(--accent, var(--ink-red-strong))' }}>
               <CustomIcon emoji="⏳" /> 이번 주 순위 {label}{weekRank.length > 0 ? ` · 지금 ${weekRank.length}명 참여 중` : ''}
             </p>
           );
@@ -154,7 +154,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
           shareExternal(buildRankBragMessage(myRankIdx + 1, weekRank.length, statLine));
         };
         return (
-          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(33, 30, 24, 0.08) 0%, rgba(33, 30, 24, 0.02) 100%)', border: '1.5px solid rgba(33, 30, 24, 0.3)', marginBottom: '16px' }}>
+          <div className="glass-card my-rank-card" style={{ background: 'linear-gradient(135deg, rgba(26, 21, 51, 0.08) 0%, rgba(26, 21, 51, 0.02) 100%)', border: '1.5px solid rgba(26, 21, 51, 0.3)', marginBottom: '16px' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
               <div className="my-rank-left">
                 <span className="my-rank-pos" style={{ color: 'var(--primary)', fontSize: '20px', fontWeight: 800 }}>{myRankIdx + 1}위</span>
@@ -172,7 +172,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
             </div>
             <button
               onClick={handleBragRank}
-              style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(33, 30, 24,0.12)', color: 'var(--primary)', border: '1px solid rgba(33, 30, 24,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}
+              style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(26, 21, 51,0.12)', color: 'var(--primary)', border: '1px solid rgba(26, 21, 51,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}
             >
               <CustomIcon emoji="📣" /> 친구에게 내 순위 자랑하기
             </button>
@@ -324,13 +324,13 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
                       <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
                     )}
                     {reward && (
-                      <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(33, 30, 24,0.12)', borderRadius: '8px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
+                      <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(26, 21, 51,0.12)', borderRadius: '8px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
                         <CustomIcon emoji="🏆" /> {reward.label} +{reward.amount}원
                       </span>
                     )}
                   </span>
                   <span className="rank-row-days" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: row.total === 0 ? '#4C79A5' : '#A9822F' }}>{row.total === 0 ? <><CustomIcon emoji="🌿" /> 무지출</> : <><CustomIcon emoji="💸" /> 유지출</>}</span>
+                    <span style={{ fontSize: '11px', fontWeight: 800, color: row.total === 0 ? 'var(--ink-blue)' : 'var(--brass)' }}>{row.total === 0 ? <><CustomIcon emoji="🌿" /> 무지출</> : <><CustomIcon emoji="💸" /> 유지출</>}</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>·</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{row.days}일 기록</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>·</span>

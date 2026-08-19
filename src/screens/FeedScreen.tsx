@@ -1642,7 +1642,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <button className="story-item" onClick={() => setShowBossSheet(true)}>
                 <span className="story-avatar story-ring--boss">
                   <CustomIcon emoji={weeklyBoss.boss_emoji || '🐲'} />
-                  <span className="story-badge" style={{ color: '#C93A2B' }}>{weeklyBoss.hp <= 0 ? '처치' : `${bossPct}%`}</span>
+                  <span className="story-badge" style={{ color: 'var(--ink-red-strong)' }}>{weeklyBoss.hp <= 0 ? '처치' : `${bossPct}%`}</span>
                 </span>
                 <span className="story-name">주간 보스</span>
               </button>
@@ -1658,7 +1658,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
       {welcomeBack && (
         <div
-          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(33, 30, 24, 0.25)', background: 'rgba(33, 30, 24, 0.06)' }}
+          style={{ display: 'flex', alignItems: 'center', gap: '10px', width: '100%', textAlign: 'left', padding: '12px 14px', borderRadius: '14px', border: '1px solid rgba(26, 21, 51, 0.25)', background: 'rgba(26, 21, 51, 0.06)' }}
         >
           <IconHeart filled size={18} className="" />
           <span style={{ flex: 1, fontSize: '13px', fontWeight: 700, color: 'var(--text-main)', lineHeight: 1.4 }}>
@@ -1670,7 +1670,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             return mine ? (
               <button
                 onClick={() => { handleBragShare(mine); setWelcomeBack(null); }}
-                style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: 'var(--text-main)', color: 'var(--bg-base, #F6F0E0)', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
+                style={{ flexShrink: 0, padding: '6px 12px', borderRadius: '10px', border: 'none', background: 'var(--text-main)', color: 'var(--bg-base, var(--card-bg))', fontSize: '12px', fontWeight: 800, cursor: 'pointer' }}
               >
                 자랑하기
               </button>
@@ -2175,11 +2175,11 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 ) : (
                   <>
                     <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', fontWeight: 800, marginBottom: '4px' }}>
-                      <span style={{ color: '#C93A2B' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
+                      <span style={{ color: 'var(--ink-red-strong)' }}>HP {weeklyBoss.hp} / {weeklyBoss.max_hp}</span>
                       <span style={{ color: 'var(--text-sub)' }}>{pct}%</span>
                     </div>
                     <div style={{ height: '10px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden', marginBottom: '12px' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: '#C93A2B', transition: 'width 0.5s' }} />
+                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, #FF6FB4, #E01F80)', transition: 'width 0.5s' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
                       멤버의 하루 첫 기록이 공격이 됩니다. 무지출 30 · 절약 방어 20 · 기록 10. 이번 주 안에 처치하면 <strong style={{ color: 'var(--primary)' }}>전원 젤리 50개</strong>.
@@ -2269,7 +2269,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                     handleToggleFollow(f.id, f.nickname);
                     setQuickMenuFriend(null);
                   }}
-                  style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(201, 58, 43, 0.08)', border: '1px solid rgba(201, 58, 43, 0.15)', color: 'var(--error)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
+                  style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(255, 61, 154, 0.08)', border: '1px solid rgba(255, 61, 154, 0.15)', color: 'var(--error)', fontWeight: 700, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
                 >
                   {renderTextWithEmoji('👥 팔로우 취소 (언팔로우)')}
                 </button>
