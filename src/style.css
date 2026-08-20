@@ -1,4 +1,5 @@
-@import url("https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.css");
+/* Pretendard는 index.html에서 비동기 로드 — CSS @import는 렌더 블로킹이라 CDN 지연 시
+   "최초 접속 20초" 반려 위험 (fx-signal 1차 반려 실사유와 동일 패턴). 시스템 폰트로 먼저 그린다 */
 
 :root {
   /* Y2K / 레트로 퓨처리즘 — 2000년대 데스크톱 OS 창 (크롬 베벨 + 라벤더 실버)
@@ -8381,3 +8382,26 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
   transform: translateY(1px);
   box-shadow: inset 0 2px 4px rgba(40, 15, 110, 0.4);
 }
+
+/* 부팅 스플래시 — 본체 청크가 붙기 전 첫 페인트. CSS만으로 그린다(JS·에셋 의존 0) */
+.boot-splash {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  height: 100dvh;
+  background: var(--bg);
+}
+.boot-splash-logo {
+  font-size: 26px;
+  font-weight: 900;
+  letter-spacing: -0.01em;
+  background: linear-gradient(180deg, #FFFFFF 0%, #B9AEE6 38%, #2E2358 52%, #6E5FA8 68%, #EFEBFF 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  -webkit-text-stroke: 0.6px #2E2358;
+  text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+}
+.boot-splash-sub { font-size: 12px; font-weight: 700; color: var(--text-mute); }

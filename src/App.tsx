@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
 import { haptic } from './lib/haptics';
@@ -31,8 +31,6 @@ import {
   type DailyState,
   updateJellyPocketSpent,
   addJelly,
-  getIntentTrigger,
-  setIntentTrigger,
   getWeeklyBudget,
   addToGoal,
   getFollowedUsers,
@@ -48,11 +46,13 @@ import { preloadReward, showReward, initBannerAds } from './lib/ads';
 import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, fetchGlobalStats, addFairyResponse, type GlobalStats, type SpendingItem, type WeekRankRow } from './lib/supabase';
 import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
 import FeedScreen from './screens/FeedScreen';
-import RankScreen from './screens/RankScreen';
-import ProfileScreen from './screens/ProfileScreen';
-import RecordScreen from './screens/RecordScreen';
-import PersonaTest from './screens/PersonaTest';
-import CommunityScreen from './screens/CommunityScreen';
+// 첫 화면(피드)에 필요 없는 화면은 지연 로드 — 시작 번들에서 빼서 최초 접속 시간을 줄인다
+// (자매앱 fx-signal·economy-piggy가 "최초 접속 20초 초과"로 실제 반려된 사유)
+const RankScreen = lazy(() => import('./screens/RankScreen'));
+const ProfileScreen = lazy(() => import('./screens/ProfileScreen'));
+const RecordScreen = lazy(() => import('./screens/RecordScreen'));
+const PersonaTest = lazy(() => import('./screens/PersonaTest'));
+const CommunityScreen = lazy(() => import('./screens/CommunityScreen'));
 import CustomIcon from './components/CustomIcon';
 import { IconTabFeed, IconTabPlaza, IconTabMy } from './components/Icons';
 
@@ -117,6 +117,11 @@ export default function App() {
     if (path === 'mylog' || path === 'profile') return 'mylog';
     return 'feed';
   });
+  // 방문한 탭만 지연 로드한다. 한 번 방문하면 계속 마운트돼 있어 재요청·플리커는 그대로 막힌다
+  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(() => new Set([tab]));
+  useEffect(() => {
+    setVisitedTabs(prev => prev.has(tab) ? prev : new Set(prev).add(tab));
+  }, [tab]);
   const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
   const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
   const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
@@ -131,8 +136,6 @@ export default function App() {
   const [rankClaiming, setRankClaiming] = useState(false);
   const [showPointToast, setShowPointToast] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
-  // 인텐트 트리거 — 온보딩 관문에서 빼서 첫 기록 완료 후 1회 모달로 (습관 장치는 유지, 장벽은 제거)
-  const [showTriggerPicker, setShowTriggerPicker] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
   const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
@@ -577,10 +580,8 @@ export default function App() {
         if (chargedToGoal === 0) haptic('softMedium'); // 영수증 쾅 — 충전 시엔 addToGoal의 무게 햅틱이 대신함(이중 진동 방지)
         showToast(toastMsg);
 
-        // 습관 트리거 — 아하 정점(내 카드의 요정 반응)을 가리지 않게 토스트(3s) 소멸 후 ~4초 뒤 제안
-        if (!getIntentTrigger()) {
-          setTimeout(() => { if (!getIntentTrigger()) setShowTriggerPicker(true); }, 7000);
-        }
+        // 습관 트리거 자동 모달 제거(2026-08-20) — 자동 오픈 오버레이는 자매앱 2개의 실제 반려 사유
+        // ("진입 즉시 바텀시트" 계열). 픽커는 마이로그의 요정 카드에서 수동으로 연다.
       } else {
         haptic('softMedium');
         showToast('추가 자백 완료');
@@ -705,10 +706,14 @@ export default function App() {
           />
         </div>
         <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
-          {/* 광장 — 주제별 게시판 (짠톡방은 사용량 0으로 폐기, 친밀 공간은 서클이 담당) */}
-          <CommunityScreen userId={userId} />
+          {/* 광장 — 주제별 게시판. 처음 방문할 때 로드하고, 이후엔 마운트를 유지해 재요청·플리커를 막는다 */}
+          {visitedTabs.has('community') && (
+            <Suspense fallback={null}><CommunityScreen userId={userId} /></Suspense>
+          )}
         </div>
         <div className={tab !== 'mylog' ? 'tab-panel--hidden' : ''}>
+          {visitedTabs.has('mylog') && (
+          <Suspense fallback={null}>
           <ProfileScreen
             userId={userId}
             nickname={nickname}
@@ -724,6 +729,8 @@ export default function App() {
             onShieldEarned={handleFriendsInvited}
             onOpenRanking={() => { loadRank(); setShowRankingModal(true); }}
           />
+          </Suspense>
+          )}
         </div>
       </div>
 
@@ -735,6 +742,7 @@ export default function App() {
               <h3 className="ranking-modal-title"><CustomIcon emoji="🏆" /> 이번 주 절약 랭킹</h3>
               <button className="ranking-modal-close" onClick={() => setShowRankingModal(false)}>✕</button>
             </div>
+            <Suspense fallback={null}>
             <RankScreen
               userId={userId}
               weekRank={weekRank}
@@ -746,6 +754,7 @@ export default function App() {
               rankClaiming={rankClaiming}
               onRetry={loadRank}
             />
+            </Suspense>
           </div>
         </div>
       )}
@@ -770,12 +779,14 @@ export default function App() {
 
       {/* 기록 모달 */}
       {showRecord && (
+        <Suspense fallback={null}>
         <RecordScreen
           onSubmit={handleSubmitRecord}
           onClose={() => setShowRecord(false)}
           submitting={submitting}
           isAdditional={daily.recorded && daily.date === getTodayStr()}
         />
+        </Suspense>
       )}
 
       {/* 무지출 한마디 모달 */}
@@ -816,6 +827,7 @@ export default function App() {
 
       {/* 소비 성향 테스트 모달 */}
       {showPersonaTest && (
+        <Suspense fallback={null}>
         <PersonaTest
           onClose={(newPersona) => {
             setShowPersonaTest(false);
@@ -825,34 +837,7 @@ export default function App() {
             }
           }}
         />
-      )}
-
-      {/* 습관 트리거 픽커 — 첫 기록 후 1회 (선택 사항) */}
-      {showTriggerPicker && (
-        <div className="modal-overlay" onClick={() => setShowTriggerPicker(false)}>
-          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
-            <div style={{ padding: '20px 16px', textAlign: 'left' }}>
-              <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>내일도 판정 받으려면, 언제가 편해요?</h3>
-              <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>구체적인 순간을 정해두면 습관 유지 확률이 크게 올라가요.</p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                {['🍚 점심 식사 마치고', '☕ 카페 갈 때', '🚌 퇴근길 버스/지하철에서', '🛌 자기 전 침대에서'].map(label => (
-                  <button
-                    key={label}
-                    onClick={() => {
-                      setIntentTrigger(label);
-                      setShowTriggerPicker(false);
-                      showToast(`⏰ 좋아요! "${label}" 마다 만나요`);
-                    }}
-                    style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(255,255,255,0.65)', border: '1px solid var(--divider)', fontWeight: 700, fontSize: '13.5px', cursor: 'pointer', textAlign: 'left' }}
-                  >
-                    {label}
-                  </button>
-                ))}
-              </div>
-              <button onClick={() => setShowTriggerPicker(false)} style={{ marginTop: '10px', width: '100%', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>나중에 정할게요</button>
-            </div>
-          </div>
-        </div>
+        </Suspense>
       )}
 
       {/* 포인트 토스트 */}

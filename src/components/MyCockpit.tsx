@@ -18,6 +18,7 @@ import {
   equipItem,
   SHOP_ITEMS,
   getIntentTrigger,
+  setIntentTrigger,
   getSavingGoal,
   setSavingGoal,
   getLastEmotion,
@@ -90,7 +91,9 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
   const [showShopModal, setShowShopModal] = useState(false);
   const [editingPetName, setEditingPetName] = useState(false);
   const [petNameInput, setPetNameInput] = useState(() => getPetName() || '');
-  const intentTrigger = getIntentTrigger();
+  const [intentTriggerState, setIntentTriggerState] = useState<string | null>(() => getIntentTrigger());
+  const [showTriggerModal, setShowTriggerModal] = useState(false);
+  const intentTrigger = intentTriggerState;
 
   const [savingGoal, setSavingGoalState] = useState(() => getSavingGoal());
   const [goalBump, setGoalBump] = useState(0); // 충전 순간 게이지 출렁 — key 리마운트로 애니메이션 재발사
@@ -354,7 +357,8 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                   <span style={{ color: conditionColor }}>{condition} · {conditionLabel}</span>
                 </div>
                 <div style={{ height: '6px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden' }}>
-                  <div style={{ width: `${condition}%`, height: '100%', borderRadius: '100px', background: conditionColor, transition: 'width 0.4s' }} />
+                  {/* 고정폭 바를 clip-path로 깎는다 — width 애니메이션의 레이아웃 비용 없이 둥근 캡·그라데이션 보존 */}
+                  <div style={{ width: '100%', height: '100%', borderRadius: '100px', background: conditionColor, clipPath: `inset(0 ${100 - condition}% 0 0 round 100px)`, transition: 'clip-path 0.4s' }} />
                 </div>
               </div>
             </div>
@@ -364,6 +368,39 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
           </button>
         </div>
       </div>
+
+      {/* ⏰ 기록 시간 정하기 — 구 자동 모달(심사 반려 패턴)을 수동 진입으로 이식. 미설정일 때만 노출 */}
+      {!intentTriggerState && (
+        <button
+          onClick={() => setShowTriggerModal(true)}
+          style={{ width: '100%', marginBottom: '16px', padding: '11px 14px', borderRadius: '12px', background: 'var(--surface-faint)', border: '1px solid var(--chrome-edge)', boxShadow: 'inset 0 1px 0 var(--chrome-hi)', color: 'var(--text-sub)', fontSize: '12.5px', fontWeight: 700, cursor: 'pointer', textAlign: 'left' }}
+        >
+          <CustomIcon emoji="⏰" /> 매일 기록할 시간을 정하면 요정이 그 순간을 기억해요 <span style={{ float: 'right', color: 'var(--violet-deep)', fontWeight: 800 }}>정하기 ›</span>
+        </button>
+      )}
+      <SimpleModal open={showTriggerModal} onClose={() => setShowTriggerModal(false)}>
+        <div style={{ padding: '20px 16px', textAlign: 'left' }}>
+          <h3 style={{ margin: '0 0 4px', fontSize: '17px', fontWeight: 800 }}>매일 언제 기록하는 게 편해요?</h3>
+          <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>구체적인 순간을 정해두면 습관이 오래가요.</p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
+            {['🍚 점심 식사 마치고', '☕ 카페 갈 때', '🚌 퇴근길 버스/지하철에서', '🛌 자기 전 침대에서'].map(label => (
+              <button
+                key={label}
+                onClick={() => {
+                  setIntentTrigger(label);
+                  setIntentTriggerState(label);
+                  setShowTriggerModal(false);
+                  showToast(`⏰ 좋아요! "${label}" 마다 만나요`);
+                }}
+                style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--surface-faint)', border: '1px solid var(--chrome-edge)', fontWeight: 700, fontSize: '13.5px', cursor: 'pointer', textAlign: 'left' }}
+              >
+                {renderTextWithEmoji(label)}
+              </button>
+            ))}
+          </div>
+          <button onClick={() => setShowTriggerModal(false)} style={{ marginTop: '10px', width: '100%', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '12px', cursor: 'pointer', fontWeight: 700 }}>닫기</button>
+        </div>
+      </SimpleModal>
 
       {/* 🛒 충동 대기방 — 사고 싶은 걸 담아두면 48시간 뒤 피드에서 다시 물어봐요 */}
       <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left' }}>
@@ -434,7 +471,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                   <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{formatAmount(sharedSaved)} ({pct}%)</span>
                 </div>
                 <div style={{ height: '12px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden' }}>
-                  <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, var(--ink-blue), #3FE0AE)', transition: 'width 0.4s' }} />
+                  <div style={{ width: '100%', height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, var(--ink-blue), #3FE0AE)', clipPath: `inset(0 ${100 - pct}% 0 0 round 100px)`, transition: 'clip-path 0.4s' }} />
                 </div>
                 <p style={{ margin: '8px 0 0', fontSize: '11px', color: 'var(--text-sub)' }}>
                   {myNick} {formatAmount(isA ? duo.saved_a : duo.saved_b)} · {otherNick} {formatAmount(isA ? duo.saved_b : duo.saved_a)} 기여 — 둘의 절약이 한 목표를 채워요
@@ -499,7 +536,7 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                 return (
                   <>
                     <div style={{ height: '14px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden', marginBottom: '10px' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: done ? 'linear-gradient(90deg, var(--brass), #F0C863)' : 'linear-gradient(90deg, #8F74FF, #5B34E8)', transition: 'width 0.4s' }} />
+                      <div style={{ width: '100%', height: '100%', borderRadius: '100px', background: done ? 'linear-gradient(90deg, var(--brass), #F0C863)' : 'linear-gradient(90deg, #8F74FF, #5B34E8)', clipPath: `inset(0 ${100 - pct}% 0 0 round 100px)`, transition: 'clip-path 0.4s' }} />
                     </div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '14px', fontSize: '13px' }}>
                       <span style={{ color: 'var(--primary)', fontWeight: 800 }}>{formatAmount(savingGoal.saved)} ({pct}%)</span>

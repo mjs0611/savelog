@@ -2179,7 +2179,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       <span style={{ color: 'var(--text-sub)' }}>{pct}%</span>
                     </div>
                     <div style={{ height: '10px', borderRadius: '100px', background: 'var(--divider)', overflow: 'hidden', marginBottom: '12px' }}>
-                      <div style={{ width: `${pct}%`, height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, #FF6FB4, #E01F80)', transition: 'width 0.5s' }} />
+                      <div style={{ width: '100%', height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, #FF6FB4, #E01F80)', clipPath: `inset(0 ${100 - pct}% 0 0 round 100px)`, transition: 'clip-path 0.5s' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
                       멤버의 하루 첫 기록이 공격이 됩니다. 무지출 30 · 절약 방어 20 · 기록 10. 이번 주 안에 처치하면 <strong style={{ color: 'var(--primary)' }}>전원 젤리 50개</strong>.

@@ -42,12 +42,15 @@ export default function BenefitLedger({ userId, entries }: Props) {
       <div className="benefit-ledger-grid">
         <div className="benefit-ledger-cell">
           <span className="benefit-ledger-who"><CustomIcon emoji="🌱" /> 미래의 나</span>
+          {/* 지킨 돈이 없으면 0원 대신 무지출 일수를 승격 — 실사용 데이터가 있는 지표(전 유저의 77%)가 장부를 산 것으로 만든다 */}
           <span className="benefit-ledger-value benefit-ledger-value--saved">
-            {savedTotal > 0 ? `+${formatAmount(savedTotal)}` : '0원'}
+            {savedTotal > 0 ? `+${formatAmount(savedTotal)}` : zeroDays > 0 ? `무지출 ${zeroDays}일` : '0원'}
           </span>
           <span className="benefit-ledger-note">
             {savedTotal > 0
               ? `참아서 남긴 몫${zeroDays > 0 ? ` · 무지출 ${zeroDays}일` : ''}`
+              : zeroDays > 0
+              ? '지갑이 쉰 날들 — 전부 미래의 내 몫이에요'
               : '참은 돈을 적으면 여기 쌓여요'}
           </span>
         </div>

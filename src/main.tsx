@@ -1,8 +1,20 @@
-import React from 'react';
+import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import { ThemeProvider, PortalProvider } from '@toss/tds-mobile';
 import './style.css';
-import App from './App';
+
+// TDS(약 870KB)와 앱 본체를 시작 번들에서 분리한다. 첫 페인트는 아래 스플래시가
+// CSS만으로 즉시 그리고, 그 뒤에 본체 청크가 붙는다.
+// (자매앱 fx-signal·economy-piggy가 "최초 접속 20초 초과"로 반려된 사유를 선제 차단)
+const Root = lazy(() => import('./Root'));
+
+function BootSplash() {
+  return (
+    <div className="boot-splash">
+      <span className="boot-splash-logo">savelog</span>
+      <span className="boot-splash-sub">불러오는 중</span>
+    </div>
+  );
+}
 
 declare const __BUILD_ID__: string;
 (window as unknown as Record<string, unknown>).__build__ = __BUILD_ID__;
@@ -30,10 +42,8 @@ class ErrorBoundary extends React.Component<
 
 createRoot(document.getElementById('root')!).render(
   <ErrorBoundary>
-    <ThemeProvider>
-      <PortalProvider>
-        <App />
-      </PortalProvider>
-    </ThemeProvider>
+    <Suspense fallback={<BootSplash />}>
+      <Root />
+    </Suspense>
   </ErrorBoundary>,
 );
