@@ -5,12 +5,12 @@
   "scripts": {
     "dev": "vite",
     "dev:ait": "vite --mode ait",
-    "build": "tsc -b && vite build",
+    "build": "tsc -b && vite build && ait build",
     "build:ait": "tsc -b && vite build --mode ait",
     "preview": "vite preview"
   },
   "dependencies": {
-    "@apps-in-toss/web-framework": "^2.6.1",
+    "@apps-in-toss/web-framework": "^3.0.5",
     "@emotion/react": "^11.14.0",
     "@supabase/supabase-js": "^2.106.2",
     "@toss/tds-mobile": "^2.3.0",
@@ -23,6 +23,7 @@
     "@types/react-dom": "^18.3.7",
     "@vitejs/plugin-react": "^4.7.0",
     "typescript": "^5.9.3",
-    "vite": "^5.4.21"
+    "vite": "^5.4.21",
+    "@apps-in-toss/devtools": "^3.0.5"
   }
 }

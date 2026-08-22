@@ -1,9 +1,14 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 
+import aitDevtools from "@apps-in-toss/devtools/unplugin";
+
 export default defineConfig({
-  plugins: [((react as any).default || react)()],
+  plugins: [aitDevtools.vite(), ((react as any).default || react)()],
   base: './',
+  css: {
+    postcss: {},
+  },
   server: {
     port: 5180,
     host: 'localhost',
