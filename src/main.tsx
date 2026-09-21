@@ -1,10 +1,8 @@
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
-import './style.css';
+import './journal.css';
 
-// TDS(약 870KB)와 앱 본체를 시작 번들에서 분리한다. 첫 페인트는 아래 스플래시가
-// CSS만으로 즉시 그리고, 그 뒤에 본체 청크가 붙는다.
-// (자매앱 fx-signal·economy-piggy가 "최초 접속 20초 초과"로 반려된 사유를 선제 차단)
+// First paint stays small; Root separates personal and legacy surfaces.
 const Root = lazy(() => import('./Root'));
 
 function BootSplash() {

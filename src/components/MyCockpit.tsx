@@ -74,12 +74,9 @@ interface Props {
   daily: DailyState;
   streak: StreakData;
   weekRank: WeekRankRow[];
-  pendingPoints: number;
-  pendingClaiming?: boolean;
-  onClaimPending: () => void;
 }
 
-export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, pendingPoints, pendingClaiming = false, onClaimPending }: Props) {
+export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank }: Props) {
   const [speech, setSpeech] = useState<string | null>(null);
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isWobbling, setIsWobbling] = useState(false);
@@ -306,18 +303,8 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
         <button onClick={() => setShowGuide(true)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', borderRadius: '100px', padding: '5px 12px', cursor: 'pointer' }}>사용법</button>
       </div>
 
-      {/* 💠 통합 리워드 스트립 — 토스포인트(현금) · 젤리(가상) · 목표(절약진행) 한눈에 */}
+      {/* 💠 통합 리워드 스트립 — 젤리(가상) · 목표(절약진행) 한눈에 */}
       <div className="glass-card" style={{ padding: '12px', marginBottom: '16px', display: 'flex', gap: '8px' }}>
-        <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
-          <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="💰" /> 토스포인트</p>
-          <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: pendingPoints > 0 ? 'var(--primary)' : 'var(--text-main)' }}>{pendingPoints}원</p>
-          {pendingPoints > 0 && (
-            <button onClick={onClaimPending} disabled={pendingClaiming}
-              style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer' }}>
-              {pendingClaiming ? '받는 중' : '광고 보고 받기'}
-            </button>
-          )}
-        </div>
         <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🪙" /> 젤리</p>
           <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800 }}>{jellyBalance}</p>

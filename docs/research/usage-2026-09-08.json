@@ -1,0 +1,170 @@
+{
+  "as_of_kst": "2026-09-08T07:00:22.710003+09:00",
+  "coverage": {
+    "users": {
+      "rows": 81,
+      "complete": true
+    },
+    "entries": {
+      "rows": 74,
+      "complete": true
+    },
+    "reactions": {
+      "rows": 80,
+      "complete": true
+    },
+    "community_posts": {
+      "rows": 2,
+      "complete": true
+    },
+    "community_comments": {
+      "rows": 15,
+      "complete": true
+    },
+    "community_likes": {
+      "rows": 0,
+      "complete": true
+    },
+    "follows": {
+      "rows": 10,
+      "complete": true
+    },
+    "notifications": {
+      "rows": 48,
+      "complete": true
+    },
+    "stories": {
+      "rows": 1,
+      "complete": true
+    },
+    "duos": {
+      "rows": 0,
+      "complete": true
+    },
+    "interactions": {
+      "rows": 22,
+      "complete": true
+    },
+    "balance_votes": {
+      "rows": 0,
+      "complete": true
+    },
+    "circle_members": {
+      "rows": 1,
+      "complete": true
+    },
+    "battles": {
+      "rows": 1,
+      "complete": true
+    },
+    "chat_messages": {
+      "rows": 8,
+      "complete": true
+    }
+  },
+  "definitions": {
+    "active": "Observed successful writes only; not visits or DAU. No impression/session data in these tables.",
+    "exclusions": "user_id __fairy__ and prefixes seed-, mock-, test-, fairy, savelog-fairy, ai-; social-/milestone- entries excluded from record metrics.",
+    "linked_conversion": "Set intersection of current users.user_key and records.user_id; anonymous/orphan identities reported separately.",
+    "retention": "Exact calendar day after first recorded write, KST. Not app-open retention.",
+    "causality": "Behavioral associations, not reasons supplied by users. No causal effect estimate."
+  },
+  "funnel": {
+    "linked_users": 81,
+    "linked_users_with_record": 17,
+    "linked_users_without_record": 64,
+    "all_record_authors": 29,
+    "unmatched_record_authors": 12,
+    "repeat_record_authors": 7,
+    "repeat_day_authors": 6
+  },
+  "records": {
+    "raw": 74,
+    "human": 69,
+    "core": 66,
+    "zero_amount": 47,
+    "saved_amount_records": 0,
+    "text_length_median": 10.0,
+    "top_two_author_records": 28,
+    "latest_record_day": "2026-08-25"
+  },
+  "monthly": [
+    {
+      "month": "2026-06",
+      "records": 52,
+      "writers": 19,
+      "write_active_users": 21,
+      "new_linked_users": 36
+    },
+    {
+      "month": "2026-07",
+      "records": 7,
+      "writers": 7,
+      "write_active_users": 8,
+      "new_linked_users": 33
+    },
+    {
+      "month": "2026-08",
+      "records": 7,
+      "writers": 5,
+      "write_active_users": 6,
+      "new_linked_users": 10
+    },
+    {
+      "month": "2026-09",
+      "records": 0,
+      "writers": 0,
+      "write_active_users": 1,
+      "new_linked_users": 2
+    }
+  ],
+  "retention": {
+    "D1_exact_record_return": {
+      "returned": 4,
+      "eligible": 29
+    },
+    "D7_exact_record_return": {
+      "returned": 1,
+      "eligible": 29
+    },
+    "D30_exact_record_return": {
+      "returned": 0,
+      "eligible": 25
+    }
+  },
+  "first_record_feedback": {
+    "human_reaction_within_24h": {
+      "authors": 10,
+      "later_record_day": 3
+    },
+    "no_human_reaction_within_24h": {
+      "authors": 19,
+      "later_record_day": 3
+    }
+  },
+  "reactions": {
+    "human": 60,
+    "types": {
+      "doubt": 12,
+      "trust": 48
+    },
+    "human_judges": 9,
+    "automated_rows": 15
+  },
+  "recent": {
+    "7": {
+      "from": "2026-09-02",
+      "to": "2026-09-08",
+      "records": 0,
+      "writers": 0,
+      "write_active_users": 1
+    },
+    "30": {
+      "from": "2026-08-10",
+      "to": "2026-09-08",
+      "records": 7,
+      "writers": 5,
+      "write_active_users": 6
+    }
+  }
+}

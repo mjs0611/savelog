@@ -84,14 +84,11 @@ interface Props {
   // HomeScreen에서 이관된 props
   daily: DailyState;
   streak: StreakData;
-  pendingPoints: number;
   submitting?: boolean;
-  pendingClaiming?: boolean;
   streakShields?: number;
   onRecord: () => void;
   onQuickRecord: (items: SpendingItem[]) => Promise<void>;
   onQuickZeroSpend: () => void;
-  onClaimPending: () => void;
   onNavigateToMyLog?: () => void;
   onShareToChat?: (entry: any) => void;
   onShieldEarned?: (count: number) => void;
@@ -183,7 +180,7 @@ export function parseQuickRecord(text: string): SpendingItem[] {
 
 
 
-export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onClaimPending, onNavigateToMyLog }: Props) {
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, submitting = false, onRecord, onQuickRecord, onNavigateToMyLog }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   // 소비 고민 글 실제 투표 집계 (seed 가짜값 대체)
   const [dilemmaVotes, setDilemmaVotes] = useState<Record<string, { over: number; ok: number; total: number }>>({});
@@ -1596,17 +1593,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
 
 
-      {/* 앱바 — 로고 + 포인트 칩. 크롬은 여기까지 */}
+      {/* 앱바 — 로고 + 마이 진입. 크롬은 여기까지 */}
       <div className="feed-appbar">
         <span className="feed-appbar-logo">savelog</span>
-        {pendingPoints > 0 ? (
-          <button className="feed-point-chip" onClick={onClaimPending} disabled={pendingClaiming} style={{ opacity: pendingClaiming ? 0.6 : 1 }}>
-            {/* CTA만 보고 다음 행동을 알 수 있어야 한다 — 광고가 뜬다는 사실을 라벨에 명시 (앱인토스 다크패턴 정책 4·5) */}
-            {pendingClaiming ? '광고 시청 중...' : `광고 보고 ${pendingPoints}원`}
-          </button>
-        ) : (
-          <button onClick={onNavigateToMyLog} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}>마이 ›</button>
-        )}
+        <button onClick={onNavigateToMyLog} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}>마이 ›</button>
       </div>
 
       {/* 스토리 레일 — 서클 멤버 현황·보스. 서클 없으면 히어로(컴포저)만 남긴다 */}

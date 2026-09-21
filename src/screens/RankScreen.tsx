@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Badge } from '@toss/tds-mobile';
 import type { WeekRankRow } from '../lib/supabase';
-import { formatAmount, formatWeekRange, getWeekKey, getPrevWeekKey, getTodayStr } from '../lib/utils';
+import { formatAmount, formatWeekRange, getWeekKey, getTodayStr } from '../lib/utils';
 import { sendCheeringMessage, getNickname, getPersona, getDailyMission } from '../lib/storage';
 import { shareExternal, buildRankBragMessage } from '../lib/share';
 import CustomIcon, { renderTextWithEmoji } from '../components/CustomIcon';
@@ -10,19 +10,15 @@ import { IconTrophy } from '../components/Icons';
 interface Props {
   userId: string;
   weekRank: WeekRankRow[];
-  prevWeekRank?: WeekRankRow[];
   loading: boolean;
   loadFailed?: boolean;
   dailyRecorded?: boolean;
-  onClaimRankReward?: (amount: number) => void;
-  claimedThisWeek?: boolean;
-  rankClaiming?: boolean;
   onRetry?: () => void;
 }
 
 const MEDAL = ['🥇', '🥈', '🥉'];
 
-export default function RankScreen({ userId, weekRank, prevWeekRank = [], loading, loadFailed, dailyRecorded = false, onClaimRankReward, claimedThisWeek, rankClaiming = false, onRetry }: Props) {
+export default function RankScreen({ userId, weekRank, loading, loadFailed, dailyRecorded = false, onRetry }: Props) {
   const weekKey = getWeekKey();
   const [duelSent, setDuelSent] = useState<boolean>(() => {
     try { return localStorage.getItem(`savelog_duel_${getWeekKey()}`) === 'true'; } catch { return false; }
@@ -34,45 +30,6 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
   }, [weekKey]);
 
 
-
-  // ── 순위 리워드는 지난 주 최종 성적 기준으로만 계산 ──
-  // 참여자 게이트: 주간 참여 5명 미만이면 보상 미지급 (2026-W29 정산분부터 — 이전 주는 소급하지 않음)
-  const MIN_WEEKLY_PARTICIPANTS = 5;
-  const REWARD_GATE_FROM_WEEK = '2026-W29';
-  const prevWeekKeyStr = getPrevWeekKey();
-  const prevRewardGated = prevWeekKeyStr >= REWARD_GATE_FROM_WEEK && prevWeekRank.length < MIN_WEEKLY_PARTICIPANTS;
-  const curRewardGated = weekRank.length < MIN_WEEKLY_PARTICIPANTS;
-  const prevSpendGroup = prevWeekRank.filter(r => r.total > 0);
-  const prevZeroGroup = prevWeekRank.filter(r => r.total === 0);
-  const myPrevSpendIdx = prevSpendGroup.findIndex(r => r.user_id === userId);
-  const myPrevZeroIdx = prevZeroGroup.findIndex(r => r.user_id === userId);
-  const prevMyRow = myPrevSpendIdx >= 0 ? prevSpendGroup[myPrevSpendIdx]
-    : myPrevZeroIdx >= 0 ? prevZeroGroup[myPrevZeroIdx] : null;
-  const isPrevSuspicious = prevMyRow ? (prevMyRow.total === 0 && prevMyRow.doubtCount >= 3) : false;
-  const prevMyDays = prevMyRow?.days ?? 0;
-  const rankRewardAmount = isPrevSuspicious || prevRewardGated ? 0
-    : myPrevSpendIdx === 0 && prevMyDays >= 3 ? 50
-    : myPrevSpendIdx >= 0 && prevMyDays >= 3 && prevSpendGroup.length > 0 && (myPrevSpendIdx + 1) / prevSpendGroup.length <= 0.1 ? 30
-    : myPrevZeroIdx === 0 && prevMyDays >= 3 ? 50
-    : 0;
-
-
-  // 이번 주 리그(유지출/무지출)별 보상 예상 — 실제 정산은 지난 주 성적 기준
-  const curSpendGroup = weekRank.filter(r => r.total > 0);
-  const curZeroGroup = weekRank.filter(r => r.total === 0);
-  const projectReward = (row: WeekRankRow): { amount: number; label: string } | null => {
-    if (curRewardGated) return null;
-    if (row.days < 3) return null;
-    if (row.total > 0) {
-      const idx = curSpendGroup.findIndex(r => r.user_id === row.user_id);
-      if (idx === 0) return { amount: 50, label: '유지출 1위' };
-      if (curSpendGroup.length > 0 && (idx + 1) / curSpendGroup.length <= 0.1) return { amount: 30, label: '상위 10%' };
-    } else {
-      const idx = curZeroGroup.findIndex(r => r.user_id === row.user_id);
-      if (idx === 0) return { amount: 50, label: '무지출 1위' };
-    }
-    return null;
-  };
 
   const personaKey = getPersona() || 'hamster';
   let leagueName = "🌿 짠물 예산 방어 리그";
@@ -132,7 +89,6 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
               <CustomIcon emoji={missionEmoji} /> {mission.action}
             </h4>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '12px' }}>
-              <span style={{ fontSize: '12px', color: 'var(--text-sub)', fontWeight: 600 }}><CustomIcon emoji="🪙" /> {mission.reward}원 리워드</span>
               {!mission.completed && (
                 <span style={{ fontSize: '11px', color: 'var(--text-mute)' }}>지출 입력 시 자동 판정</span>
               )}
@@ -221,38 +177,6 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
       })()}
 
 
-      {/* 주간 리워드 안내 + 수령 */}
-      <div className="glass-card reward-info-card">
-        <p className="reward-info-title">주간 리워드</p>
-        <div className="reward-rows">
-          <div className="reward-row reward-row--section"><CustomIcon emoji="💸" /> 절약 순위 리워드 (유지출 그룹)</div>
-          <div className="reward-row reward-row--indent"><CustomIcon emoji="🥇" /> 1위 (3일↑) <span>+50원</span></div>
-          <div className="reward-row reward-row--indent"><CustomIcon emoji="📊" /> 상위 10% (3일↑) <span>+30원</span></div>
-          <div className="reward-rows-divider" />
-          <div className="reward-row reward-row--section"><CustomIcon emoji="🌿" /> 무지출 인증단 순위 리워드</div>
-          <div className="reward-row reward-row--indent"><CustomIcon emoji="🥇" /> 1위 (3일↑) <span>+50원</span></div>
-          <div className="reward-rows-divider" />
-          <div className="reward-row"><CustomIcon emoji="📝" /> 매일 기록 <span>+3원</span></div>
-        </div>
-        <p className="reward-info-note">모든 리워드는 광고 시청 후 수령</p>
-        {prevMyRow && rankRewardAmount === 0 && !isPrevSuspicious && prevMyDays > 0 && prevMyDays < 3 && (
-          <p className="reward-days-hint"><CustomIcon emoji="📅" /> 지난 주 기록이 3일 미만이라 순위 리워드가 없어요 ({prevMyDays}/3일)</p>
-        )}
-        {prevWeekRank.length === 0 && (
-          <p className="reward-days-hint"><CustomIcon emoji="📅" /> 순위 리워드는 매주 월요일 오전 9시 이후 지난 주 성적 기준으로 수령 가능해요</p>
-        )}
-        {rankRewardAmount > 0 && onClaimRankReward && (
-          <button
-            className="rank-reward-btn"
-            disabled={claimedThisWeek || rankClaiming}
-            onClick={() => onClaimRankReward(rankRewardAmount)}
-          >
-            {claimedThisWeek ? <><CustomIcon emoji="✅" /> 지난 주 리워드 수령 완료</> : rankClaiming ? '광고 시청 중...' : <><CustomIcon emoji="📺" /> 광고 보고 +{rankRewardAmount}원 받기</>}
-          </button>
-        )}
-        <p className={`reward-note${rankRewardAmount > 0 ? ' reward-note--compact' : ''}`}>* 순위 리워드는 지난 주 성적 기준 · 3일 이상 기록 시 광고 보고 수령</p>
-      </div>
-
       {/* 💡 하이브리드 절약 점수 안내 카드 */}
       <div className="glass-card" style={{ padding: '16px', background: 'var(--surface-dim)', borderRadius: '20px', border: '1px solid var(--divider)', marginBottom: '20px', textAlign: 'left' }}>
         <h4 style={{ margin: '0 0 6px 0', fontSize: '13px', fontWeight: 800, color: 'var(--primary)' }}><CustomIcon emoji="💡" /> savelog 하이브리드 점수제</h4>
@@ -290,28 +214,8 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
             </div>
           )}
 
-          <p style={{ fontSize: '11px', color: 'var(--text-mute)', textAlign: 'center', margin: '0 0 8px' }}>
-            <CustomIcon emoji="🏆" /> 뱃지 = 이번 주 마감 시 예상 보상 · 실제 지급은 지난 주 성적 기준
-          </p>
-
-          {/* 목표 근접 효과: 실참여 인원으로 게이트를 진행형으로 — "N명만 더" */}
-          {curRewardGated && (
-            <div className="glass-card" style={{ padding: '12px 14px', borderRadius: '12px', margin: '0 0 10px', background: '#FFFFFF', border: '1.5px solid var(--divider)' }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline', marginBottom: '6px' }}>
-                <span style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-main)' }}>보상 게이트 {Math.min(weekRank.length, MIN_WEEKLY_PARTICIPANTS)}/{MIN_WEEKLY_PARTICIPANTS}</span>
-                <span style={{ fontSize: '11px', fontWeight: 700, color: 'var(--text-sub)' }}>
-                  {MIN_WEEKLY_PARTICIPANTS - weekRank.length}명만 더 오면 전원 보상이 열려요
-                </span>
-              </div>
-              <div style={{ height: '6px', borderRadius: '3px', background: 'var(--divider)', overflow: 'hidden' }}>
-                <div style={{ height: '100%', width: `${Math.min(100, (weekRank.length / MIN_WEEKLY_PARTICIPANTS) * 100)}%`, borderRadius: '3px', background: 'var(--text-main)' }} />
-              </div>
-            </div>
-          )}
-
           {weekRank.map((row, i) => {
             const rowScore = row.score ?? (800 * row.days + Math.round(Math.max(0, 100000 - row.total) / 100000 * 4400));
-            const reward = projectReward(row);
             return (
               <div key={row.user_id} className={`rank-row glass-card ${row.user_id === userId ? 'rank-row--mine' : ''}`}>
                 <span className="rank-pos">
@@ -323,11 +227,7 @@ export default function RankScreen({ userId, weekRank, prevWeekRank = [], loadin
                     {row.user_id === userId && (
                       <Badge size="xsmall" color="blue" variant="weak" style={{ marginLeft: 6 }}>나</Badge>
                     )}
-                    {reward && (
-                      <span style={{ marginLeft: 6, fontSize: '10px', fontWeight: 800, color: 'var(--primary)', background: 'rgba(26, 21, 51,0.12)', borderRadius: '8px', padding: '2px 6px', whiteSpace: 'nowrap' }}>
-                        <CustomIcon emoji="🏆" /> {reward.label} +{reward.amount}원
-                      </span>
-                    )}
+
                   </span>
                   <span className="rank-row-days" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
                     <span style={{ fontSize: '11px', fontWeight: 800, color: row.total === 0 ? 'var(--ink-blue)' : 'var(--brass)' }}>{row.total === 0 ? <><CustomIcon emoji="🌿" /> 무지출</> : <><CustomIcon emoji="💸" /> 유지출</>}</span>

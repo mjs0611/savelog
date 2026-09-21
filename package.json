@@ -7,7 +7,10 @@
     "dev:ait": "vite --mode ait",
     "build": "tsc -b && vite build && ait build",
     "build:ait": "tsc -b && vite build --mode ait",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "test": "node --experimental-strip-types --test tests/journal.test.mjs",
+    "test:browser": "node tests/journal.browser.mjs",
+    "analyze:usage": "python3 scripts/analyze_usage.py"
   },
   "dependencies": {
     "@apps-in-toss/web-framework": "^3.0.5",

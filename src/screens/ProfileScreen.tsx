@@ -38,14 +38,11 @@ interface Props {
   onShieldEarned?: (count: number) => void;
   weekRank?: WeekRankRow[];
   daily?: DailyState;
-  pendingPoints?: number;
-  pendingClaiming?: boolean;
-  onClaimPending?: () => void;
   onShareToChat?: (entry: any) => void;
   onOpenRanking?: () => void;
 }
 
-export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, weekRank = [], daily, pendingPoints = 0, pendingClaiming = false, onClaimPending, onShareToChat, onOpenRanking }: Props) {
+export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, weekRank = [], daily, onShareToChat, onOpenRanking }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
   
@@ -297,8 +294,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       <MoneyPattern entries={allEntries.length > 0 ? allEntries : myEntries} />
 
       {/* 🐹 내 절약 코쿼핏 (리워드·펫·목표·듀오) — 피드에서 마이로그로 이동 */}
-      {daily && onClaimPending && (
-        <MyCockpit userId={userId} daily={daily} streak={streak} weekRank={weekRank} pendingPoints={pendingPoints} pendingClaiming={pendingClaiming} onClaimPending={onClaimPending} />
+      {daily && (
+        <MyCockpit userId={userId} daily={daily} streak={streak} weekRank={weekRank} />
       )}
 
       {/* 2. Sub-tab Navigation */}
@@ -379,14 +376,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <span><CustomIcon emoji="🛡️" /> 친구 공유하고 스트릭 보호권 받기</span>
               <span className="setting-arrow">›</span>
             </div>
-            <div className="glass-card how-to-card" style={{ marginTop: '12px' }}>
-              <p className="how-to-title">포인트 획득 방법</p>
-              <div className="how-to-rows">
-                <div className="how-to-row"><span><CustomIcon emoji="📝" /> 매일 기록</span><span className="how-to-reward-muted">+3원 대기</span></div>
-                <div className="how-to-row"><span><CustomIcon emoji="🏆" /> 주간 순위 보상</span><span className="how-to-reward-muted">순위별 지급</span></div>
-                <div className="how-to-row how-to-row--note"><span>└ 광고 시청 후 토스포인트 지급</span><span /></div>
-              </div>
-            </div>
+
           </div>
 
           <div className="settings-section">
@@ -429,9 +419,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <h4>제 1 조 (목적)</h4>
           <p>본 약관은 "세이브로그"(이하 "회사"라 함)가 제공하는 제반 서비스의 이용조건 및 절차, 회원과 회사 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
           <h4>제 2 조 (용어의 정의)</h4>
-          <p>1. "서비스"라 함은 이용자가 모바일 기기를 통해 소비 내역을 기록하고, 짠물 미션 및 피드 기능을 제공받는 서비스를 말합니다.<br/>2. "토스포인트"라 함은 서비스 내 미션이나 활동 수행 시 토스 플랫폼을 통해 지급되는 포인트를 의미합니다.</p>
-          <h4>제 3 조 (리워드)</h4>
-          <p>회사는 서비스 활성화를 위해 기록 및 미션 달성 보상으로 토스포인트를 적립해 드리며, 적립 조건은 회사 내부 정책에 따릅니다.</p>
+          <p>"서비스"라 함은 이용자가 모바일 기기를 통해 소비 내역을 기록하고, 짠물 미션 및 피드 기능을 제공받는 서비스를 말합니다.</p>
+          <h4>제 3 조 (앱 내 재화)</h4>
+          <p>젤리는 서비스 내 꾸미기에 사용하는 가상 재화이며, 현금이나 토스포인트로 교환할 수 없습니다. 서비스에서는 토스포인트를 적립하거나 지급하지 않습니다.</p>
         </div>
         <Button display="full" size="large" color="primary" variant="fill" onClick={() => setTermsModalOpen(false)}>확인</Button>
       </SimpleModal>

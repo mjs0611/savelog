@@ -1,0 +1,235 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-09-08T03:39:42.708230+00:00",
+  "title": "Design System: savelog personal journal",
+  "extensions": {
+    "colorMeta": {
+      "journal-ink": {
+        "role": "neutral",
+        "displayName": "Journal Ink",
+        "tonalRamp": [
+          "oklch(15% 0.0280 188.73)",
+          "oklch(26% 0.0280 188.73)",
+          "oklch(38% 0.0280 188.73)",
+          "oklch(49% 0.0280 188.73)",
+          "oklch(61% 0.0280 188.73)",
+          "oklch(72% 0.0280 188.73)",
+          "oklch(84% 0.0280 188.73)",
+          "oklch(95% 0.0280 188.73)"
+        ]
+      },
+      "journal-muted": {
+        "role": "neutral",
+        "displayName": "Journal Muted",
+        "tonalRamp": [
+          "oklch(15% 0.0175 170.54)",
+          "oklch(26% 0.0175 170.54)",
+          "oklch(38% 0.0175 170.54)",
+          "oklch(49% 0.0175 170.54)",
+          "oklch(61% 0.0175 170.54)",
+          "oklch(72% 0.0175 170.54)",
+          "oklch(84% 0.0175 170.54)",
+          "oklch(95% 0.0175 170.54)"
+        ]
+      },
+      "journal-green": {
+        "role": "primary",
+        "displayName": "Journal Green",
+        "tonalRamp": [
+          "oklch(15% 0.0734 173.26)",
+          "oklch(26% 0.0734 173.26)",
+          "oklch(38% 0.0734 173.26)",
+          "oklch(49% 0.0734 173.26)",
+          "oklch(61% 0.0734 173.26)",
+          "oklch(72% 0.0734 173.26)",
+          "oklch(84% 0.0734 173.26)",
+          "oklch(95% 0.0734 173.26)"
+        ]
+      },
+      "journal-rule": {
+        "role": "neutral",
+        "displayName": "Journal Rule",
+        "tonalRamp": [
+          "oklch(15% 0.0131 141.81)",
+          "oklch(26% 0.0131 141.81)",
+          "oklch(38% 0.0131 141.81)",
+          "oklch(49% 0.0131 141.81)",
+          "oklch(61% 0.0131 141.81)",
+          "oklch(72% 0.0131 141.81)",
+          "oklch(84% 0.0131 141.81)",
+          "oklch(95% 0.0131 141.81)"
+        ]
+      },
+      "daylight": {
+        "role": "neutral",
+        "displayName": "Daylight",
+        "tonalRamp": [
+          "oklch(15% 0.0054 117.92)",
+          "oklch(26% 0.0054 117.92)",
+          "oklch(38% 0.0054 117.92)",
+          "oklch(49% 0.0054 117.92)",
+          "oklch(61% 0.0054 117.92)",
+          "oklch(72% 0.0054 117.92)",
+          "oklch(84% 0.0054 117.92)",
+          "oklch(95% 0.0054 117.92)"
+        ]
+      },
+      "surface": {
+        "role": "neutral",
+        "displayName": "Surface",
+        "tonalRamp": [
+          "oklch(15% 0.0000 89.88)",
+          "oklch(26% 0.0000 89.88)",
+          "oklch(38% 0.0000 89.88)",
+          "oklch(49% 0.0000 89.88)",
+          "oklch(61% 0.0000 89.88)",
+          "oklch(72% 0.0000 89.88)",
+          "oklch(84% 0.0000 89.88)",
+          "oklch(95% 0.0000 89.88)"
+        ]
+      },
+      "selected": {
+        "role": "primary",
+        "displayName": "Selected",
+        "tonalRamp": [
+          "oklch(15% 0.0100 155.09)",
+          "oklch(26% 0.0100 155.09)",
+          "oklch(38% 0.0100 155.09)",
+          "oklch(49% 0.0100 155.09)",
+          "oklch(61% 0.0100 155.09)",
+          "oklch(72% 0.0100 155.09)",
+          "oklch(84% 0.0100 155.09)",
+          "oklch(95% 0.0100 155.09)"
+        ]
+      }
+    },
+    "shadows": [
+      {
+        "name": "navigation",
+        "value": "0 5px 24px #253b3914",
+        "purpose": "고정 메뉴의 깊이"
+      },
+      {
+        "name": "status",
+        "value": "0 5px 20px #253b391a",
+        "purpose": "상태 알림의 깊이"
+      }
+    ],
+    "motion": [
+      {
+        "name": "control-state",
+        "value": "180ms ease-out",
+        "purpose": "선택과 저장 버튼의 배경·테두리 전환"
+      },
+      {
+        "name": "recorded-day",
+        "value": "240ms ease-out",
+        "purpose": "opacity .65→1, scale .94→1. reduced motion에서는 제거."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "compact-max",
+        "value": "359px"
+      },
+      {
+        "name": "desktop-min",
+        "value": "720px"
+      }
+    ],
+    "tonalRampNote": "패널 미리보기용으로 실제 팔레트의 색상·채도에서 생성한 OKLCH 램프입니다. 앱에 구현된 색 토큰이 아니며 frontmatter를 대체하지 않습니다."
+  },
+  "components": [
+    {
+      "name": "Primary save",
+      "kind": "button",
+      "description": "실제 저장 동작에 쓰는 전폭 버튼입니다.",
+      "html": "<button class=\"ds-primary\">소비 기록하기<svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg></button>",
+      "css": ".ds-primary{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:9px;background:var(--journal-green,#216554);color:#fff;border:0;width:100%;min-height:54px;border-radius:12px;font-weight:600;padding:12px;transition:background 180ms ease-out}@media(hover:hover){.ds-primary:hover:not(:disabled){background:#174f41}}.ds-primary:disabled{background:#dde3dc;color:#59645d;cursor:default}@media(prefers-reduced-motion:reduce){.ds-primary{transition:none}}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}",
+      "refersTo": "button-primary"
+    },
+    {
+      "name": "Secondary backup",
+      "kind": "button",
+      "description": "백업 내보내기·가져오기. 구현에는 별도 hover 색이 없습니다.",
+      "html": "<button class=\"ds-secondary\">백업 가져오기</button>",
+      "css": ".ds-secondary{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;cursor:pointer;display:inline-flex;align-items:center;justify-content:center;gap:7px;border:1px solid var(--journal-rule,#d8dfd7);border-radius:9px;color:var(--journal-ink,#253b39);background:transparent;min-height:46px;padding:9px 13px;font-size:13px}.ds-secondary:disabled{opacity:.55;cursor:default}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}"
+    },
+    {
+      "name": "Text action",
+      "kind": "button",
+      "description": "수정·취소·날짜 이동에 쓰는 밑줄 버튼입니다. 별도 hover 색은 없습니다.",
+      "html": "<button class=\"ds-text\">수정하기</button>",
+      "css": ".ds-text{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;cursor:pointer;display:inline-flex;align-items:center;gap:4px;border:0;background:none;color:var(--journal-green,#216554);padding:8px 0;min-height:44px;font-size:13px;font-weight:600;text-decoration:underline;text-underline-offset:4px}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}",
+      "refersTo": "button-text"
+    },
+    {
+      "name": "Memo field",
+      "kind": "input",
+      "description": "선택 메모를 받는 한 줄 필드입니다.",
+      "html": "<label class=\"ds-label\" for=\"ds-note\">한 줄 메모 <span>선택</span></label><input class=\"ds-input\" id=\"ds-note\" placeholder=\"친구와 먹은 점심이 좋았어요\" maxlength=\"120\"/>",
+      "css": ".ds-label{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:14px;font-weight:600;color:var(--journal-ink,#253b39)}.ds-label span{font-weight:400;font-size:12px;color:var(--journal-muted,#63706b);margin-left:6px}.ds-input{display:block;margin-top:9px;border:1px solid var(--journal-rule,#d8dfd7);border-radius:8px;background:#fbfcfa;padding:13px 12px;color:var(--journal-ink,#253b39);font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:16px;line-height:1.55;width:100%;caret-color:var(--journal-green,#216554)}.ds-input::placeholder{color:#6f7873;font-size:13px}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}"
+    },
+    {
+      "name": "Selected consumption choice",
+      "kind": "custom",
+      "description": "선택 중인 상태이며 아직 저장 성공을 뜻하지 않습니다.",
+      "html": "<button class=\"ds-choice\" aria-pressed=\"true\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"m5 12 4 4L19 6\"/></svg><strong>안 썼어요</strong><span>0원으로 하루 남기기</span></button>",
+      "css": ".ds-choice{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;cursor:pointer;border:1px solid var(--journal-green,#216554);background:#eaf1ec;color:var(--journal-ink,#253b39);border-radius:12px;padding:18px 8px 17px;display:flex;align-items:center;flex-direction:column;gap:4px;transition:background 180ms ease-out,border-color 180ms ease-out;min-width:0}.ds-choice svg{width:27px;height:34px;margin-bottom:6px;color:var(--journal-green,#216554)}.ds-choice strong{font-size:17px;font-weight:650;letter-spacing:-.025em}.ds-choice span{font-size:11px;color:var(--journal-muted,#63706b)}@media(hover:hover){.ds-choice:hover{background:#f4f8f3}}.ds-choice:disabled{opacity:.55;cursor:default}@media(prefers-reduced-motion:reduce){.ds-choice{transition:none}}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}",
+      "refersTo": "choice-selected"
+    },
+    {
+      "name": "Two-item navigation",
+      "kind": "nav",
+      "description": "프리뷰에서는 흐름 안에 배치합니다. 앱에서는 하단 안전 영역 위에 고정합니다. 별도 hover 색은 없습니다.",
+      "html": "<nav class=\"ds-nav\" aria-label=\"주 메뉴\"><button aria-current=\"page\"><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><rect x=\"3\" y=\"5\" width=\"18\" height=\"16\" rx=\"3\"/><path d=\"M7 3v4m10-4v4M3 11h18m-12 5 2 2 4-4\"/></svg><span>오늘</span></button><button><svg width=\"22\" height=\"22\" viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"round\" stroke-linejoin=\"round\" aria-hidden=\"true\"><path d=\"M5 3h12a2 2 0 0 1 2 2v16H6a3 3 0 0 1-3-3V5a2 2 0 0 1 2-2ZM3 17h16M8 7h6M8 11h4\"/></svg><span>내 기록</span></button></nav>",
+      "css": ".ds-nav{width:min(100%,410px);display:grid;grid-template-columns:1fr 1fr;border-radius:24px;background:#fff;box-shadow:0 5px 24px #253b3914;padding:10px 14px}.ds-nav button{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;cursor:pointer;background:none;color:var(--journal-muted,#63706b);border:none;display:flex;align-items:center;justify-content:center;gap:8px;min-height:42px;font-size:13px}.ds-nav button[aria-current=\"page\"]{color:#1c2928;font-weight:650}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}"
+    },
+    {
+      "name": "Record surface",
+      "kind": "card",
+      "description": "기록 면의 모서리·패딩 프리뷰입니다. 예시 내용은 면 스타일 확인용입니다.",
+      "html": "<section class=\"ds-card\"><h2>소비 기록</h2><p>로그인 없이 이 기기에만 저장해요.</p></section>",
+      "css": ".ds-card{font-family:Pretendard,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-size:15px;line-height:1.55;color:var(--journal-ink,#253b39);background:#fff;border-radius:16px;padding:22px 20px 18px}.ds-card h2{margin:0;font-size:18px;line-height:1.5;font-weight:650;letter-spacing:-.025em}.ds-card p{margin:16px 0 0;font-size:11px;color:var(--journal-muted,#63706b)}@media(min-width:720px){.ds-card{padding:26px}}.ds-primary:focus-visible,.ds-secondary:focus-visible,.ds-text:focus-visible,.ds-input:focus-visible,.ds-choice:focus-visible,.ds-nav button:focus-visible{outline:3px solid #347566;outline-offset:4px}"
+    }
+  ],
+  "narrative": {
+    "northStar": "주간 책상 플래너",
+    "overview": "따뜻한 밝은 바탕, 녹색을 머금은 먹색 글자, 실제 기록이 채우는 날짜 칸이 중심입니다. 종이 질감을 모사하지 않고 플래너의 날짜 구조와 짧은 기록 동작을 가져옵니다. 한국어 문장과 금액을 먼저 읽을 수 있도록 그림보다 글자와 여백을 사용합니다.\n\n이 문서는 현재 구현된 개인 기록 화면의 시각 규칙입니다. 기존 공개 피드 공간에는 별도 디자인이 있으며 이 토큰을 소급 적용하지 않습니다. 제품 흐름과 저장 범위는 PRODUCT.md, 이 화면의 구성 계약은 docs/journal-direction.md를 참고합니다. 배포 여부나 기록·재방문 개선 효과를 증명하는 문서가 아닙니다.",
+    "keyCharacteristics": [
+      "따뜻한 회백색 바탕과 흰 기록 면",
+      "같은 크기로 제시하는 두 소비 선택지",
+      "선·채움·짧은 문구로 구분하는 날짜 상태",
+      "고정된 글자 위계와 정렬된 금액"
+    ],
+    "rules": [
+      {
+        "name": "State Before Decoration",
+        "body": "색은 선택·기록·행동을 설명합니다. 미기록 날짜를 완료 색으로 채우지 않습니다.",
+        "section": "colors"
+      },
+      {
+        "name": "Numeric Alignment",
+        "body": "금액과 날짜는 고정 폭 숫자로 읽기 위치를 유지합니다. 긴 저장 금액·메모는 영역 안에서 줄바꿈합니다.",
+        "section": "typography"
+      },
+      {
+        "name": "Quiet Surface",
+        "body": "일반 기록 면은 평평하게 유지하고 떠 있는 UI에만 깊이를 줍니다.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** 선택·미기록·저장 상태를 문구와 형태로도 구분합니다.",
+      "**Do** 소비한 날과 0원인 날에 같은 선택 면적과 글자 무게를 줍니다.",
+      "**Do** 긴 금액, 한국어 메모, 하단 안전 영역을 레이아웃 안에 수용합니다.",
+      "**Do** 기기 저장 설명과 공개 공간 안내를 해당 동작 가까이에 유지합니다."
+    ],
+    "donts": [
+      "**Don't** 미기록 날짜를 0원 또는 실패 상태로 시각화합니다.",
+      "**Don't** 저장 완료색을 저장 실패 상태에 적용합니다.",
+      "**Don't** 장식용 종이 질감·그라데이션·벌점형 연속 기록 이미지를 이 개인 기록 화면에 추가합니다.",
+      "**Don't** 기존 공개 공간의 시각 규칙을 이 개인 기록 화면에 자동으로 혼합합니다."
+    ]
+  }
+}

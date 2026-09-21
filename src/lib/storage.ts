@@ -213,18 +213,17 @@ export function setPersona(key: string): void {
 export interface DailyMission {
   category: string;
   action: string;
-  reward: number;
   completed: boolean;
 }
 
 export function getDailyMission(dateStr: string): DailyMission {
   const missions = [
-    { category: '카페', action: '오늘 카페 지출 0원 도전', reward: 5 },
-    { category: '쇼핑', action: '오늘 쇼핑 지출 0원 도전', reward: 5 },
-    { category: '취미', action: '오늘 취미 지출 0원 도전', reward: 5 },
-    { category: '식비', action: '오늘 식비 지출 5,000원 이하 도전', reward: 5 },
-    { category: '교통', action: '오늘 교통 지출 2,000원 이하 도전', reward: 5 },
-    { category: '기타', action: '오늘 무지출(0원 지출) 하루 도전', reward: 5 },
+    { category: '카페', action: '오늘 카페 지출 0원 도전' },
+    { category: '쇼핑', action: '오늘 쇼핑 지출 0원 도전' },
+    { category: '취미', action: '오늘 취미 지출 0원 도전' },
+    { category: '식비', action: '오늘 식비 지출 5,000원 이하 도전' },
+    { category: '교통', action: '오늘 교통 지출 2,000원 이하 도전' },
+    { category: '기타', action: '오늘 무지출(0원 지출) 하루 도전' },
   ];
   
   let hash = 0;
@@ -240,7 +239,6 @@ export function getDailyMission(dateStr: string): DailyMission {
   return {
     category: base.category,
     action: base.action,
-    reward: base.reward,
     completed,
   };
 }
@@ -304,48 +302,6 @@ export function sendCheeringMessage(recipientNickname: string, text: string, sen
   } catch (e) {
     console.error(e);
   }
-}
-
-// ── Pending Points (max 50원, 광고 보고 수령) ────────────────────────────────
-
-const PENDING_KEY = 'savelog_pending_points';
-export const MAX_PENDING_POINTS = 50;
-
-export function getPendingPoints(): number {
-  try {
-    const n = Number(localStorage.getItem(PENDING_KEY) ?? '0');
-    return Math.min(isNaN(n) ? 0 : n, MAX_PENDING_POINTS);
-  }
-  catch { return 0; }
-}
-
-export function addPendingPoints(amount: number): number {
-  const current = getPendingPoints();
-  const next = Math.min(current + amount, MAX_PENDING_POINTS);
-  try { localStorage.setItem(PENDING_KEY, String(next)); } catch {}
-  return next;
-}
-
-export function clearPendingPoints(): void {
-  try { localStorage.setItem(PENDING_KEY, '0'); } catch {}
-}
-
-// 청구된 금액만 차감 후 나머지를 반환 (광고 시청 중 추가 적립분 보존)
-export function consumePendingPoints(amount: number): number {
-  const remaining = Math.max(0, getPendingPoints() - amount);
-  try { localStorage.setItem(PENDING_KEY, String(remaining)); } catch {}
-  return remaining;
-}
-
-// ── Rank Reward Claimed ──────────────────────────────────────────────────────
-
-export function getClaimedRankReward(weekKey: string): boolean {
-  try { return localStorage.getItem(`savelog_rank_claimed_${weekKey}`) === 'true'; }
-  catch { return false; }
-}
-
-export function setClaimedRankReward(weekKey: string): void {
-  try { localStorage.setItem(`savelog_rank_claimed_${weekKey}`, 'true'); } catch {}
 }
 
 // ── Follow System ───────────────────────────────────────────────────────────
@@ -420,13 +376,6 @@ export function cleanupStaleKeys(): void {
         : key.startsWith('savelog_recorded_date_') ? key.slice('savelog_recorded_date_'.length)
         : null;
       if (dateStr && new Date(dateStr + 'T00:00:00') < cutoff) { toRemove.push(key); continue; }
-      if (key.startsWith('savelog_rank_claimed_')) {
-        const weekKey = key.slice('savelog_rank_claimed_'.length);
-        try {
-          const { start } = getWeekRange(weekKey);
-          if (start < cutoff) toRemove.push(key);
-        } catch {}
-      }
       if (key.startsWith('savelog_duel_')) {
         const weekKey = key.slice('savelog_duel_'.length);
         try {
