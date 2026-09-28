@@ -823,6 +823,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   // 수첩에 담기 — 판정이 '평가'라면 담기는 '내 삶에 가져갈 것' (Are.na Connect 번안)
   function handleScrap(entry: EntryWithReactions) {
     const on = toggleScrapLocal(entry.id);
+    if (on === null) { showFeedToast('수첩을 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해 주세요.'); return; }
     setScrapped(new Set(getScrapIds()));
     setEntries(prev => prev.map(e => e.id === entry.id ? { ...e, scrap_count: Math.max(0, e.scrap_count + (on ? 1 : -1)) } : e));
     setScrapServer(entry.id, userId, on);

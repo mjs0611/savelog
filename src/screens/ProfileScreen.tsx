@@ -658,6 +658,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
 
 // 짠수첩 — 피드에서 담아온 남의 자백·꿀팁 (Are.na 'Connect' 번안). 원본=localStorage(lib/scraps.ts)
 function ScrapbookTab() {
+  const [scrapError, setScrapError] = useState(false);
   const [ids, setIds] = useState<string[]>(() => getScrapIds());
   const [items, setItems] = useState<Entry[] | null>(null);
 
@@ -673,7 +674,8 @@ function ScrapbookTab() {
   }, [ids]);
 
   function handleRemove(id: string) {
-    toggleScrapLocal(id);
+    if (toggleScrapLocal(id) === null) { setScrapError(true); return; }
+    setScrapError(false);
     setIds(getScrapIds());
   }
 
@@ -693,6 +695,7 @@ function ScrapbookTab() {
 
   return (
     <div className="scrapbook-list">
+      {scrapError && <p role="alert">수첩을 저장하지 못했어요. 저장 공간을 확인하고 다시 시도해 주세요.</p>}
       {items.map(e => (
         <div key={e.id} className="scrapbook-card">
           <div className="scrapbook-head">

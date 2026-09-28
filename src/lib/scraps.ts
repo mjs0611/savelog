@@ -16,13 +16,13 @@ export function getScrapIds(): string[] {
   }
 }
 
-// 토글 후의 상태를 돌려준다 (true=담김). 최근에 담은 것이 배열 앞.
-export function toggleScrapLocal(entryId: string): boolean {
+// 토글 후 상태(true=담김), 저장 실패는 null. 최근에 담은 것이 배열 앞.
+export function toggleScrapLocal(entryId: string): boolean | null {
   const ids = getScrapIds();
   const has = ids.includes(entryId);
   const next = has ? ids.filter((id) => id !== entryId) : [entryId, ...ids];
   try {
     localStorage.setItem(KEY, JSON.stringify(next.slice(0, MAX)));
-  } catch { /* quota — 담기 실패해도 앱은 계속 */ }
+  } catch { return null; }
   return !has;
 }
