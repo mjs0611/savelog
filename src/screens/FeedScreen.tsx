@@ -1260,27 +1260,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
           const realVotes = dilemmaVotes[entry.id];
           const hasRealVotes = !!realVotes && realVotes.total > 0;
 
-          const seed = entry.id.split('').reduce((acc, c) => acc + c.charCodeAt(0), 0);
-          const overPctBase = (seed % 40) + 30; // 30% ~ 70%
-
-          let overPct: number;
-          let okPct: number;
-          if (hasRealVotes) {
-            overPct = Math.round((realVotes.over / realVotes.total) * 100);
-            okPct = 100 - overPct;
-          } else {
-            overPct = overPctBase;
-            okPct = 100 - overPct;
-            if (myVote === 'over') {
-              overPct = Math.min(95, overPct + 5);
-              okPct = 100 - overPct;
-            } else if (myVote === 'ok') {
-              okPct = Math.min(95, okPct + 5);
-              overPct = 100 - okPct;
-            }
-          }
-
-          const totalFeedVotes = hasRealVotes ? realVotes.total : ((seed % 30) + 12 + (myVote ? 1 : 0));
+          const overPct = hasRealVotes ? Math.round((realVotes.over / realVotes.total) * 100) : 0;
+          const okPct = hasRealVotes ? 100 - overPct : 0;
+          const totalFeedVotes = hasRealVotes ? realVotes.total : 0;
 
           return (
             <div className="dilemma-post-body">
@@ -1291,7 +1273,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <span className="dilemma-amount-value">{amount.toLocaleString('ko-KR')}원</span>
               </div>
 
-              {hasVoted ? (
+              {hasVoted && !hasRealVotes ? (
+                <p role="status">아직 확인된 투표 결과가 없어요.</p>
+              ) : hasVoted ? (
                 <div className="dilemma-result-section">
                   <div className="dilemma-result-labels">
                     <span className="dilemma-result-over">
