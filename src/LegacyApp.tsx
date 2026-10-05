@@ -597,7 +597,7 @@ export default function App() {
   // ── 메인 앱 ─────────────────────────────────────────────────────────────────
   return (
     <div className="app-root">
-      
+
       {/* Supabase 미설정 배너 — 개발 환경에서만 표시 */}
       {import.meta.env.DEV && !isSupabaseConfigured && (
         <div className="dev-banner">

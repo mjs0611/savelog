@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import JournalIcon from './components/JournalIcon';
 import { EMPTY_JOURNAL, JOURNAL_KEY, MAX_AMOUNT, mergeJournal, parseJournal, readJournal, saveCheckIn,
-  todayKST, weekDates, weekSummary, type Journal } from './lib/journal';
+  shiftDate, todayKST, weekDates, weekSummary, type Journal } from './lib/journal';
 import { trackJournal } from './lib/journalAnalytics';
 
 const won = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
@@ -14,6 +14,8 @@ const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 export default function App() {
   const [today, setToday] = useState(todayKST);
   const [selectedDate, setSelectedDate] = useState(todayKST);
+  const [weekAnchor, setWeekAnchor] = useState(todayKST);
+  const [reviewExpanded, setReviewExpanded] = useState(false);
   const [tab, setTab] = useState<'today' | 'history'>(window.location.pathname === '/history' ? 'history' : 'today');
   const [initial] = useState(() => {
     try { return { journal: readJournal(localStorage), error: '' }; }
@@ -32,9 +34,14 @@ export default function App() {
   const draftActive = useRef(false);
   const amountInput = useRef<HTMLInputElement>(null);
   const importInput = useRef<HTMLInputElement>(null);
+  const weekHeading = useRef<HTMLHeadingElement>(null);
+  const entryHeading = useRef<HTMLHeadingElement>(null);
   const entry = journal.entries.find(e => e.date === selectedDate);
-  const summary = weekSummary(journal, today);
-  const dates = weekDates(today);
+  const summary = weekSummary(journal, weekAnchor, today);
+  const dates = weekDates(weekAnchor);
+  const currentWeek = dates[0] === weekDates(today)[0];
+  const showWeekYear = dates[0].slice(0, 4) !== today.slice(0, 4) || dates[0].slice(0, 4) !== dates[6].slice(0, 4);
+  const weekDateLabel = (date: string) => `${showWeekYear ? `${date.slice(0, 4)}.` : ''}${Number(date.slice(5, 7))}.${Number(date.slice(8))}`;
   const isForm = !entry || editing;
   draftActive.current = isForm && kind !== null;
 
@@ -44,8 +51,10 @@ export default function App() {
     function refresh() {
       const next = todayKST();
       if (currentDay === next) return;
+      const previousDay = currentDay;
       currentDay = next;
       setToday(next);
+      setWeekAnchor(anchor => weekDates(anchor)[0] === weekDates(previousDay)[0] ? next : anchor);
       if (draftActive.current) {
         setMessage('날짜가 바뀌었어요. 작성 중인 기록은 원래 날짜로 저장돼요.');
       } else {
@@ -76,11 +85,31 @@ export default function App() {
   }, [message]);
 
   function selectDate(date: string, discard = false) {
-    if (date === selectedDate) { changeTab('today'); return; }
+    if (date === selectedDate) { setWeekAnchor(date); changeTab('today'); focusEntry(); return; }
     if (!discard && date !== selectedDate && draftActive.current) { setPendingDate(date); return; }
     setPendingDate(null);
     setSelectedDate(date); setEditing(false); setKind(null); setAmount(''); setNote(''); setError('');
+    setWeekAnchor(date);
     changeTab('today');
+    focusEntry();
+  }
+  function focusEntry() {
+    window.requestAnimationFrame(() => {
+      entryHeading.current?.focus({ preventScroll: true });
+      entryHeading.current?.scrollIntoView({ block: 'start' });
+    });
+  }
+  function reviewThisWeek() {
+    setWeekAnchor(today); setReviewExpanded(true);
+    trackJournal('history_open');
+    window.requestAnimationFrame(() => {
+      weekHeading.current?.focus({ preventScroll: true });
+      weekHeading.current?.scrollIntoView({ block: 'start' });
+    });
+  }
+  function moveWeek(days: -7 | 7 | 0) {
+    setWeekAnchor(days === 0 ? today : shiftDate(dates[0], days));
+    setReviewExpanded(true);
   }
   function changeTab(next: 'today' | 'history') {
     setTab(next);
@@ -151,7 +180,7 @@ export default function App() {
         {tab === 'today' ? <>
           <section className="journal-intro">
             <div className="journal-date-line"><time dateTime={selectedDate}>{dayLabel(selectedDate)}</time></div>
-            <h1>{entry && !editing ? selectedDate === today ? '오늘을 남겼어요.' : '이날을 남겼어요.' : selectedDate === today ? '오늘, 어떻게 썼나요?' : '이날, 어떻게 썼나요?'}</h1>
+            <h1 ref={entryHeading} tabIndex={-1}>{entry && !editing ? selectedDate === today ? '오늘을 남겼어요.' : '이날을 남겼어요.' : selectedDate === today ? '오늘, 어떻게 썼나요?' : '이날, 어떻게 썼나요?'}</h1>
             <p>{entry && !editing ? '잘 쓴 날도, 안 쓴 날도. 내 일주일이 보여요.' : '쓴 돈만 짧게. 평가는 하지 않아요.'}</p>
           </section>
           <div className="journal-workspace">
@@ -189,11 +218,17 @@ export default function App() {
                 <p className="journal-saved-amount">{won(entry.amount)}</p>
                 <p className="journal-saved-note">{entry.note || (entry.amount === 0 ? '돈을 쓰지 않은 하루였어요.' : '쓴 돈을 확인했어요.')}</p>
                 <p className="journal-return-prompt">내일도 이 칸에서 하루를 남겨보세요.</p>
+                <button className="journal-secondary journal-review-action" onClick={reviewThisWeek}>이번 주 돌아보기 <JournalIcon name="arrow" size={17} /></button>
               </div>}
               <p className="journal-private"><JournalIcon name="lock" size={14} /> 로그인 없이 이 기기에만 저장해요.</p>
             </section>
             <section className="journal-week" aria-labelledby="week-title">
-              <div className="journal-section-heading"><h2 id="week-title">이번 주, 한 칸씩</h2><span>{Number(dates[0].slice(5, 7))}.{Number(dates[0].slice(8))} – {Number(dates[6].slice(5, 7))}.{Number(dates[6].slice(8))}</span></div>
+              <div className="journal-section-heading"><h2 id="week-title" ref={weekHeading} tabIndex={-1}>{currentWeek ? '이번 주, 한 칸씩' : '지난 기록 돌아보기'}</h2><span>{weekDateLabel(dates[0])} – {weekDateLabel(dates[6])}</span></div>
+              <nav className="journal-week-navigation" aria-label="기록 주간 이동">
+                <button className="journal-text-button" onClick={() => moveWeek(-7)}><JournalIcon name="back" size={14} /> 지난 주</button>
+                <button className="journal-text-button" disabled={currentWeek} onClick={() => moveWeek(7)}>다음 주 <JournalIcon name="arrow" size={14} /></button>
+                {!currentWeek && <button className="journal-text-button" onClick={() => moveWeek(0)}>이번 주</button>}
+              </nav>
               <div className="journal-week-grid">
                 {dates.map((date, i) => {
                   const item = journal.entries.find(e => e.date === date);
@@ -204,7 +239,14 @@ export default function App() {
                 })}
               </div>
               {summary.recorded > 0 ? <div className="journal-week-summary"><p><strong>{summary.recorded}일</strong>을 남겼어요. 그중 무지출은 <strong>{summary.zero}일</strong>.</p><p>기록한 소비 합계 <strong>{won(summary.total)}</strong></p><span>빈 날짜는 합계에 포함하지 않아요.</span></div>
-                : <p className="journal-week-empty">첫 기록이 이곳에 쌓여요.<br />하루 빠져도 괜찮아요. 남긴 날은 그대로예요.</p>}
+                : <p className="journal-week-empty">{currentWeek ? '첫 기록이 이곳에 쌓여요.' : '이 주에는 남긴 기록이 없어요.'}<br />하루 빠져도 괜찮아요. 남긴 날은 그대로예요.</p>}
+              {reviewExpanded && summary.recorded > 0 && <div className="journal-week-review">
+                <p>기록한 날을 누르면 금액과 메모를 다시 볼 수 있어요.</p>
+                <ul>{summary.entries.map(item => <li key={item.date}><button className="journal-week-review-row" onClick={() => selectDate(item.date)}>
+                  <span><time dateTime={item.date}>{dayLabel(item.date)}</time><span className="journal-week-review-note">{item.note || (item.amount === 0 ? '무지출로 남긴 하루' : '쓴 돈을 확인한 하루')}</span></span>
+                  <strong>{won(item.amount)}</strong><JournalIcon name="arrow" size={14} />
+                </button></li>)}</ul>
+              </div>}
               {selectedDate !== today && <button className="journal-text-button" onClick={() => selectDate(today)}>오늘로 돌아오기 <JournalIcon name="arrow" size={14} /></button>}
             </section>
           </div>

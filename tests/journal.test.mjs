@@ -30,6 +30,20 @@ test('missing days are never counted as zero; previous week is excluded', () => 
   const summary = weekSummary(journal, '2026-09-08');
   assert.equal(summary.recorded, 2); assert.equal(summary.zero, 1); assert.equal(summary.total, 12000);
 });
+test('a past week includes its entire seven days while this week still excludes future records', () => {
+  const journal = { version: 1, entries: [entry('2026-09-06'), entry('2026-09-04', 7000), entry('2026-09-01', 1000), entry('2026-09-09', 9000)] };
+  const past = weekSummary(journal, '2026-09-01', '2026-09-08');
+  assert.equal(past.recorded, 3); assert.equal(past.zero, 1); assert.equal(past.total, 8000);
+  assert.equal(weekSummary(journal, '2026-09-08', '2026-09-08').recorded, 0);
+});
+test('looking back across a year boundary neither mutates saved entries nor counts missing days', () => {
+  const journal = { version: 1, entries: [entry('2027-01-03'), entry('2026-12-31', 3000), entry('2026-12-27', 9000)] };
+  const before = JSON.stringify(journal);
+  const summary = weekSummary(journal, '2026-12-28', '2027-01-04');
+  assert.equal(summary.recorded, 2); assert.equal(summary.zero, 1); assert.equal(summary.total, 3000);
+  assert.equal(JSON.stringify(journal), before);
+  assert.equal(weekSummary(journal, '2026-12-21', '2027-01-04').recorded, 1);
+});
 test('backup validation rejects invalid dates, unsafe values and duplicate dates', () => {
   for (const bad of [entry('2026-02-30'), entry('2026-09-08', -1), entry('2026-09-08', 1.5), entry('2026-09-08', MAX_AMOUNT + 1), { ...entry('2026-09-08'), note: 'a'.repeat(121) }]) {
     assert.throws(() => parseJournal(JSON.stringify({ version: 1, entries: [bad] })));

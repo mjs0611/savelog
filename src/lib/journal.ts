@@ -67,9 +67,10 @@ export function mergeJournal(storage: Store, imported: Journal): { journal: Jour
   storage.setItem(JOURNAL_KEY, JSON.stringify(journal));
   return { journal, added: additions.length };
 }
-export function weekSummary(journal: Journal, date: string) {
+export function weekSummary(journal: Journal, date: string, throughDate = date) {
   const dates = weekDates(date);
-  const entries = journal.entries.filter(e => dates.includes(e.date) && e.date <= date);
+  // The viewed week and today's cutoff differ when looking back at a full week.
+  const entries = journal.entries.filter(e => dates.includes(e.date) && e.date <= throughDate);
   return { entries, total: entries.reduce((sum, e) => sum + e.amount, 0),
     recorded: entries.length, zero: entries.filter(e => e.amount === 0).length };
 }
