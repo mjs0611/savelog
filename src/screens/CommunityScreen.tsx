@@ -1,3 +1,4 @@
+import { LEGACY_READONLY } from '../legacyReadonly';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import {
@@ -348,7 +349,7 @@ export default function CommunityScreen({ userId }: Props) {
               오늘의 질문{questionAnswers >= 1 ? ` · ${questionAnswers}명이 답했어요` : ''}
             </p>
             <p style={{ margin: '4px 0 10px', fontSize: '14.5px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.45 }}>{tq.q}</p>
-            <button
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
               onClick={() => {
                 setComposeCategory(tq.category);
                 setComposeTitle(tq.q);
@@ -412,7 +413,7 @@ export default function CommunityScreen({ userId }: Props) {
                     {p ? <img src={p.icon} alt="" style={{ width: '18px', height: '18px', borderRadius: '50%' }} /> : <CustomIcon emoji="🐷" />} {post.nickname}
                   </span>
                   <span className="community-post-stats" style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
-                    <button
+                    <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                       type="button"
                       className={`community-stat ${post.liked_by_me ? 'community-stat--liked' : ''}`}
                       onClick={(e) => { e.stopPropagation(); handleToggleLike(post); }}
@@ -432,12 +433,12 @@ export default function CommunityScreen({ userId }: Props) {
       </div>
 
       {/* 작성 FAB */}
-      <button className="community-fab" onClick={openCompose} aria-label="새 글 작성">
+      {!LEGACY_READONLY && (<button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="community-fab" onClick={openCompose} aria-label="새 글 작성">
         <CustomIcon emoji="📝" />
-      </button>
+      </button>)}
 
       {/* 작성 모달 */}
-      {composeOpen && (
+      {!LEGACY_READONLY && composeOpen && (
         <div className="modal-overlay" onClick={() => !submitting && setComposeOpen(false)}>
           <div className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
@@ -459,7 +460,7 @@ export default function CommunityScreen({ userId }: Props) {
                 ))}
               </div>
 
-              <input
+              <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 className="community-compose-input"
                 placeholder={COMPOSE_PLACEHOLDER[composeCategory].title}
                 value={composeTitle}
@@ -468,7 +469,7 @@ export default function CommunityScreen({ userId }: Props) {
               />
               
               <div className="community-textarea-wrap">
-                <textarea
+                <textarea title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                   className="community-compose-textarea"
                   placeholder={COMPOSE_PLACEHOLDER[composeCategory].content}
                   value={composeContent}
@@ -481,7 +482,7 @@ export default function CommunityScreen({ userId }: Props) {
 
               <label className="community-compose-image-btn">
                 <CustomIcon emoji="📷" /> 사진 첨부
-                <input type="file" accept="image/*" onChange={handleComposeImageChange} style={{ display: 'none' }} />
+                <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} type="file" accept="image/*" onChange={handleComposeImageChange} style={{ display: 'none' }} />
               </label>
               {composeImageError && <p className="image-error-msg">{composeImageError}</p>}
               {composeImage && (
@@ -495,7 +496,7 @@ export default function CommunityScreen({ userId }: Props) {
             <div className="modal-footer">
               <div className="community-compose-actions">
                 <Button display="full" size="large" color="dark" variant="weak" onClick={() => setComposeOpen(false)} disabled={submitting}>닫기</Button>
-                <Button display="full" size="large" color="primary" variant="fill" onClick={handleSubmitPost} disabled={submitting || composeTitle.trim().length < 2 || composeContent.trim().length < 5}>
+                <Button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" display="full" size="large" color="primary" variant="fill" onClick={handleSubmitPost} disabled={LEGACY_READONLY || (submitting || composeTitle.trim().length < 2 || composeContent.trim().length < 5)}>
                   {submitting ? '등록 중...' : '등록'}
                 </Button>
               </div>
@@ -534,7 +535,7 @@ export default function CommunityScreen({ userId }: Props) {
               )}
 
               <div className="community-detail-actions">
-                <button
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                   className={`community-stat ${detailPost.liked_by_me ? 'community-stat--liked' : ''}`}
                   onClick={() => handleToggleLike(detailPost)}
                 >
@@ -542,7 +543,7 @@ export default function CommunityScreen({ userId }: Props) {
                 </button>
                 <span className="community-stat"><CustomIcon emoji="💬" /> {detailPost.comment_count}</span>
                 {detailPost.user_id === userId && (
-                  <button className="community-detail-delete" onClick={handleDeletePost}>🗑 글 삭제</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="community-detail-delete" onClick={handleDeletePost}>🗑 글 삭제</button>
                 )}
               </div>
 
@@ -552,7 +553,7 @@ export default function CommunityScreen({ userId }: Props) {
                 {detailLoading ? (
                   <p className="community-comments-loading">불러오는 중...</p>
                 ) : detailComments.length === 0 ? (
-                  <p className="community-comments-empty">첫 댓글을 남겨 보세요!</p>
+                  <p className="community-comments-empty">보관된 댓글이 없어요.</p>
                 ) : (
                   <div className="community-comments-list">
                     {detailComments.map(c => {
@@ -567,7 +568,7 @@ export default function CommunityScreen({ userId }: Props) {
                               <span className="community-comment-name">{c.nickname}</span>
                               <span className="community-comment-time">{timeAgo(c.created_at)}</span>
                               {c.user_id === userId && (
-                                <button className="community-comment-del" onClick={() => handleDeleteComment(c)}>삭제</button>
+                                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="community-comment-del" onClick={() => handleDeleteComment(c)}>삭제</button>
                               )}
                             </div>
                             <p className="community-comment-text">{c.content}</p>
@@ -581,8 +582,8 @@ export default function CommunityScreen({ userId }: Props) {
             </div>
 
             <div className="modal-footer" style={{ padding: '12px 16px calc(12px + env(safe-area-inset-bottom, 0px))' }}>
-              <div className="community-comment-input-row">
-                <input
+              {!LEGACY_READONLY && (<div className="community-comment-input-row">
+                <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                   className="community-comment-input"
                   placeholder="댓글 달기..."
                   value={commentDraft}
@@ -590,14 +591,14 @@ export default function CommunityScreen({ userId }: Props) {
                   onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleSubmitComment(); } }}
                   maxLength={200}
                 />
-                <button
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true"
                   className="community-comment-submit"
                   onClick={handleSubmitComment}
-                  disabled={!commentDraft.trim() || commentSubmitting}
+                  disabled={LEGACY_READONLY || (!commentDraft.trim() || commentSubmitting)}
                 >
                   게시
                 </button>
-              </div>
+              </div>)}
             </div>
           </div>
         </div>

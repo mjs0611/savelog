@@ -1,8 +1,9 @@
+import { LEGACY_READONLY } from '../legacyReadonly';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
 import type { EntryWithReactions, WeekRankRow } from '../lib/supabase';
-import { fetchFeed, toggleReaction, toggleStamp, setScrapServer, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, toggleFollowSupabase, sendCheerNotification, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchOrCreateWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
+import { fetchFeed, toggleReaction, toggleStamp, setScrapServer, submitEntry, submitBalanceVote, fetchDilemmaVoteCounts, fetchFollows, fetchFollowersWithNickname, toggleFollowSupabase, sendCheerNotification, fetchMyDuo, fetchMyInteractions, fetchCommentsForPosts, addCommunityComment, isSupabaseConfigured, fetchWeeklyBoss, createBattle, fetchMyBattle, fetchDayTotals, fetchMyCircle, createCircle, joinCircleByCode, joinOpenCircle, leaveCircle, CIRCLE_MAX_MEMBERS, fetchGlobalStats, fetchFeedbackSince, type GlobalStats, type ServerRelation, type CommunityComment, type WeeklyBoss, type Battle, type Duo, type MyCircle, type SpendingItem } from '../lib/supabase';
 import { STAMPS, STAMP_BY_KEY, topStamp } from '../lib/stamps';
 import { haptic } from '../lib/haptics';
 import { shareExternal, buildCircleInviteMessage, buildRecordBragMessage } from '../lib/share';
@@ -84,14 +85,11 @@ interface Props {
   // HomeScreen에서 이관된 props
   daily: DailyState;
   streak: StreakData;
-  pendingPoints: number;
   submitting?: boolean;
-  pendingClaiming?: boolean;
   streakShields?: number;
   onRecord: () => void;
   onQuickRecord: (items: SpendingItem[]) => Promise<void>;
   onQuickZeroSpend: () => void;
-  onClaimPending: () => void;
   onNavigateToMyLog?: () => void;
   onShareToChat?: (entry: any) => void;
   onShieldEarned?: (count: number) => void;
@@ -100,11 +98,11 @@ interface Props {
 
 // 필터별 빈 상태 문구 — 무엇이 없는지와 다음 행동을 같이 준다
 const FILTER_EMPTY: Record<string, { title: string; sub: string }> = {
-  dilemma: { title: '아직 올라온 고민이 없어요', sub: '"살까말까" 모드로 물어보면 짠친들이 대신 골라줘요' },
-  spend: { title: '아직 올라온 지출 자백이 없어요', sub: '오늘 쓴 걸 한 줄 남기면 여기 바로 올라와요' },
-  save: { title: '아직 지킨 돈 인증이 없어요', sub: '참은 소비나 무지출을 남기면 첫 인증이 돼요' },
-  tip: { title: '아직 올라온 꿀팁이 없어요', sub: '아낀 방법을 공유하면 짠친들이 담아가요' },
-  circle: { title: '아직 우리 서클의 기록이 없어요', sub: '오늘 첫 기록을 남기거나 친구를 초대해 보세요' },
+  dilemma: { title: '아직 올라온 고민이 없어요', sub: '보관된 고민이 없어요' },
+  spend: { title: '아직 올라온 지출 자백이 없어요', sub: '보관된 기록이 없어요' },
+  save: { title: '아직 지킨 돈 인증이 없어요', sub: '보관된 기록이 없어요' },
+  tip: { title: '아직 올라온 꿀팁이 없어요', sub: '보관된 기록이 없어요' },
+  circle: { title: '아직 우리 서클의 기록이 없어요', sub: '보관된 기록이 없어요' },
 };
 
 // ── 1-Tap 퀵 액션 프롬프트 칩 — 직관적 입력 유도 ──
@@ -183,7 +181,7 @@ export function parseQuickRecord(text: string): SpendingItem[] {
 
 
 
-export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, pendingPoints, submitting = false, pendingClaiming, onRecord, onQuickRecord, onClaimPending, onNavigateToMyLog }: Props) {
+export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], daily, streak, submitting = false, onRecord, onQuickRecord, onNavigateToMyLog }: Props) {
   const [entries, setEntries] = useState<EntryWithReactions[]>([]);
   // 소비 고민 글 실제 투표 집계 (seed 가짜값 대체)
   const [dilemmaVotes, setDilemmaVotes] = useState<Record<string, { over: number; ok: number; total: number }>>({});
@@ -577,6 +575,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   const userTouchedTabRef = React.useRef(false);
   // 서클이 있으면 서클이 홈 — fetch 완료 후 승격 (초기값은 'all')
   useEffect(() => {
+    if (LEGACY_READONLY && !myCircle) { setFeedTab('all'); return; }
     if (circleLoaded && myCircle && !userTouchedTabRef.current) setFeedTab('circle');
   }, [circleLoaded, myCircle]);
 
@@ -727,8 +726,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   useEffect(() => {
     if (!myCircle) { setWeeklyBoss(null); return; }
     const key = `${getWeekKey()}__c__${myCircle.circle.id}`;
-    const hp = Math.max(300, 150 * myCircle.members.length);
-    fetchOrCreateWeeklyBoss(key, hp).then(b => setWeeklyBoss(b)).catch(() => {});
+    fetchWeeklyBoss(key).then(b => setWeeklyBoss(b)).catch(() => {});
   }, [refreshToken, myCircle]);
 
   function handleClaimBossReward() {
@@ -1225,7 +1223,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
             {/* 이미 팔로우 중이면 버튼 숨김 — 누를 게 없는 상태가 정상 상태 */}
             {entry.user_id !== userId && !followedUsers[entry.user_id] && (
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 onClick={() => handleToggleFollow(entry.user_id, entry.nickname || '')}
                 className="feed-card-ig-follow"
                 style={{ marginLeft: '4px' }}
@@ -1315,14 +1313,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 </div>
               ) : (
                 <div className="dilemma-vote-btns">
-                  <button
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                     onClick={() => handleFeedVote(entry.id, 'over')}
                     className="balance-vote-card balance-vote-card--over"
                   >
                     <span className="vote-emoji"><CustomIcon emoji="🔥" /></span>
                     <span className="vote-title">사도 돼</span>
                   </button>
-                  <button
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                     onClick={() => handleFeedVote(entry.id, 'ok')}
                     className="balance-vote-card balance-vote-card--ok"
                   >
@@ -1349,9 +1347,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   <div style={{ marginTop: '10px' }}>
                     <p style={{ margin: '0 0 6px', fontSize: '11.5px', color: 'var(--text-sub)', textAlign: 'center', fontWeight: 700 }}>짠친 투표를 보고 최종 결정해요</p>
                     <div style={{ display: 'flex', gap: '8px' }}>
-                      <button onClick={() => handleResolveDilemma(entry.id, amount, false)}
+                      <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => handleResolveDilemma(entry.id, amount, false)}
                         style={{ flex: 1, padding: '9px', borderRadius: '10px', border: 'none', background: 'var(--primary)', color: '#fff', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🌱 참았어요</button>
-                      <button onClick={() => handleResolveDilemma(entry.id, amount, true)}
+                      <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => handleResolveDilemma(entry.id, amount, true)}
                         style={{ flex: 1, padding: '9px', borderRadius: '10px', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-main)', fontWeight: 800, fontSize: '12.5px', cursor: 'pointer' }}>🔥 질렀어요</button>
                     </div>
                   </div>
@@ -1368,7 +1366,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
         {/* 인증샷 / 영수증 이미지 */}
         {entry.image && (
-          <div className="feed-card-image-wrap" onClick={() => setLightboxImage(entry.image || null)} onDoubleClick={(e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
+          <div className="feed-card-image-wrap" onClick={() => setLightboxImage(entry.image || null)} onDoubleClick={LEGACY_READONLY ? undefined : (e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
             <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
             {doubleTappedHearts[entry.id] && (
               <div className="heart-double-tap-overlay"><CustomIcon emoji="❤️" /></div>
@@ -1435,7 +1433,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         {!isMilestone && (
           <div style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
             {entry.user_id !== userId && (
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 onClick={() => setStampPickerFor(prev => (prev === entry.id ? null : entry.id))}
                 aria-label="스탬프"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px 12px 0', background: 'none', border: 'none', cursor: 'pointer', color: entry.my_stamp ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
@@ -1444,9 +1442,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </button>
             )}
             {entry.user_id !== userId ? (
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true"
                 onClick={(e) => handleReact(entry, 'trust', e)}
-                disabled={toggling.has(entry.id)}
+                disabled={LEGACY_READONLY || (toggling.has(entry.id))}
                 aria-label="응원하기"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: liked ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
               >
@@ -1474,7 +1472,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </>
             )}
             {entry.user_id !== userId && (
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 onClick={() => handleScrap(entry)}
                 aria-label="짠수첩에 담기"
                 style={{ display: 'inline-flex', alignItems: 'center', gap: '5px', padding: '12px 12px', background: 'none', border: 'none', cursor: 'pointer', color: scrapped.has(entry.id) ? 'var(--primary)' : 'var(--text-mute)', fontSize: '12px', fontWeight: 700 }}
@@ -1512,7 +1510,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             {STAMPS.map(st => {
               const mine = entry.my_stamp === st.key;
               return (
-                <button
+                <button data-legacy-write="true" disabled={LEGACY_READONLY}
                   key={st.key}
                   onClick={() => { handleStamp(entry, st.key); setStampPickerFor(null); }}
                   title={st.label}
@@ -1541,8 +1539,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 ))}
               </div>
             )}
-            <div className="feed-thread-input-row">
-              <input
+            {!LEGACY_READONLY && (<div className="feed-thread-input-row">
+              <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 id={`comment-input-${entry.id}`}
                 type="text"
                 value={commentInputs[entry.id] || ''}
@@ -1552,14 +1550,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 maxLength={60}
                 className="feed-thread-input"
               />
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true"
                 onClick={() => submitCommentInput(entry.id)}
-                disabled={!(commentInputs[entry.id] || '').trim()}
+                disabled={LEGACY_READONLY || (!(commentInputs[entry.id] || '').trim())}
                 className="feed-thread-submit"
               >
                 게시
               </button>
-            </div>
+            </div>)}
           </div>
         )}
       </div>
@@ -1596,17 +1594,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
 
 
-      {/* 앱바 — 로고 + 포인트 칩. 크롬은 여기까지 */}
+      {/* 앱바 — 로고 + 마이 진입. 크롬은 여기까지 */}
       <div className="feed-appbar">
         <span className="feed-appbar-logo">savelog</span>
-        {pendingPoints > 0 ? (
-          <button className="feed-point-chip" onClick={onClaimPending} disabled={pendingClaiming} style={{ opacity: pendingClaiming ? 0.6 : 1 }}>
-            {/* CTA만 보고 다음 행동을 알 수 있어야 한다 — 광고가 뜬다는 사실을 라벨에 명시 (앱인토스 다크패턴 정책 4·5) */}
-            {pendingClaiming ? '광고 시청 중...' : `광고 보고 ${pendingPoints}원`}
-          </button>
-        ) : (
-          <button onClick={onNavigateToMyLog} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}>마이 ›</button>
-        )}
+        <button onClick={onNavigateToMyLog} style={{ background: 'none', border: 'none', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 700, cursor: 'pointer' }}>마이 ›</button>
       </div>
 
       {/* 스토리 레일 — 서클 멤버 현황·보스. 서클 없으면 히어로(컴포저)만 남긴다 */}
@@ -1618,7 +1609,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         return (
           <div className="story-rail">
             {/* 나 — 기록 전: 점선 링(탭=기록) / 후: 채운 링(탭=룰렛) */}
-            <button className="story-item" onClick={() => { if (!recordedTodayFlag) onRecord(); else setShowRoulette(true); }}>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="story-item" onClick={() => { if (!recordedTodayFlag) onRecord(); else setShowRoulette(true); }}>
               <span className={`story-avatar ${recordedTodayFlag ? 'story-ring' : 'story-ring--empty'}`}>
                 {myPersona ? <img src={PERSONAS[myPersona].icon} alt="" /> : <CustomIcon emoji="🐷" />}
                 {streak.streak > 0 && <span className="story-badge">🔥{streak.streak}</span>}
@@ -1690,7 +1681,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       )}
 
       {/* 📝 인라인 포스트 컴포저 (기록 CTA & 1-Tap 퀵 프롬프트 칩) — 피드 최상단 */}
-      <div ref={composerRef} className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+      {!LEGACY_READONLY && (<div ref={composerRef} className={`feed-composer${!daily.recorded && streak.totalDays === 0 ? ' feed-composer--onboarding' : ''}`} style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
         {daily.recorded && daily.date === getTodayStr() ? (
           <div className="feed-composer-done">
             <span className="feed-composer-done-icon"><CustomIcon emoji="✅" /></span>
@@ -1702,10 +1693,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </span>
             </div>
             {rouletteSpins > 0 && (
-              <button className="feed-composer-add-btn" onClick={() => setShowRoulette(true)} style={{ marginRight: '6px' }}>🎰 {rouletteSpins}</button>
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="feed-composer-add-btn" onClick={() => setShowRoulette(true)} style={{ marginRight: '6px' }}>🎰 {rouletteSpins}</button>
             )}
             {/* 375pt에서 이 행에 4요소가 들어가야 해서 라벨을 줄임 — "털어놓기" 어휘는 유지 */}
-            <button className="feed-composer-add-btn" onClick={onRecord}>+ 털어놓기</button>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="feed-composer-add-btn" onClick={onRecord}>+ 털어놓기</button>
           </div>
         ) : (
           <>
@@ -1713,8 +1704,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <span className="feed-composer-avatar" style={{ flexShrink: 0 }}>
                 {(() => { const p = getPersona(); return p ? <img src={PERSONAS[p].icon} alt="" className="custom-icon" /> : <CustomIcon emoji="🐷" className="custom-icon" />; })()}
               </span>
-              <button onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
-              <input
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={onRecord} aria-label="자세히 기록" style={{ flexShrink: 0, width: '36px', height: '36px', borderRadius: '50%', border: '1px solid var(--divider)', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontSize: '18px', fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', lineHeight: 1 }}>＋</button>
+              <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 value={quickText}
                 onChange={e => setQuickText(e.target.value.slice(0, 60))}
                 onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleQuickSubmit(); } }}
@@ -1722,9 +1713,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 maxLength={60}
                 className="quick-input"
               />
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true"
                 onClick={() => handleQuickSubmit()}
-                disabled={!quickText.trim() || submitting}
+                disabled={LEGACY_READONLY || (!quickText.trim() || submitting)}
                 style={{ flexShrink: 0, padding: '11px 16px', borderRadius: '14px', background: (!quickText.trim() || submitting) ? '#E5E7EB' : 'var(--primary)', color: (!quickText.trim() || submitting) ? 'var(--text-mute)' : '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', transition: 'background 0.2s, color 0.2s' }}
               >
                 {submitting ? '...' : '인증'}
@@ -1734,7 +1725,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             {/* 1-Tap 퀵 프롬프트 칩 바 */}
             <div className="prompt-chips-rail">
               {PROMPT_CHIPS.map(chip => (
-                <button
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                   key={chip.label}
                   type="button"
                   className={`prompt-chip prompt-chip--${chip.tone}`}
@@ -1755,15 +1746,15 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             )}
           </>
         )}
-      </div>
+      </div>)}
 
       {/* 💬 인피드 오늘의 소비 토크 카드 (1탭 인터랙션 & 소셜 대화) */}
-      {!dailyQSubmitted && (
+      {!LEGACY_READONLY && !dailyQSubmitted && (
         <div className="daily-question-card">
           <span className="daily-question-tag">{renderTextWithEmoji(todayPrompt.tag)} · 오늘의 토크</span>
           <p className="daily-question-title">{todayPrompt.q}</p>
           <div className="daily-question-input-row">
-            <input
+            <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
               value={dailyQAnswer}
               onChange={e => setDailyQAnswer(e.target.value.slice(0, 80))}
               onKeyDown={e => { if (e.key === 'Enter') { e.preventDefault(); handleDailyQSubmit(); } }}
@@ -1771,9 +1762,9 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               className="daily-question-input"
               maxLength={80}
             />
-            <button
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true"
               onClick={handleDailyQSubmit}
-              disabled={!dailyQAnswer.trim() || dailyQSubmitting}
+              disabled={LEGACY_READONLY || (!dailyQAnswer.trim() || dailyQSubmitting)}
               className="daily-question-btn"
             >
               {dailyQSubmitting ? '...' : '답변'}
@@ -1807,10 +1798,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       </div>
 
       {/* 시스템 한 줄 — 넛지·정산·결정은 조용한 회색 행으로 */}
-      {duoPartnerNudge && !(daily.recorded && daily.date === getTodayStr()) && (
+      {!LEGACY_READONLY && duoPartnerNudge && !(daily.recorded && daily.date === getTodayStr()) && (
         <div className="system-row">
           <span><strong>{duoPartnerNudge}</strong>님이 오늘 기록을 마쳤어요 — 공동 불꽃이 기다려요</span>
-          <button onClick={onRecord} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>기록 ›</button>
+          <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={onRecord} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>기록 ›</button>
         </div>
       )}
       {battleResult && (
@@ -1828,14 +1819,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         <div className="system-row">
           <span>'{readyWish[0].name}' ({formatAmount(readyWish[0].price)}) — 아직도 원해요?</span>
           <span style={{ display: 'flex', gap: '10px', flexShrink: 0 }}>
-            <button onClick={() => handleWishResolve(readyWish[0].id, false)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>참았어요</button>
-            <button onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink-red)', background: 'none', border: 'none', cursor: 'pointer' }}>샀어요</button>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => handleWishResolve(readyWish[0].id, false)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>참았어요</button>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => handleWishResolve(readyWish[0].id, true)} style={{ fontSize: '12px', fontWeight: 700, color: 'var(--ink-red)', background: 'none', border: 'none', cursor: 'pointer' }}>샀어요</button>
           </span>
         </div>
       )}
 
       {/* ⚖️ 오늘의 판정 — 발견 탭 전용, 보더리스 미니멀 프롬프트 */}
-      {feedTab === 'all' && judgeQueue.length > 0 && (() => {
+      {!LEGACY_READONLY && feedTab === 'all' && judgeQueue.length > 0 && (() => {
         const e = judgeQueue[0];
         const isDilemma = e.is_balance_game || e.items.some(it => it.category === '소비 고민');
         return (
@@ -1845,13 +1836,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             <div className="judge-prompt-actions">
               {isDilemma ? (
                 <>
-                  <button onClick={(ev) => handleJudge(e, 'ok', ev)} className="judge-btn judge-btn--primary">참아!</button>
-                  <button onClick={(ev) => handleJudge(e, 'over', ev)} className="judge-btn">사도 돼</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={(ev) => handleJudge(e, 'ok', ev)} className="judge-btn judge-btn--primary">참아!</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={(ev) => handleJudge(e, 'over', ev)} className="judge-btn">사도 돼</button>
                 </>
               ) : (
                 <>
-                  <button onClick={(ev) => handleJudge(e, 'trust', ev)} className="judge-btn judge-btn--primary">짠내난다</button>
-                  <button onClick={(ev) => handleJudge(e, 'doubt', ev)} className="judge-btn">진짜야?</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={(ev) => handleJudge(e, 'trust', ev)} className="judge-btn judge-btn--primary">짠내난다</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={(ev) => handleJudge(e, 'doubt', ev)} className="judge-btn">진짜야?</button>
                 </>
               )}
               <button onClick={() => setJudgeSkipped(prev => new Set(prev).add(e.id))} className="judge-skip">넘기기</button>
@@ -1876,7 +1867,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       )}
 
       {/* 🔒 서클 티저 — 발견 탭의 서클 미보유 유저에게 컨셉 노출 */}
-      {feedTab === 'all' && circleLoaded && !myCircle && (
+      {!LEGACY_READONLY && feedTab === 'all' && circleLoaded && !myCircle && (
         <div
           className="glass-card"
           onClick={() => { userTouchedTabRef.current = true; setFeedTab('circle'); }}
@@ -1898,14 +1889,14 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <button onClick={() => setShowCircleSheet(true)} style={{ background: 'none', border: 'none', fontSize: '13px', fontWeight: 800, color: 'var(--text-main)', cursor: 'pointer', padding: 0 }}>
                   {myCircle.circle.name} <span style={{ color: 'var(--text-mute)', fontWeight: 600 }}>{myCircle.members.length}/{CIRCLE_MAX_MEMBERS} ›</span>
                 </button>
-                <button onClick={handleShareCircleInvite} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>+ 초대</button>
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={handleShareCircleInvite} style={{ flexShrink: 0, fontSize: '12px', fontWeight: 800, color: 'var(--primary)', background: 'none', border: 'none', cursor: 'pointer' }}>+ 초대</button>
               </div>
 
               {/* 서클 피드 */}
               {displayedEntries.length === 0 ? (
                 <div className="empty-state">
                   <p>아직 우리 서클의 기록이 없어요</p>
-                  <p className="empty-sub">오늘 첫 기록을 남기거나, 위의 💌 초대로 친구를 데려와 보세요</p>
+                  <p className="empty-sub">보관된 서클 기록이 없어요. 발견 탭에서 다른 기록을 볼 수 있어요</p>
                 </div>
               ) : (
                 <div className="feed-list">
@@ -1922,36 +1913,36 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         })() : (
           /* 서클 없음 — 온보딩 (콜드스타트: 만들기 / 코드 참여 / 공개 서클 랜덤 매칭) + 발견 미리보기 */
           <>
-          <div className="glass-card" style={{ padding: '18px 16px', textAlign: 'left', marginBottom: '16px' }}>
+          {!LEGACY_READONLY && (<div className="glass-card" style={{ padding: '18px 16px', textAlign: 'left', marginBottom: '16px' }}>
             <h3 style={{ margin: '0 0 6px', fontSize: '16px', fontWeight: 800 }}>{'짠 서클'}</h3>
             <p style={{ margin: '0 0 14px', fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.55 }}>
               돈 얘기는 아는 사람끼리가 편하죠. 3~8명이서 서로 오늘 쓴 걸 보고, 놀리고, 같이 주간 보스를 잡는 방이에요.
             </p>
             {circleFormMode === 'create' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <input value={circleNameInput} onChange={e => setCircleNameInput(e.target.value)} maxLength={16} placeholder="서클 이름 (예: 월급사수대)" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--divider)', fontSize: '13px', background: 'rgba(255,255,255,0.8)' }} />
+                <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} value={circleNameInput} onChange={e => setCircleNameInput(e.target.value)} maxLength={16} placeholder="서클 이름 (예: 월급사수대)" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--divider)', fontSize: '13px', background: 'rgba(255,255,255,0.8)' }} />
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={handleCreateCircle} disabled={!circleNameInput.trim() || circleBusy} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !circleNameInput.trim() || circleBusy ? 0.5 : 1 }}>{circleBusy ? '만드는 중...' : '만들기'}</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" onClick={handleCreateCircle} disabled={LEGACY_READONLY || (!circleNameInput.trim() || circleBusy)} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !circleNameInput.trim() || circleBusy ? 0.5 : 1 }}>{circleBusy ? '만드는 중...' : '만들기'}</button>
                   <button onClick={() => setCircleFormMode('none')} style={{ flexShrink: 0, padding: '11px 14px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-sub)', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>닫기</button>
                 </div>
               </div>
             ) : circleFormMode === 'join' ? (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <input value={circleJoinInput} onChange={e => setCircleJoinInput(e.target.value.toUpperCase())} maxLength={6} placeholder="초대 코드 6자리" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--divider)', fontSize: '13px', letterSpacing: '2px', background: 'rgba(255,255,255,0.8)' }} />
+                <input title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} value={circleJoinInput} onChange={e => setCircleJoinInput(e.target.value.toUpperCase())} maxLength={6} placeholder="초대 코드 6자리" autoFocus style={{ width: '100%', boxSizing: 'border-box', padding: '11px 12px', borderRadius: '12px', border: '1px solid var(--divider)', fontSize: '13px', letterSpacing: '2px', background: 'rgba(255,255,255,0.8)' }} />
                 <div style={{ display: 'flex', gap: '8px' }}>
-                  <button onClick={handleJoinCircleCode} disabled={!circleJoinInput.trim() || circleBusy} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !circleJoinInput.trim() || circleBusy ? 0.5 : 1 }}>{circleBusy ? '참여 중...' : '참여하기'}</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" onClick={handleJoinCircleCode} disabled={LEGACY_READONLY || (!circleJoinInput.trim() || circleBusy)} style={{ flex: 1, padding: '11px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px', opacity: !circleJoinInput.trim() || circleBusy ? 0.5 : 1 }}>{circleBusy ? '참여 중...' : '참여하기'}</button>
                   <button onClick={() => setCircleFormMode('none')} style={{ flexShrink: 0, padding: '11px 14px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-sub)', fontWeight: 700, cursor: 'pointer', fontSize: '13px' }}>닫기</button>
                 </div>
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                <button onClick={() => setCircleFormMode('create')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>내 서클 만들고 친구 초대하기</button>
-                <button onClick={() => setCircleFormMode('join')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>초대 코드로 참여하기</button>
-                <button onClick={handleJoinOpen} disabled={circleBusy} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer', fontSize: '13px', opacity: circleBusy ? 0.5 : 1 }}>{circleBusy ? '배정 중...' : '이번 주 공개 서클 입장 (랜덤 매칭)'}</button>
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => setCircleFormMode('create')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>내 서클 만들고 친구 초대하기</button>
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => setCircleFormMode('join')} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary-light)', border: 'none', color: 'var(--primary)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}>초대 코드로 참여하기</button>
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" onClick={handleJoinOpen} disabled={LEGACY_READONLY || (circleBusy)} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontWeight: 700, cursor: 'pointer', fontSize: '13px', opacity: circleBusy ? 0.5 : 1 }}>{circleBusy ? '배정 중...' : '이번 주 공개 서클 입장 (랜덤 매칭)'}</button>
                 {!circleLoaded && <p style={{ margin: 0, fontSize: '11px', color: 'var(--text-mute)', textAlign: 'center' }}>서클 정보를 불러오는 중...</p>}
               </div>
             )}
-          </div>
+          </div>)}
 
           {/* 발견 미리보기 — 서클 만들기 전에도 화면이 비지 않게 */}
           {entries.length > 0 && (
@@ -1986,8 +1977,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   </>
                 ) : (
                   <>
-                    <p>첫 자백을 남겨보세요</p>
-                    <p className="empty-sub">한 줄이면 절약 요정이 바로 판정하러 와요</p>
+                    <p>보관된 공개 기록이 없어요</p>
+                    <p className="empty-sub">예전에 나눈 기록이 여기에 보여요</p>
                   </>
                 )}
               </div>
@@ -1996,7 +1987,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
             /* 필터 결과만 0건 — entries로 판정하면 카드도 안내도 없는 빈 화면이 된다 (필터가 고장난 것처럼 보임) */
             <div className="empty-state">
               <p>{FILTER_EMPTY[socialFilter]?.title ?? '해당하는 글이 아직 없어요'}</p>
-              <p className="empty-sub">{FILTER_EMPTY[socialFilter]?.sub ?? '첫 글을 남기면 여기 바로 올라와요'}</p>
+              <p className="empty-sub">{FILTER_EMPTY[socialFilter]?.sub ?? '이 조건에 맞는 보관 기록이 없어요'}</p>
               <button onClick={() => setSocialFilter('all')} className="rank-empty-retry-btn">전체 보기</button>
             </div>
           ) : (
@@ -2061,7 +2052,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 ))}
               </div>
 
-              <textarea
+              <textarea title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 value={messageText}
                 onChange={(e) => setMessageText(e.target.value)}
                 placeholder="전달하고 싶은 익명의 응원 메시지를 직접 작성해 보세요..."
@@ -2076,7 +2067,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 <Button size="large" display="full" color="dark" variant="weak" onClick={() => setMessageRecipientEntry(null)}>닫기</Button>
               </div>
               <div>
-                <Button size="large" display="full" color="primary" variant="fill" disabled={!messageText.trim()} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
+                <Button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" size="large" display="full" color="primary" variant="fill" disabled={LEGACY_READONLY || (!messageText.trim())} onClick={handleSendMessageSubmit}>쪽지 보내기</Button>
               </div>
             </div>
           </div>
@@ -2141,13 +2132,13 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                   </div>
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-                  <button onClick={() => { setShowCircleSheet(false); handleShareCircleInvite(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '13px', cursor: 'pointer' }}>친구 초대하기</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => { setShowCircleSheet(false); handleShareCircleInvite(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '13px', cursor: 'pointer' }}>친구 초대하기</button>
                   {todayBattle ? (
                     <div style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--surface-dim)', color: 'var(--text-sub)', fontWeight: 700, fontSize: '13px', textAlign: 'center' }}>오늘 배틀 진행 중 · 자정 정산</div>
                   ) : myDuo ? (
-                    <button onClick={() => { setShowCircleSheet(false); handleChallengeBattle(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--surface-dim)', border: 'none', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>듀오 짝꿍에게 오늘 덜 쓰기 배틀 신청</button>
+                    <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => { setShowCircleSheet(false); handleChallengeBattle(); }} style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--surface-dim)', border: 'none', color: 'var(--text-main)', fontWeight: 700, fontSize: '13px', cursor: 'pointer' }}>듀오 짝꿍에게 오늘 덜 쓰기 배틀 신청</button>
                   ) : null}
-                  <button onClick={() => { setShowCircleSheet(false); handleLeaveCircle(); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: 'var(--text-mute)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>서클 나가기</button>
+                  <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => { setShowCircleSheet(false); handleLeaveCircle(); }} style={{ width: '100%', padding: '10px', background: 'none', border: 'none', color: 'var(--text-mute)', fontWeight: 600, fontSize: '12px', cursor: 'pointer', textDecoration: 'underline' }}>서클 나가기</button>
                 </div>
               </div>
             </div>
@@ -2168,7 +2159,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 {dead ? (
                   <>
                     <p style={{ margin: '0 0 14px', fontSize: '13.5px', fontWeight: 800, color: '#8A6A1E' }}>처치 완료! 우리 서클의 절약이 보스를 쓰러뜨렸어요 🎉</p>
-                    <button onClick={handleClaimBossReward} disabled={bossRewardClaimed} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: bossRewardClaimed ? 'var(--surface-dim)' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '13px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}>
+                    <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" onClick={handleClaimBossReward} disabled={LEGACY_READONLY || (bossRewardClaimed)} style={{ width: '100%', padding: '12px', borderRadius: '12px', border: 'none', background: bossRewardClaimed ? 'var(--surface-dim)' : 'var(--primary)', color: bossRewardClaimed ? 'var(--text-mute)' : '#fff', fontWeight: 800, fontSize: '13px', cursor: bossRewardClaimed ? 'default' : 'pointer' }}>
                       {bossRewardClaimed ? '보상 수령 완료 ✓' : '젤리 50개 받기'}
                     </button>
                   </>
@@ -2182,7 +2173,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                       <div style={{ width: '100%', height: '100%', borderRadius: '100px', background: 'linear-gradient(90deg, #FF6FB4, #E01F80)', clipPath: `inset(0 ${100 - pct}% 0 0 round 100px)`, transition: 'clip-path 0.5s' }} />
                     </div>
                     <p style={{ margin: 0, fontSize: '12.5px', color: 'var(--text-sub)', lineHeight: 1.6 }}>
-                      멤버의 하루 첫 기록이 공격이 됩니다. 무지출 30 · 절약 방어 20 · 기록 10. 이번 주 안에 처치하면 <strong style={{ color: 'var(--primary)' }}>전원 젤리 50개</strong>.
+                      주간 보스의 마지막 상태를 보관하고 있어요.
                     </p>
                   </>
                 )}
@@ -2193,7 +2184,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       })()}
 
       {/* 🎰 지갑 수비 룰렛 모달 */}
-      <RouletteModal open={showRoulette} onClose={() => setShowRoulette(false)} onPrize={handleRoulettePrize} />
+      <RouletteModal open={!LEGACY_READONLY && showRoulette} onClose={() => setShowRoulette(false)} onPrize={handleRoulettePrize} />
 
       {/* 👤 짠친 미니 프로필 모달 — 관계 상태·교류 스트릭·팔로우/쪽지 원탭 */}
       {quickMenuFriend && (() => {
@@ -2245,7 +2236,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', marginBottom: '16px' }}>
               {!isFollowing && (
-                <button
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                   onClick={() => { handleToggleFollow(f.id, f.nickname); setQuickMenuFriend(null); }}
                   style={{ width: '100%', padding: '12px', borderRadius: '12px', background: 'var(--primary)', border: 'none', color: '#fff', fontWeight: 800, fontSize: '13px', cursor: 'pointer', textAlign: 'center' }}
                 >
@@ -2253,7 +2244,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
                 </button>
               )}
 
-              <button
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                 onClick={() => {
                   setQuickMenuFriend(null);
                   setMessageRecipientEntry({ user_id: f.id, nickname: f.nickname });
@@ -2264,7 +2255,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               </button>
 
               {isFollowing && (
-                <button
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                   onClick={() => {
                     handleToggleFollow(f.id, f.nickname);
                     setQuickMenuFriend(null);
@@ -2283,10 +2274,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
       })()}
 
       {/* ✏️ 플로팅 퀵 작성 캡슐 (FAB) */}
-      <button
+      <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
         type="button"
         className="floating-compose-capsule"
-        hidden={!showFab}
+        hidden={LEGACY_READONLY || !showFab}
         onClick={() => {
           haptic('tickWeak');
           onRecord();

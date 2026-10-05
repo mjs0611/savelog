@@ -1,852 +1,237 @@
-import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
-import { Button } from '@toss/tds-mobile';
-import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
-import { haptic } from './lib/haptics';
-import {
-  getUserId,
-  getUserKey,
-  setUserKey as setUserKeyStorage,
-  getNickname,
-  setNickname,
-  generateNickname,
-  loadDailyState,
-  saveDailyState,
-  getEffectiveStreak,
-  updateStreak,
-  getPersona,
-  getDailyMission,
-  completeDailyMission,
-  setRecordedDate,
-  getPendingPoints,
-  addPendingPoints,
-  consumePendingPoints,
-  cleanupStaleKeys,
-  getStreakShields,
-  addStreakShield,
-  getMilestonePosted,
-  setMilestonePosted,
-  getClaimedRankReward,
-  setClaimedRankReward,
-  type StreakData,
-  type DailyState,
-  updateJellyPocketSpent,
-  addJelly,
-  getWeeklyBudget,
-  addToGoal,
-  getFollowedUsers,
-  saveFollowedUsers,
-  addRouletteSpins,
-  checkAndResetDailyPhysics,
-  resolveSkeleton,
-  getZeigarnikSkeletons,
-  reduceBudgetEntropy,
-} from './lib/storage';
-import { initAit, grantPendingReward, grantRankReward } from './lib/tosspoint';
-import { preloadReward, showReward, initBannerAds } from './lib/ads';
-import { submitEntry, fetchWeekRank, isSupabaseConfigured, verifyUserLinked, contributeToDuo, fetchMyDuo, createDuo, ensureMutualFollow, attackWeeklyBoss, joinCircleByCode, fetchGlobalStats, addFairyResponse, type GlobalStats, type SpendingItem, type WeekRankRow } from './lib/supabase';
-import { getTodayStr, getWeekKey, getPrevWeekKey, formatAmount } from './lib/utils';
-import FeedScreen from './screens/FeedScreen';
-// 첫 화면(피드)에 필요 없는 화면은 지연 로드 — 시작 번들에서 빼서 최초 접속 시간을 줄인다
-// (자매앱 fx-signal·economy-piggy가 "최초 접속 20초 초과"로 실제 반려된 사유)
-const RankScreen = lazy(() => import('./screens/RankScreen'));
-const ProfileScreen = lazy(() => import('./screens/ProfileScreen'));
-const RecordScreen = lazy(() => import('./screens/RecordScreen'));
-const PersonaTest = lazy(() => import('./screens/PersonaTest'));
-const CommunityScreen = lazy(() => import('./screens/CommunityScreen'));
-import CustomIcon from './components/CustomIcon';
-import { IconTabFeed, IconTabPlaza, IconTabMy } from './components/Icons';
+import { useEffect, useRef, useState } from 'react';
+import type { FormEvent } from 'react';
+import JournalIcon from './components/JournalIcon';
+import { EMPTY_JOURNAL, JOURNAL_KEY, MAX_AMOUNT, mergeJournal, parseJournal, readJournal, saveCheckIn,
+  todayKST, weekDates, weekSummary, type Journal } from './lib/journal';
+import { trackJournal } from './lib/journalAnalytics';
 
-type Tab = 'feed' | 'community' | 'mylog';
-
-// ── 딥링크 초대 파라미터 파싱 (모듈 로드 시 1회) ──────────────────────────────
-// 공유 링크(intoss://savelog?room=… / ?duo=…)로 진입한 경우 pending으로 저장해 두고,
-// 로그인·닉네임 설정이 끝난 뒤 자동 입장/듀오 수락 플로우가 소비한다.
-try {
-  const bootParams = new URLSearchParams(window.location.search);
-  const bootDuo = bootParams.get('duo');
-  const bootCircle = bootParams.get('circle'); // 짠 서클 초대 코드
-  const bootInviter = bootParams.get('by'); // 초대자 — 자동 맞팔(짝꿍) 대상
-  if (bootCircle) {
-    localStorage.setItem('savelog_pending_circle', bootCircle);
-  }
-  if (bootDuo) {
-    localStorage.setItem('savelog_pending_duo', JSON.stringify({ id: bootDuo, nick: bootParams.get('dn') || '' }));
-  } else if (bootInviter) {
-    // 초대 링크로 들어온 유저는 초대자와 자동 맞팔 (그래프 시딩) — duo는 수락 플로우에서 함께 처리
-    localStorage.setItem('savelog_pending_mutual', JSON.stringify({ id: bootInviter, nick: bootParams.get('bn') || '' }));
-  }
-  if (bootDuo || bootCircle) {
-    // 재실행 시 중복 트리거 방지를 위해 주소에서 파라미터 제거
-    window.history.replaceState(null, '', window.location.pathname);
-  }
-} catch { /* URL 파싱 실패는 무시 */ }
-
-const TAB_ICONS: Record<Tab, React.ComponentType<{ size?: number; filled?: boolean }>> = {
-  feed: IconTabFeed,
-  community: IconTabPlaza,
-  mylog: IconTabMy,
-};
-const TABS: { key: Tab; label: string }[] = [
-  { key: 'feed', label: '피드' },
-  { key: 'community', label: '광장' },
-  { key: 'mylog', label: '마이로그' },
-];
-
+const won = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
+const dayLabel = (date: string) => new Intl.DateTimeFormat('ko-KR', {
+  timeZone: 'Asia/Seoul', month: 'long', day: 'numeric', weekday: 'long',
+}).format(new Date(`${date}T12:00:00+09:00`));
+const weekdays = ['월', '화', '수', '목', '금', '토', '일'];
 
 export default function App() {
-  const fallbackId = useRef(getUserId()).current;
-
-  const [anonymousKey, setAnonymousKey] = useState<string | null>(() => getUserKey());
-  const [tossLinked, setTossLinked] = useState(() => localStorage.getItem('savelog_toss_linked') === 'true');
-  const [loginLoading, setLoginLoading] = useState(false);
-  const [loginError, setLoginError] = useState<string | null>(null);
-
-  const userId = anonymousKey ?? fallbackId;
-
-  // 닉네임 관문 제거 — 없으면 임의 짠네임 자동 생성 (마이로그 설정에서 변경 가능)
-  const [nickname, setNicknameState] = useState<string>(() => {
-    const existing = getNickname();
-    if (existing) return existing;
-    const generated = generateNickname();
-    setNickname(generated);
-    return generated;
+  const [today, setToday] = useState(todayKST);
+  const [selectedDate, setSelectedDate] = useState(todayKST);
+  const [tab, setTab] = useState<'today' | 'history'>(window.location.pathname === '/history' ? 'history' : 'today');
+  const [initial] = useState(() => {
+    try { return { journal: readJournal(localStorage), error: '' }; }
+    catch { return { journal: EMPTY_JOURNAL, error: '이 기기의 기록을 읽을 수 없어요. 저장 공간 설정을 확인한 뒤 다시 열어 주세요. 기존 기록은 덮어쓰지 않아요.' }; }
   });
-  const [tab, setTab]           = useState<Tab>(() => {
-    const path = window.location.pathname.replace(/^\//, '').split('/')[0];
-    if (path === 'chat' || path === 'community') return 'community';
-    if (path === 'mylog' || path === 'profile') return 'mylog';
-    return 'feed';
-  });
-  // 방문한 탭만 지연 로드한다. 한 번 방문하면 계속 마운트돼 있어 재요청·플리커는 그대로 막힌다
-  const [visitedTabs, setVisitedTabs] = useState<Set<Tab>>(() => new Set([tab]));
-  useEffect(() => {
-    setVisitedTabs(prev => prev.has(tab) ? prev : new Set(prev).add(tab));
-  }, [tab]);
-  const [daily, setDaily]       = useState<DailyState>(() => loadDailyState(getTodayStr()));
-  const [streak, setStreak]     = useState<StreakData>(() => getEffectiveStreak());
-  const [weekRank, setWeekRank] = useState<WeekRankRow[]>([]);
-  const [prevWeekRank, setPrevWeekRank] = useState<WeekRankRow[]>([]);
-  const [rankLoading, setRankLoading] = useState(true);
-  const [rankLoadFailed, setRankLoadFailed] = useState(false);
-  const [showRecord, setShowRecord] = useState(false);
-  const [showZeroNote, setShowZeroNote] = useState(false);
-  const [zeroNoteText, setZeroNoteText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
-  const [pendingClaiming, setPendingClaiming] = useState(false);
-  const [rankClaiming, setRankClaiming] = useState(false);
-  const [showPointToast, setShowPointToast] = useState<string | null>(null);
-  const [showPersonaTest, setShowPersonaTest] = useState(false);
-  const [showRankingModal, setShowRankingModal] = useState(false);
-  const [pendingPoints, setPendingPoints] = useState<number>(() => getPendingPoints());
-  const [feedRefreshToken, setFeedRefreshToken] = useState(0);
-  const [profileRefreshToken, setProfileRefreshToken] = useState(0);
-  const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
-  // 첫 실행 자동 가이드는 제거 — 13개 개념 오버레이가 첫 자백(아하) 전에 끼어들지 않게.
-  // 사용법은 마이로그 설정 '❓ savelog 사용법'에서 온디맨드로 (ProfileScreen)
-  const [globalStats, setGlobalStats] = useState<GlobalStats | null>(null);
-  const toastTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const submittingRef = useRef(false);
-  const pendingClaimingRef = useRef(false);
-  const rankClaimingRef = useRef(false);
-  const rankLoadIdRef = useRef(0);
+  const [journal, setJournal] = useState<Journal>(initial.journal);
+  const [storageError, setStorageError] = useState(initial.error);
+  const [editing, setEditing] = useState(false);
+  const [kind, setKind] = useState<'zero' | 'spend' | null>(null);
+  const [amount, setAmount] = useState('');
+  const [note, setNote] = useState('');
+  const [error, setError] = useState('');
+  const [message, setMessage] = useState('');
+  const [backupText, setBackupText] = useState('');
+  const [pendingDate, setPendingDate] = useState<string | null>(null);
+  const draftActive = useRef(false);
+  const amountInput = useRef<HTMLInputElement>(null);
+  const importInput = useRef<HTMLInputElement>(null);
+  const entry = journal.entries.find(e => e.date === selectedDate);
+  const summary = weekSummary(journal, today);
+  const dates = weekDates(today);
+  const isForm = !entry || editing;
+  draftActive.current = isForm && kind !== null;
 
-  // 키보드가 바텀시트/입력을 가리지 않도록 visualViewport 높이 차를 --kb로 노출.
-  // iOS 웹뷰는 키보드가 레이아웃 뷰포트를 줄이지 않아 fixed 시트 하단이 가려진다.
+  useEffect(() => { trackJournal('open', { has_history: initial.journal.entries.length > 0 }); }, [initial]);
   useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-    const update = () => {
-      const kb = Math.max(0, window.innerHeight - vv.height - vv.offsetTop);
-      document.documentElement.style.setProperty('--kb', `${Math.round(kb)}px`);
-    };
-    vv.addEventListener('resize', update);
-    vv.addEventListener('scroll', update);
-    update();
-    return () => {
-      vv.removeEventListener('resize', update);
-      vv.removeEventListener('scroll', update);
-    };
-  }, []);
-
-  useEffect(() => {
-    checkAndResetDailyPhysics(getTodayStr());
-    fetchGlobalStats(getWeekKey()).then(setGlobalStats).catch(() => {});
-    initAit();
-    initBannerAds();
-    preloadReward(); // 항상 리워드 광고 미리 로드
-    loadRank();
-    // 지난 주 순위 로드 (리워드 수령 판단용)
-    fetchWeekRank(getPrevWeekKey()).then(data => { if (data) setPrevWeekRank(data); }).catch(() => {});
-    cleanupStaleKeys();
-
-    // 연결 끊기 후 재진입 방지 + non-numeric key 재로그인 강제
-    const currentKey = getUserKey();
-    const isLinked = localStorage.getItem('savelog_toss_linked') === 'true';
-    if (currentKey && isLinked) {
-      const numericKey = Number(currentKey);
-      if (isNaN(numericKey) || numericKey === 0) {
-        // non-numeric = proper Toss login 미완료 → 재로그인 강제
-        localStorage.removeItem('savelog_toss_linked');
-        setTossLinked(false);
+    let currentDay = todayKST();
+    function refresh() {
+      const next = todayKST();
+      if (currentDay === next) return;
+      currentDay = next;
+      setToday(next);
+      if (draftActive.current) {
+        setMessage('날짜가 바뀌었어요. 작성 중인 기록은 원래 날짜로 저장돼요.');
       } else {
-        // numeric = users 테이블 검증
-        verifyUserLinked(currentKey).then(valid => {
-          if (!valid) {
-            localStorage.removeItem('savelog_user_key');
-            localStorage.removeItem('savelog_toss_linked');
-            setAnonymousKey(null);
-            setTossLinked(false);
-          }
-        }).catch(() => {});
+        setSelectedDate(next); setEditing(false); setKind(null); setAmount(''); setNote('');
+        setMessage('날짜가 바뀌었어요. 오늘 기록을 시작해 주세요.');
       }
     }
+    const timer = window.setInterval(refresh, 30000);
+    document.addEventListener('visibilitychange', refresh);
+    return () => { clearInterval(timer); document.removeEventListener('visibilitychange', refresh); };
   }, []);
-
-  // 자정 넘어 앱으로 돌아올 때 daily 상태 갱신 (날짜 staleness 방지)
   useEffect(() => {
-    function handleVisibilityChange() {
-      if (document.visibilityState === 'visible') {
-        const currentDay = getTodayStr();
-        checkAndResetDailyPhysics(currentDay);
-        setDaily(prev => prev.date !== currentDay ? loadDailyState(currentDay) : prev);
-        setStreak(getEffectiveStreak());
-        setStreakShields(getStreakShields());
-        loadRank();
-        // 주차가 바뀌었을 때 prevWeekRank도 갱신 (리워드 판단 staleness 방지)
-        fetchWeekRank(getPrevWeekKey()).then(data => { if (data) setPrevWeekRank(data); }).catch(() => {});
-        // 백그라운드 복귀 시 피드·프로필 갱신 (stale 데이터 방지)
-        setFeedRefreshToken(t => t + 1);
-        setProfileRefreshToken(t => t + 1);
-        preloadReward(); // 백그라운드 복귀 시 광고 재로드
-      }
+    function update(e: StorageEvent) {
+      if (e.key !== JOURNAL_KEY && e.key !== null) return;
+      try { setJournal(readJournal(localStorage)); setStorageError(''); }
+      catch { setStorageError('다른 창의 기록을 읽을 수 없어요. 이 화면을 다시 열어 주세요.'); }
     }
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('storage', update);
+    return () => window.removeEventListener('storage', update);
   }, []);
-
-  // 듀오 초대 링크(?duo=) 수락 — 온보딩(로그인·닉네임·트리거) 완료 후 1회 처리
   useEffect(() => {
-    if (!nickname) return;
-    if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
-    const raw = localStorage.getItem('savelog_pending_duo');
-    if (!raw) return;
-    localStorage.removeItem('savelog_pending_duo');
-    (async () => {
-      try {
-        const { id: inviterId, nick: inviterNick } = JSON.parse(raw);
-        if (!inviterId || inviterId === userId) return;
-        const buddyNick = inviterNick || '짠친';
-        const [mine, theirs] = await Promise.all([fetchMyDuo(userId), fetchMyDuo(inviterId)]);
-        if (mine) { showToast('이미 맺어진 머니 듀오가 있어요. 해제 후 다시 수락할 수 있어요.'); return; }
-        if (theirs) { showToast(`${buddyNick}님은 이미 다른 듀오가 있어요.`); return; }
-        const duo = await createDuo(userId, nickname, inviterId, buddyNick);
-        if (duo) {
-          showToast(`💞 ${buddyNick}님과 머니 듀오를 맺었어요! 마이로그에서 확인하세요.`);
-          window.dispatchEvent(new Event('savelog_duo_updated'));
-          // 듀오 = 짝꿍의 정점 — 팔로우 관계도 함께 맺어 그래프 정합성 유지
-          applyMutualFollow(inviterId, buddyNick, false);
-        }
-      } catch { /* 초대 수락 실패는 조용히 무시 */ }
-    })();
-  }, [nickname, anonymousKey, tossLinked, userId]);
+    if (kind === 'spend' && isForm) amountInput.current?.focus();
+  }, [kind, isForm]);
+  useEffect(() => {
+    if (!message) return;
+    const timer = window.setTimeout(() => setMessage(''), 5000);
+    return () => clearTimeout(timer);
+  }, [message]);
 
-  // 초대자와 자동 맞팔 처리 (서버 양방향 + 로컬 팔로잉 목록 반영)
-  function applyMutualFollow(otherId: string, otherNick: string, withToast: boolean) {
-    if (!otherId || otherId === userId) return;
-    ensureMutualFollow(userId, nickname || '짠친', otherId, otherNick || '짠친').then(ok => {
-      if (!ok) return;
-      const followed = getFollowedUsers();
-      if (!followed[otherId]) {
-        saveFollowedUsers({ ...followed, [otherId]: otherNick || '짠친' });
-      }
-      setFeedRefreshToken(t => t + 1);
-      if (withToast) showToast(`🤝 ${otherNick || '초대한 친구'}님과 짝꿍이 되었어요!`);
-    }).catch(() => {});
+  function selectDate(date: string, discard = false) {
+    if (date === selectedDate) { changeTab('today'); return; }
+    if (!discard && date !== selectedDate && draftActive.current) { setPendingDate(date); return; }
+    setPendingDate(null);
+    setSelectedDate(date); setEditing(false); setKind(null); setAmount(''); setNote(''); setError('');
+    changeTab('today');
   }
-
-  // 톡방 초대 링크(?room=&by=)로 들어온 경우 — 초대자와 자동 맞팔 (그래프 시딩)
-  useEffect(() => {
-    if (!nickname) return;
-    if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
-    const raw = localStorage.getItem('savelog_pending_mutual');
-    if (!raw) return;
-    localStorage.removeItem('savelog_pending_mutual');
-    try {
-      const { id, nick } = JSON.parse(raw);
-      applyMutualFollow(id, nick, true);
-    } catch { /* 파싱 실패 무시 */ }
-  }, [nickname, anonymousKey, tossLinked, userId]);
-
-  // 서클 초대 링크(?circle=코드) — 온보딩 완료 후 자동 합류
-  useEffect(() => {
-    if (!nickname) return;
-    if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) return;
-    const code = localStorage.getItem('savelog_pending_circle');
-    if (!code) return;
-    localStorage.removeItem('savelog_pending_circle');
-    joinCircleByCode(code, userId, nickname).then(res => {
-      if (res.ok && res.circle) {
-        showToast(`🔒 서클 「${res.circle.name}」에 합류했어요!`);
-        setFeedRefreshToken(t => t + 1);
-      } else if (res.reason) {
-        showToast(`서클 합류 실패: ${res.reason}`);
-      }
-    }).catch(() => {});
-  }, [nickname, anonymousKey, tossLinked, userId]);
-
-  function navigateTo(next: Tab) {
+  function changeTab(next: 'today' | 'history') {
     setTab(next);
-    if (next === 'feed') setFeedRefreshToken(t => t + 1);
-    if (next === 'mylog') setProfileRefreshToken(t => t + 1);
-    const path = '/' + next;
-    window.history.replaceState(null, '', path);
+    window.history.replaceState(null, '', next === 'today' ? '/' : '/history');
+    if (next === 'history') trackJournal('history_open');
   }
-
-  async function loadRank() {
-    const loadId = ++rankLoadIdRef.current;
-    setRankLoading(true);
+  function choose(next: 'zero' | 'spend') {
+    setKind(next); setError('');
+    trackJournal('record_start', { kind: next, action: entry ? 'edit' : 'create' });
+  }
+  function edit() {
+    if (!entry) return;
+    setKind(entry.amount === 0 ? 'zero' : 'spend'); setAmount(entry.amount ? String(entry.amount) : '');
+    setNote(entry.note); setEditing(true); setError('');
+  }
+  function save(event: FormEvent) {
+    event.preventDefault();
+    const total = kind === 'zero' ? 0 : Number(amount);
+    if (!kind) { setError('오늘 소비를 선택해 주세요.'); return; }
+    if (kind === 'spend' && (!amount || !Number.isSafeInteger(total) || total <= 0 || total > MAX_AMOUNT)) {
+      setError(`쓴 금액을 1원부터 ${won(MAX_AMOUNT)}까지 입력해 주세요.`); amountInput.current?.focus(); return;
+    }
+    if (selectedDate > todayKST()) { setError('미래 날짜는 기록할 수 없어요.'); return; }
     try {
-      const data = await fetchWeekRank(getWeekKey());
-      if (loadId !== rankLoadIdRef.current) return; // 더 최신 요청이 진행 중 → 결과 버림
-      if (data === null) {
-        setRankLoadFailed(true);
-        return; // 기존 데이터 유지
-      }
-      setRankLoadFailed(false);
-      setWeekRank(data);
+      const next = saveCheckIn(localStorage, { date: selectedDate, amount: total, note: note.trim(), updatedAt: new Date().toISOString() });
+      setJournal(next); setEditing(false); setError(''); setStorageError('');
+      setMessage(entry ? '기록을 수정했어요.' : '이 기기에 기록했어요.');
+      trackJournal('record_saved', { kind, action: entry ? 'edit' : 'create', has_history: journal.entries.length > 0 });
     } catch {
-      if (loadId !== rankLoadIdRef.current) return;
-      setRankLoadFailed(true);
-    } finally {
-      if (loadId === rankLoadIdRef.current) setRankLoading(false);
+      setError('저장하지 못했어요. 입력한 내용은 그대로예요. 기기 저장 공간을 확인한 뒤 다시 눌러 주세요.');
+      trackJournal('record_failed', { kind });
     }
   }
-
-  // ── 토스 로그인 ─────────────────────────────────────────────────────────────
-  const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL ?? '';
-  const SUPABASE_ANON_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? import.meta.env.VITE_SUPABASE_ANON_KEY ?? '';
-
-  async function handleTossLogin() {
-    if (loginLoading) return;
-    setLoginLoading(true);
-    setLoginError(null);
-    // Step 1: 토스 로그인 SDK (약관 동의 + 인가코드 발급)
-    let authorizationCode: string;
-    let referrer: string | undefined;
+  function exportBackup() {
     try {
-      const result = await appLogin();
-      authorizationCode = result.authorizationCode;
-      referrer = result.referrer ?? undefined;
-    } catch (e) {
-      console.error('[TossLogin] appLogin failed', e);
-      setLoginError('토스 로그인을 완료할 수 없어요. 잠시 후 다시 시도해 주세요.');
-      setLoginLoading(false);
-      return;
-    }
-
+      const contents = JSON.stringify(readJournal(localStorage), null, 2);
+      setBackupText(contents);
+      const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
+      const link = document.createElement('a'); link.href = url; link.download = `savelog-${today}.json`;
+      document.body.appendChild(link); link.click(); link.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      trackJournal('backup_export');
+    } catch { setMessage('백업을 만들 수 없어요. 기기 저장 공간을 확인해 주세요.'); }
+  }
+  async function importBackup(file?: File) {
+    if (!file) return;
     try {
-      // Step 2: Supabase Edge Function으로 토큰 교환 → userKey 획득
-      const res = await fetch(`${SUPABASE_URL}/functions/v1/toss-login`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'apikey': SUPABASE_ANON_KEY,
-          'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ authorizationCode, referrer, oldUserId: userId }),
-      });
-      const data = await res.json();
-
-      if (res.ok && data.userKey) {
-        // userKey를 문자열로 변환하여 기존 userId 체계와 호환
-        const userKeyStr = String(data.userKey);
-        setUserKeyStorage(userKeyStr);
-        setAnonymousKey(userKeyStr);
-        localStorage.setItem('savelog_terms_agreed', 'true');
-        localStorage.setItem('savelog_toss_linked', 'true');
-        setTossLinked(true);
-      } else {
-        // Edge Function 실패 (mTLS 등) — 사용자 차단하지 않고 anonymous fallback
-        console.warn('[TossLogin] Edge Function failed, fallback to anonymous', res.status, data);
-        const anonResult = await getAnonymousKey();
-        if (anonResult && typeof anonResult === 'object' && anonResult.type === 'HASH') {
-          if (!anonymousKey) {
-            setUserKeyStorage(anonResult.hash);
-            setAnonymousKey(anonResult.hash);
-          }
-          localStorage.setItem('savelog_terms_agreed', 'true');
-          localStorage.setItem('savelog_toss_linked', 'true');
-          setTossLinked(true);
-        } else {
-          setLoginError('로그인 처리 중 오류가 발생했어요. 잠시 후 다시 시도해 주세요.');
-        }
-      }
-    } catch (e) {
-      console.error('[TossLogin] error', e);
-      setLoginError(`네트워크 오류: ${e instanceof Error ? e.message : String(e)}`);
-    } finally {
-      setLoginLoading(false);
-    }
+      if (file.size > 5_000_000) throw new Error('5MB 이하의 세이브로그 백업 파일을 선택해 주세요.');
+      const imported = parseJournal(await file.text());
+      if (imported.entries.some(e => e.date > todayKST())) throw new Error('미래 날짜가 있는 백업은 가져올 수 없어요.');
+      const result = mergeJournal(localStorage, imported);
+      setJournal(result.journal); setMessage(`${result.added}일의 기록을 가져왔어요. 같은 날짜의 기존 기록은 유지했어요.`);
+      trackJournal('backup_import');
+    } catch (e) { setMessage(e instanceof Error ? e.message : '가져오지 못했어요. 백업 파일을 확인해 주세요.'); }
+    finally { if (importInput.current) importInput.current.value = ''; }
   }
 
-  if ((!anonymousKey || !tossLinked) && import.meta.env.PROD) {
-    const isMigration = !!nickname;
-    return (
-      <div className="app-root">
-        <div className="screen setup-screen">
-          <div className="setup-hero">
-            <img src="/images/savelog_main_character.png" alt="Savelog Piggy" className="setup-hero-img" />
-            <h1 className="setup-title">savelog</h1>
-            {isMigration ? (
-              <p className="setup-desc">기록과 포인트를 잃지 않게<br />토스 계정에 연결해 둘게요</p>
-            ) : (
-              <p className="setup-desc">내 판정이 짠친의 결제를 멈추고<br />짠친의 판정이 내 돈을 지켜요</p>
-            )}
-            {!isMigration && globalStats !== null && globalStats.totalRecords >= 30 && (
-              <p className="setup-proof">지금까지 쌓인 짠 인증 {globalStats.totalRecords.toLocaleString('ko-KR')}개</p>
-            )}
-          </div>
-          <Button size="xlarge" display="full" color="primary" variant="fill" onClick={handleTossLogin} disabled={loginLoading}>
-            {loginLoading ? '연동 중...' : isMigration ? '토스 계정 연동하기' : '토스로 시작하기'}
-          </Button>
-          {loginError && <p className="login-error-msg">{loginError}</p>}
-        </div>
-      </div>
-    );
-  }
-
-  function handleSubmitRecord(items: SpendingItem[], image?: string): Promise<void> {
-    return handleCloseAdAndSubmit(items, image);
-  }
-
-  async function handleCloseAdAndSubmit(items: SpendingItem[], image?: string) {
-    const today = getTodayStr();
-    if (submittingRef.current) return;
-    submittingRef.current = true;
-    setSubmitting(true);
-    // 꿀팁·소비 고민은 소셜 포스트 — 순위·스트릭·daily 상태에서 분리
-    const isSocialPost = items.some(it => it.category === '꿀팁' || it.category === '소비 고민');
-    const isFirstRecord = !isSocialPost && (!daily.recorded || daily.date !== today);
-    try {
-      const total = items.reduce((s, i) => s + i.amount, 0);
-      const weekKey = getWeekKey();
-      const currentPersona = getPersona() ?? undefined;
-
-      const entryId = await submitEntry({
-        user_id: userId,
-        nickname: nickname!,
-        date: today,
-        // 소셜 포스트는 별도 week_key로 주간 순위에서 제외
-        week_key: isSocialPost ? 'social-' + weekKey : weekKey,
-        items,
-        total_amount: total,
-        persona: currentPersona,
-        image,
-      });
-
-      if (!entryId && isSupabaseConfigured) {
-        showToast('기록 저장에 실패했어요. 다시 시도해 주세요.');
-        return;
-      }
-
-      // 절약 요정 첫 반응 — 어떤 기록도 무반응으로 남지 않게.
-      // 오늘 첫 기록은 await — 직후 피드 refresh에 요정 반응이 반드시 실려 "자백→판정" 아하가 100% 재현되게
-      if (entryId && !isSocialPost) {
-        const fairyDone = addFairyResponse(entryId, total === 0).catch(() => {});
-        if (isFirstRecord) await fairyDone;
-      }
-
-      // 1. 젤리 저금통 예산 차감 및 몬스터 레이드 연동 (소셜 포스트 제외)
-      if (!isSocialPost) {
-        items.forEach(item => {
-          updateJellyPocketSpent(item.category, item.amount);
-        });
-
-        const hasZero = items.some(it => it.amount === 0 && it.category !== '마일스톤');
-        const hasSave = items.some(it => it.category === '절약 방어');
-
-        // 자이가르닉 스켈레톤 과제 해소 연동
-        const skeletons = getZeigarnikSkeletons();
-        items.forEach(it => {
-          const cat = it.category ? it.category.split('/')[0] : '';
-          if (cat === '식비' && skeletons.some(s => s.id === 'sk-lunch' && s.status === 'pending')) {
-            resolveSkeleton('sk-lunch');
-          } else if (cat === '카페' && skeletons.some(s => s.id === 'sk-cafe' && s.status === 'pending')) {
-            resolveSkeleton('sk-cafe');
-          } else if (skeletons.some(s => s.id === 'sk-commute' && s.status === 'pending')) {
-            resolveSkeleton('sk-commute');
-          }
-        });
-
-        // 예산 엔트로피 차감 연동
-        if (hasZero) {
-          reduceBudgetEntropy(15);
-        } else if (hasSave) {
-          reduceBudgetEntropy(10);
-        }
-      }
-
-      if (isSocialPost) {
-        showToast('공유 완료');
-      } else if (isFirstRecord) {
-        // 첫 기록에만 미션·스트릭·포인트 처리
-        const mission = getDailyMission(today);
-        let missionCleared = false;
-        if (!mission.completed) {
-          if (mission.category === '기타') {
-            if (total === 0) missionCleared = true;
-          } else if (mission.category === '식비') {
-            const foodSpend = items.filter(x => x.category === '식비').reduce((s, x) => s + x.amount, 0);
-            const hasFoodRecord = items.some(x => x.category === '식비');
-            if (!hasFoodRecord || foodSpend <= 5000) missionCleared = true;
-          } else if (mission.category === '교통') {
-            const transportSpend = items.filter(x => x.category === '교통').reduce((s, x) => s + x.amount, 0);
-            const hasTransportRecord = items.some(x => x.category === '교통');
-            if (!hasTransportRecord || transportSpend <= 2000) missionCleared = true;
-          } else {
-            const categorySpend = items.filter(x => x.category === mission.category).reduce((s, x) => s + x.amount, 0);
-            const hasCategoryRecord = items.some(x => x.category === mission.category);
-            if (!hasCategoryRecord || categorySpend === 0) missionCleared = true;
-          }
-        }
-        if (missionCleared) completeDailyMission(today);
-
-        const newStreak = updateStreak(today);
-        setRecordedDate(today);
-        setStreak(newStreak);
-
-        // 7일 완주 마일스톤 자동 피드 공유
-        if (newStreak.streak > 0 && newStreak.streak % 7 === 0) {
-          const milestoneKey = `${weekKey}-streak${newStreak.streak}`;
-          if (!getMilestonePosted(milestoneKey)) {
-            setMilestonePosted(milestoneKey);
-            submitEntry({
-              user_id: userId,
-              nickname: nickname!,
-              date: today,
-              week_key: 'milestone-' + weekKey,
-              items: [{ category: '마일스톤', emoji: '🏆', amount: 0, comment: `${newStreak.streak}일 연속 기록 중! 작은 습관이 단단해지고 있어요 🌿` }],
-              total_amount: 0,
-              persona: currentPersona,
-            }).catch(() => {});
-          }
-        }
-
-        // 포인트는 글 올리기(매일 첫 기록)에만 지급 — 연속 출석 보너스 없음
-        const totalEarn = 3;
-        const prevPending = getPendingPoints();
-        const newPending = addPendingPoints(totalEarn);
-        const actualEarned = newPending - prevPending;
-        setPendingPoints(newPending);
-        if (newPending > 0) preloadReward();
-
-        // 젤리 지급 (기본 10 젤리, 무지출 10 젤리 추가, 미션 달성 15 젤리 추가)
-        let jellyReward = 10;
-        if (total === 0) jellyReward += 10;
-        if (missionCleared) jellyReward += 15;
-        addJelly(jellyReward);
-
-        // 안 쓴 돈을 목표 게이지로 충전 — 하루 예산 대비 아낀 만큼 + 명시적 절약 방어액
-        // (구 엔트로피 50% 감쇄 페널티는 제거 — 보이지 않는 메커니즘으로 벌주지 않는다. 개념 다이어트)
-        const dailyBudget = Math.round(getWeeklyBudget() / 7);
-        const savedFromBudget = Math.max(0, dailyBudget - total);
-        const savedFromDefense = items.reduce((s, it) => s + (it.saved_amount ?? 0), 0);
-        const chargedToGoal = addToGoal(savedFromBudget + savedFromDefense);
-
-        // 머니 듀오 공동 목표에도 기여 + 공동 스트릭 갱신 (활성 듀오가 있을 때만)
-        contributeToDuo(userId, savedFromBudget + savedFromDefense, today).catch(() => {});
-
-        // 🎰 룰렛권 지급 — 기록 1회=1장, 무지출이면 2장 (가변 보상 훅)
-        const spinsEarned = total === 0 ? 2 : 1;
-        addRouletteSpins(spinsEarned);
-
-        // 🐲 서클 주간 보스 공격 — 하루 첫 기록만 유효 (도배 방지). 무지출 30 / 절약방어 20 / 기록 10
-        // 보스는 서클 단위 이벤트 (FeedScreen이 서클 로드 시 circle_id를 localStorage에 동기화)
-        const bossCircleId = localStorage.getItem('savelog_circle_id');
-        if (bossCircleId) {
-          const bossDamage = total === 0 ? 30 : items.some(it => it.category === '절약 방어') ? 20 : 10;
-          attackWeeklyBoss(`${weekKey}__c__${bossCircleId}`, bossDamage).catch(() => {});
-        }
-
-        // 수혜자 명시 — 참은 돈은 "미래의 나"에게 쌓인 몫. 이체가 아니라 집계라서 이동 동사는 쓰지 않는다
-        const goalMsg = chargedToGoal > 0 ? ` · 🌱 미래의 내 몫 +${formatAmount(chargedToGoal)}` : '';
-        // 생애 첫 기록(totalDays는 updateStreak 전 0)은 아하 카피 — 요정 판정으로 시선 유도
-        const isVeryFirstEver = newStreak.totalDays === 1;
-        const toastMsg = isVeryFirstEver
-          ? '자백 완료! 절약 요정이 첫 판정을 남겼어요 · 3원 적립 대기'
-          : actualEarned > 0
-          ? `인증 완료. ${actualEarned}원 대기 중 · 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`
-          : `인증 완료. 젤리 +${jellyReward} · 룰렛권 +${spinsEarned}${goalMsg}`;
-        if (chargedToGoal === 0) haptic('softMedium'); // 영수증 쾅 — 충전 시엔 addToGoal의 무게 햅틱이 대신함(이중 진동 방지)
-        showToast(toastMsg);
-
-        // 습관 트리거 자동 모달 제거(2026-08-20) — 자동 오픈 오버레이는 자매앱 2개의 실제 반려 사유
-        // ("진입 즉시 바텀시트" 계열). 픽커는 마이로그의 요정 카드에서 수동으로 연다.
-      } else {
-        haptic('softMedium');
-        showToast('추가 자백 완료');
-      }
-
-      // 소셜 포스트는 daily 상태 갱신 불필요 (오늘 기록 여부·지출액 변화 없음)
-      if (!isSocialPost) {
-        const prevSpent = (daily.date === today ? daily.spentAmount : 0) ?? 0;
-        const newDaily: DailyState = { date: today, recorded: true, pointGranted: true, entryId, spentAmount: prevSpent + total };
-        saveDailyState(newDaily);
-        setDaily(newDaily);
-        loadRank();
-      }
-      setFeedRefreshToken(t => t + 1);
-      setProfileRefreshToken(t => t + 1);
-      setShowRecord(false);
-      setShowZeroNote(false);
-    } finally {
-      submittingRef.current = false;
-      setSubmitting(false);
-    }
-  }
-
-  function handleClaimPending() {
-    if (pendingPoints <= 0 || pendingClaimingRef.current) return;
-    pendingClaimingRef.current = true;
-    setPendingClaiming(true);
-    const amount = pendingPoints;
-    showReward(async () => {
-      try {
-        const ok = await grantPendingReward(amount);
-        if (!ok) {
-          showToast('포인트 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
-          return;
-        }
-        // 광고 시청 중 추가 적립된 포인트를 보존하기 위해 청구한 금액만 차감
-        const remaining = consumePendingPoints(amount);
-        setPendingPoints(remaining);
-        showToast(`🎁 ${amount}원 지급 완료!`);
-      } finally {
-        pendingClaimingRef.current = false;
-        setPendingClaiming(false);
-      }
-    }, () => {
-      pendingClaimingRef.current = false;
-      setPendingClaiming(false);
-      showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
-    });
-  }
-
-  function handleClaimRankReward(amount: number) {
-    const weekKey = getPrevWeekKey(); // 리워드는 지난 주 성적 기준
-    if (getClaimedRankReward(weekKey) || rankClaimingRef.current) return;
-    rankClaimingRef.current = true;
-    setRankClaiming(true);
-    showReward(async () => {
-      try {
-        const ok = await grantRankReward(amount);
-        if (!ok) {
-          showToast('리워드 지급에 실패했어요. 잠시 후 다시 시도해 주세요.');
-          return;
-        }
-        setClaimedRankReward(weekKey);
-        showToast(`🏆 주간 리워드 ${amount}원 지급 완료!`);
-      } finally {
-        rankClaimingRef.current = false;
-        setRankClaiming(false);
-      }
-    }, () => {
-      rankClaimingRef.current = false;
-      setRankClaiming(false);
-      showToast('광고를 끝까지 시청해야 포인트를 받을 수 있어요');
-    });
-  }
-
-  // 연락처 초대 발송 완료 시 보상 — openContactsInvite가 모달 close 시점에 실제 발송 수를 전달
-  function handleFriendsInvited(count: number) {
-    addStreakShield(count);
-    setStreakShields(getStreakShields());
-    showToast(`🛡️ 친구 ${count}명 초대 완료! 스트릭 보호권 +${count} 적립`);
-  }
-
-  function showToast(msg: string) {
-    if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
-    setShowPointToast(msg);
-    toastTimerRef.current = setTimeout(() => {
-      setShowPointToast(null);
-      toastTimerRef.current = null;
-    }, 3000);
-  }
-
-  // ── 메인 앱 ─────────────────────────────────────────────────────────────────
   return (
-    <div className="app-root">
-      
-      {/* Supabase 미설정 배너 — 개발 환경에서만 표시 */}
-      {import.meta.env.DEV && !isSupabaseConfigured && (
-        <div className="dev-banner">
-          개발 모드 — Supabase 미연결 (목업 데이터)
-        </div>
-      )}
-
-      {/* 탭 콘텐츠 — display:none으로 마운트 유지 (재요청/플리커 방지) */}
-      <div className="tab-content">
-        <div className={tab !== 'feed' ? 'tab-panel--hidden' : ''}>
-          <FeedScreen
-            userId={userId}
-            refreshToken={feedRefreshToken}
-            weekRank={weekRank}
-            daily={daily}
-            streak={streak}
-            pendingPoints={pendingPoints}
-            submitting={submitting}
-            pendingClaiming={pendingClaiming}
-            streakShields={streakShields}
-            onRecord={() => setShowRecord(true)}
-            onQuickRecord={handleSubmitRecord}
-            onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
-            onClaimPending={handleClaimPending}
-            onNavigateToMyLog={() => navigateTo('mylog')}
-            onShieldEarned={handleFriendsInvited}
-          />
-        </div>
-        <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
-          {/* 광장 — 주제별 게시판. 처음 방문할 때 로드하고, 이후엔 마운트를 유지해 재요청·플리커를 막는다 */}
-          {visitedTabs.has('community') && (
-            <Suspense fallback={null}><CommunityScreen userId={userId} /></Suspense>
-          )}
-        </div>
-        <div className={tab !== 'mylog' ? 'tab-panel--hidden' : ''}>
-          {visitedTabs.has('mylog') && (
-          <Suspense fallback={null}>
-          <ProfileScreen
-            userId={userId}
-            nickname={nickname}
-            streak={streak}
-            weekRank={weekRank}
-            daily={daily}
-            pendingPoints={pendingPoints}
-            pendingClaiming={pendingClaiming}
-            onClaimPending={handleClaimPending}
-            refreshToken={profileRefreshToken}
-            onNicknameChange={setNicknameState}
-            onStartTest={() => setShowPersonaTest(true)}
-            onShieldEarned={handleFriendsInvited}
-            onOpenRanking={() => { loadRank(); setShowRankingModal(true); }}
-          />
-          </Suspense>
-          )}
-        </div>
-      </div>
-
-      {/* 주간 랭킹 모달 */}
-      {showRankingModal && (
-        <div className="modal-overlay" onClick={() => setShowRankingModal(false)}>
-          <div className="modal-sheet ranking-modal-sheet" onClick={e => e.stopPropagation()}>
-            <div className="ranking-modal-header">
-              <h3 className="ranking-modal-title"><CustomIcon emoji="🏆" /> 이번 주 절약 랭킹</h3>
-              <button className="ranking-modal-close" onClick={() => setShowRankingModal(false)}>✕</button>
-            </div>
-            <Suspense fallback={null}>
-            <RankScreen
-              userId={userId}
-              weekRank={weekRank}
-              prevWeekRank={prevWeekRank}
-              loading={rankLoading}
-              loadFailed={rankLoadFailed}
-              onClaimRankReward={handleClaimRankReward}
-              claimedThisWeek={getClaimedRankReward(getPrevWeekKey())}
-              rankClaiming={rankClaiming}
-              onRetry={loadRank}
-            />
-            </Suspense>
+    <div className="journal-app">
+      <a className="journal-skip" href="#journal-main">본문으로 이동</a>
+      <header className="journal-header">
+        <a href="/" className="journal-wordmark" aria-label="세이브로그 홈">savelog<span /></a>
+        <a href="/legacy" className="journal-legacy-link" onClick={() => trackJournal('legacy_open')}>기존 공개 기록 <JournalIcon name="arrow" size={14} /></a>
+      </header>
+      <main id="journal-main">
+        {storageError && <div className="journal-error" role="alert">{storageError}<button className="journal-text-button" onClick={() => window.location.reload()}>다시 열기</button></div>}
+        {pendingDate && <div className="journal-date-warning" role="alert"><p>아직 저장하지 않은 내용이 있어요.</p><div><button className="journal-text-button" onClick={() => setPendingDate(null)}>계속 작성하기</button><button className="journal-text-button" onClick={() => selectDate(pendingDate, true)}>저장하지 않고 날짜 이동</button></div></div>}
+        {tab === 'today' ? <>
+          <section className="journal-intro">
+            <div className="journal-date-line"><time dateTime={selectedDate}>{dayLabel(selectedDate)}</time></div>
+            <h1>{entry && !editing ? selectedDate === today ? '오늘을 남겼어요.' : '이날을 남겼어요.' : selectedDate === today ? '오늘, 어떻게 썼나요?' : '이날, 어떻게 썼나요?'}</h1>
+            <p>{entry && !editing ? '잘 쓴 날도, 안 쓴 날도. 내 일주일이 보여요.' : '쓴 돈만 짧게. 평가는 하지 않아요.'}</p>
+          </section>
+          <div className="journal-workspace">
+            <section className="journal-entry" aria-label="소비 기록">
+              {isForm ? <form onSubmit={save}>
+                <fieldset className="journal-choices" disabled={!!storageError}>
+                  <legend className="journal-sr-only">소비 여부</legend>
+                  <button type="button" className={`journal-choice ${kind === 'spend' ? 'is-selected' : ''}`} aria-pressed={kind === 'spend'} onClick={() => choose('spend')}>
+                    <span className="journal-choice-symbol"><JournalIcon name="wallet" size={27} /></span><strong>돈을 썼어요</strong><span>오늘 쓴 총액 남기기</span>
+                  </button>
+                  <button type="button" className={`journal-choice ${kind === 'zero' ? 'is-selected' : ''}`} aria-pressed={kind === 'zero'} onClick={() => choose('zero')}>
+                    <span className="journal-choice-symbol"><JournalIcon name="check" size={27} /></span><strong>안 썼어요</strong><span>0원으로 하루 남기기</span>
+                  </button>
+                </fieldset>
+                {kind && <div className="journal-fields">
+                  {kind === 'spend' ? <div className="journal-amount-field">
+                    <label htmlFor="daily-amount">{selectedDate === today ? '오늘' : '이날'} 쓴 총액</label>
+                    <div className="journal-amount-input"><input ref={amountInput} id="daily-amount" inputMode="numeric" autoComplete="off" value={amount} maxLength={8}
+                      placeholder="0" aria-invalid={!!error} aria-describedby={error ? 'record-error' : 'amount-help'} onChange={e => {
+                        const next = e.target.value.replace(/[,\s]/g, '');
+                        if (/^\d*$/.test(next)) { setAmount(next); setError(''); }
+                        else setError('금액은 원 단위 숫자로 입력해 주세요.');
+                      }} /><span>원</span></div>
+                    <p id="amount-help">빠뜨린 지출은 나중에 총액을 수정하면 돼요.</p>
+                  </div> : <p className="journal-zero-note">{selectedDate === today ? '오늘' : '이날'} 쓴 돈을 <strong>0원</strong>으로 기록해요.</p>}
+                  <label className="journal-note-label" htmlFor="daily-note">한 줄 메모 <span>선택</span></label>
+                  <input className="journal-note-input" id="daily-note" value={note} maxLength={120} placeholder={kind === 'zero' ? '집밥 먹고 산책한 날' : '친구와 먹은 점심이 좋았어요'} onChange={e => setNote(e.target.value)} />
+                  {error && <p id="record-error" className="journal-error" role="alert">{error}</p>}
+                  <button className="journal-primary" type="submit" disabled={!!storageError}>{editing ? '수정한 내용 저장' : kind === 'zero' ? '0원으로 기록하기' : '소비 기록하기'}<JournalIcon name="check" size={19} /></button>
+                  {editing && <button className="journal-text-button journal-cancel" type="button" onClick={() => { setEditing(false); setKind(null); setError(''); }}>수정 취소</button>}
+                </div>}
+                {!kind && <p className="journal-entry-hint">둘 중 하나를 고르면 기록을 시작할 수 있어요.</p>}
+              </form> : <div className="journal-saved">
+                <div className="journal-saved-heading"><span><JournalIcon name="check" size={18} /> 기록 완료</span><button className="journal-text-button" onClick={edit}>수정하기</button></div>
+                <p className="journal-saved-amount">{won(entry.amount)}</p>
+                <p className="journal-saved-note">{entry.note || (entry.amount === 0 ? '돈을 쓰지 않은 하루였어요.' : '쓴 돈을 확인했어요.')}</p>
+                <p className="journal-return-prompt">내일도 이 칸에서 하루를 남겨보세요.</p>
+              </div>}
+              <p className="journal-private"><JournalIcon name="lock" size={14} /> 로그인 없이 이 기기에만 저장해요.</p>
+            </section>
+            <section className="journal-week" aria-labelledby="week-title">
+              <div className="journal-section-heading"><h2 id="week-title">이번 주, 한 칸씩</h2><span>{Number(dates[0].slice(5, 7))}.{Number(dates[0].slice(8))} – {Number(dates[6].slice(5, 7))}.{Number(dates[6].slice(8))}</span></div>
+              <div className="journal-week-grid">
+                {dates.map((date, i) => {
+                  const item = journal.entries.find(e => e.date === date);
+                  return <button key={date} className={`journal-day ${item ? 'is-recorded' : ''} ${date === selectedDate ? 'is-current' : ''}`}
+                    aria-label={`${dayLabel(date)}, ${item ? won(item.amount) : '기록 없음'}`} aria-pressed={date === selectedDate} disabled={date > today} onClick={() => selectDate(date)}>
+                    <span>{weekdays[i]}</span><span className="journal-day-cell">{item ? <JournalIcon name="check" size={20} /> : Number(date.slice(8))}</span><span className="journal-day-state">{item ? item.amount === 0 ? '0원' : '지출' : date === today ? '오늘' : '—'}</span>
+                  </button>;
+                })}
+              </div>
+              {summary.recorded > 0 ? <div className="journal-week-summary"><p><strong>{summary.recorded}일</strong>을 남겼어요. 그중 무지출은 <strong>{summary.zero}일</strong>.</p><p>기록한 소비 합계 <strong>{won(summary.total)}</strong></p><span>빈 날짜는 합계에 포함하지 않아요.</span></div>
+                : <p className="journal-week-empty">첫 기록이 이곳에 쌓여요.<br />하루 빠져도 괜찮아요. 남긴 날은 그대로예요.</p>}
+              {selectedDate !== today && <button className="journal-text-button" onClick={() => selectDate(today)}>오늘로 돌아오기 <JournalIcon name="arrow" size={14} /></button>}
+            </section>
           </div>
-        </div>
-      )}
-
-      {/* 하단 탭바 — 앱인토스 가이드상 토스 제공 "플로팅 형태" 필수, 탭 2~5개 (현재 3개).
-          TDS 웹(@toss/tds-mobile)에는 하단 탭바 컴포넌트가 없어 형태만 맞춰 직접 구현하고,
-          접근성 계약(tablist/tab/aria-selected)은 TDS Tab과 동일하게 맞춘다. */}
-      <nav className="bottom-nav" role="tablist">
-        {TABS.map((t) => (
-          <button
-            key={t.key}
-            role="tab"
-            aria-selected={tab === t.key}
-            className={`tab-btn ${tab === t.key ? 'tab-btn--active bottom-nav-item--active' : ''}`}
-            onClick={() => navigateTo(t.key)}
-          >
-            {(() => { const Ic = TAB_ICONS[t.key]; return <Ic size={22} filled={tab === t.key} />; })()}
-            <span className="tab-label">{t.label}</span>
-          </button>
-        ))}
+          <section className="journal-bottom-note"><h2>정확한 가계부가 부담스러운 날에도.</h2><p>금액 하나, 기억하고 싶은 한 줄이면 충분해요.<br />카드·계좌 내역은 연결하지 않아요.</p></section>
+        </> : <>
+          <section className="journal-intro"><h1>내가 남긴 날들</h1><p>남과 비교하지 않고, 지난 나를 돌아봐요.</p></section>
+          {journal.entries.length ? <div className="journal-history">
+            <p className="journal-history-count">총 {journal.entries.length}일의 기록</p>
+            {journal.entries.map(item => <button className="journal-history-row" key={item.date} onClick={() => selectDate(item.date)}>
+              <span className={`journal-history-mark ${item.amount === 0 ? 'is-zero' : ''}`}><JournalIcon name={item.amount === 0 ? 'check' : 'wallet'} size={19} /></span>
+              <span className="journal-history-copy"><time dateTime={item.date}>{dayLabel(item.date)}</time><span>{item.note || (item.amount === 0 ? '무지출로 남긴 하루' : '쓴 돈을 확인한 하루')}</span></span>
+              <strong>{won(item.amount)}</strong><JournalIcon name="arrow" size={14} />
+            </button>)}
+          </div> : <section className="journal-empty-history"><JournalIcon name="book" size={36} /><h2>첫 페이지를 남겨볼까요?</h2><p>기록한 날짜와 금액을 여기서 다시 볼 수 있어요.</p><button className="journal-primary" onClick={() => selectDate(today)}>오늘 기록하기<JournalIcon name="arrow" size={18} /></button></section>}
+          <section className="journal-backup"><h2>내 기록 보관하기</h2><p>이 기록은 현재 기기에만 있어요. 앱 데이터 삭제나 기기 변경 전에는 백업 파일을 보관해 주세요.</p>
+            <div className="journal-backup-actions"><button className="journal-secondary" disabled={!journal.entries.length || !!storageError} onClick={exportBackup}><JournalIcon name="download" size={17} /> 백업 내보내기</button><button className="journal-secondary" disabled={!!storageError} onClick={() => importInput.current?.click()}>백업 가져오기</button></div>
+            <input className="journal-sr-only" ref={importInput} type="file" accept=".json,application/json" aria-label="세이브로그 백업 파일" onChange={e => { void importBackup(e.target.files?.[0]); }} />
+            {backupText && <div className="journal-backup-fallback"><label htmlFor="backup-content">파일 저장이 안 되면 아래 내용을 복사해 보관해 주세요.</label><textarea id="backup-content" readOnly value={backupText} onFocus={e => e.target.select()} /><button className="journal-text-button" onClick={() => setBackupText('')}>백업 내용 닫기</button></div>}
+          </section>
+          <a className="journal-legacy-card" href="/legacy" onClick={() => trackJournal('legacy_open')}><span><strong>예전에 남긴 공개 기록을 찾으세요?</strong><span>예전 공개 기록은 이전 공간에서 확인해요.<br />여기서 쓴 개인 기록은 피드에 올라가지 않아요.</span></span><JournalIcon name="arrow" size={18} /></a>
+        </>}
+      </main>
+      <div className="journal-status" role="status" aria-live="polite">{message && <p>{message}</p>}</div>
+      <nav className="journal-nav" aria-label="주 메뉴">
+        <button className={tab === 'today' ? 'is-active' : ''} aria-current={tab === 'today' ? 'page' : undefined} onClick={() => selectDate(today)}><JournalIcon name="today" /><span>오늘</span></button>
+        <button className={tab === 'history' ? 'is-active' : ''} aria-current={tab === 'history' ? 'page' : undefined} onClick={() => changeTab('history')}><JournalIcon name="book" /><span>내 기록</span></button>
       </nav>
-
-      {/* 기록 모달 */}
-      {showRecord && (
-        <Suspense fallback={null}>
-        <RecordScreen
-          onSubmit={handleSubmitRecord}
-          onClose={() => setShowRecord(false)}
-          submitting={submitting}
-          isAdditional={daily.recorded && daily.date === getTodayStr()}
-        />
-        </Suspense>
-      )}
-
-      {/* 무지출 한마디 모달 */}
-      {showZeroNote && (
-        <div className="modal-overlay zero-note-modal-overlay" onClick={() => { if (!submitting) setShowZeroNote(false); }}>
-          <div className="modal-sheet zero-note-modal-sheet" onClick={e => e.stopPropagation()}>
-            <p className="zero-note-modal-title"><CustomIcon emoji="🌿" /> 무지출 기록하기</p>
-            <p className="zero-note-modal-desc">
-              오늘 지갑을 어떻게 지켰어요?<br />한 줄 남기면 짠친들이 무지출 도장을 찍어줘요.
-            </p>
-            <textarea
-              className="zero-note-textarea"
-              value={zeroNoteText}
-              onChange={e => setZeroNoteText(e.target.value)}
-              placeholder="예) 집에 있는 재료로 밥해먹고 커피도 참았어요 ☕"
-              maxLength={80}
-              rows={3}
-            />
-            <p className="zero-note-modal-char-count">{zeroNoteText.length}/80</p>
-            <Button
-              size="medium"
-              display="full"
-              color="primary"
-              variant="fill"
-              disabled={zeroNoteText.trim().length < 5 || submitting}
-              onClick={() => {
-                handleSubmitRecord([{ category: '한마디', emoji: '💬', amount: 0, comment: zeroNoteText.trim() }]);
-              }}
-            >
-              {submitting ? '저장 중...' : '무지출 기록 완료'}
-            </Button>
-            {zeroNoteText.trim().length < 5 && (
-              <p className="zero-note-hint">5자 이상 입력하면 기록할 수 있어요</p>
-            )}
-          </div>
-        </div>
-      )}
-
-      {/* 소비 성향 테스트 모달 */}
-      {showPersonaTest && (
-        <Suspense fallback={null}>
-        <PersonaTest
-          onClose={(newPersona) => {
-            setShowPersonaTest(false);
-            if (newPersona) {
-              loadRank();
-              setFeedRefreshToken(t => t + 1);
-            }
-          }}
-        />
-        </Suspense>
-      )}
-
-      {/* 포인트 토스트 */}
-      {showPointToast && (
-        <div className="point-toast">{showPointToast}</div>
-      )}
-
     </div>
   );
 }
-
-// Deploy timestamp 1780836526

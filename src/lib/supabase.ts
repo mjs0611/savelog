@@ -7,9 +7,22 @@ const SUPABASE_ANON_KEY =
 
 export const isSupabaseConfigured = Boolean(SUPABASE_URL && SUPABASE_ANON_KEY);
 
-export const supabase = isSupabaseConfigured
+const supabase = isSupabaseConfigured
   ? createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
   : null;
+
+// This module belongs only to the legacy bundle. Personal journal/analytics stay independent.
+export class LegacyReadonlyError extends Error {
+  constructor() {
+    super('지금은 예전 기록만 볼 수 있어요.');
+    this.name = 'LegacyReadonlyError';
+  }
+}
+
+// Every writer stops before reads, mock success, local side effects, or network requests.
+function assertLegacyWritable(): void {
+  throw new LegacyReadonlyError();
+}
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -72,6 +85,7 @@ export interface WeekRankRow {
 export async function submitEntry(
   entry: Omit<Entry, 'id' | 'created_at'>,
 ): Promise<string | null> {
+  assertLegacyWritable();
   if (!supabase) {
     console.log('[Supabase] mock submit', entry);
     return 'mock-' + Date.now();
@@ -90,6 +104,7 @@ export async function toggleReaction(
   userId: string,
   type: 'trust' | 'doubt',
 ): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   // 스탬프 행(type='stamp:*')과 별개로 관리 — 반드시 trust/doubt만 조회 (스탬프 병존 시 maybeSingle 다중행 오류 방지)
   const { data: existing } = await supabase
@@ -116,6 +131,7 @@ export async function toggleReaction(
 
 // 거지방 스탬프 토글 — 1인 1글 1스탬프 (같은 스탬프 다시 누르면 취소, 다른 스탬프면 교체)
 export async function toggleStamp(entryId: string, userId: string, stampKey: string): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   const type = `stamp:${stampKey}`;
   const { data: existing } = await supabase
@@ -140,6 +156,7 @@ export async function toggleStamp(entryId: string, userId: string, stampKey: str
 // 짠수첩 담기 서버 집계 — reactions에 type='scrap' 행. 마이그레이션 SQL 미적용 환경에선
 // check 제약(23514)으로 조용히 실패하고, 수첩 자체는 localStorage(lib/scraps.ts)로 동작한다.
 export async function setScrapServer(entryId: string, userId: string, on: boolean): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   try {
     if (on) {
@@ -315,6 +332,7 @@ export async function submitBalanceVote(
   userId: string,
   vote: 'over' | 'ok',
 ): Promise<{ over: number; ok: number }> {
+  assertLegacyWritable();
   if (!supabase) {
     const overPct = 55 + Math.floor(Math.random() * 30);
     return { over: overPct, ok: 100 - overPct };
@@ -467,6 +485,7 @@ export async function toggleFollowSupabase(
   followedNickname: string,
   followerNickname?: string,
 ): Promise<{ following: boolean; error?: string }> {
+  assertLegacyWritable();
   if (!supabase) return { following: false, error: 'supabase 미설정' };
   const { data: existing, error: selErr } = await supabase
     .from('follows')
@@ -518,6 +537,7 @@ export async function sendFollowNotification(
   recipientId: string,
   senderNickname: string,
 ): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   await supabase.from('notifications').insert({
     recipient_id: recipientId,
@@ -560,6 +580,7 @@ export async function fetchMyDuo(userId: string): Promise<Duo | null> {
 
 // 짝꿍과 머니 듀오 맺기 (이미 있으면 기존 반환). 상호 짝꿍 전제라 즉시 active.
 export async function createDuo(me: string, meNick: string, buddyId: string, buddyNick: string): Promise<Duo | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   const existing = await fetchMyDuo(me);
   if (existing) return existing;
@@ -575,6 +596,7 @@ export async function createDuo(me: string, meNick: string, buddyId: string, bud
 
 // 오늘 안 쓴 돈을 듀오 공동 목표에 기여 + 공동 스트릭 갱신 (기록 시 호출, 하루 첫 기록만)
 export async function contributeToDuo(userId: string, savedAmount: number, today: string): Promise<void> {
+  assertLegacyWritable();
   if (!supabase || savedAmount < 0) return;
   const duo = await fetchMyDuo(userId);
   if (!duo) return;
@@ -592,11 +614,13 @@ export async function contributeToDuo(userId: string, savedAmount: number, today
 }
 
 export async function setDuoGoal(duoId: string, name: string, emoji: string, target: number): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   await supabase.from('duos').update({ goal_name: name, goal_emoji: emoji, goal_target: target }).eq('id', duoId);
 }
 
 export async function leaveDuo(duoId: string): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   await supabase.from('duos').delete().eq('id', duoId);
 }
@@ -604,6 +628,7 @@ export async function leaveDuo(duoId: string): Promise<void> {
 // ── 초대 자동 맞팔 ────────────────────────────────────────────────────────────
 // 초대 링크로 맺어진 두 사람을 서로 팔로우(=짝꿍) 처리. 이미 팔로우 중이면 건너뜀.
 export async function ensureMutualFollow(meId: string, meNick: string, otherId: string, otherNick: string): Promise<boolean> {
+  assertLegacyWritable();
   if (!supabase || !meId || !otherId || meId === otherId) return false;
   const ensure = async (followerId: string, followedId: string, followedNickname: string) => {
     const { data } = await supabase!
@@ -646,6 +671,7 @@ function interactionYesterday(today: string): string {
 }
 
 export async function recordInteractionServer(meId: string, meNick: string, otherId: string, otherNick: string, today: string): Promise<void> {
+  assertLegacyWritable();
   if (!supabase || !meId || !otherId || meId === otherId) return;
   try {
     const id = pairKey(meId, otherId);
@@ -719,6 +745,7 @@ const WEEKLY_BOSSES = [
 
 // bossKey: 전역이면 weekKey, 서클 단위면 `${weekKey}__c__${circleId}` (같은 테이블 재사용)
 export async function fetchOrCreateWeeklyBoss(bossKey: string, maxHp = 1000): Promise<WeeklyBoss | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   try {
     const { data } = await supabase.from('weekly_boss').select('*').eq('week_key', bossKey).maybeSingle();
@@ -740,6 +767,7 @@ export async function fetchOrCreateWeeklyBoss(bossKey: string, maxHp = 1000): Pr
 }
 
 export async function attackWeeklyBoss(weekKey: string, damage: number): Promise<WeeklyBoss | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   try {
     const boss = await fetchOrCreateWeeklyBoss(weekKey);
@@ -763,6 +791,7 @@ export interface Battle {
 }
 
 export async function createBattle(challenger: string, challengerNick: string, opponent: string, opponentNick: string, date: string): Promise<Battle | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   const id = `battle-${date}-${[challenger, opponent].sort().join('__')}`;
   try {
@@ -840,6 +869,7 @@ export async function fetchMyCircle(userId: string): Promise<MyCircle | null> {
 }
 
 export async function createCircle(userId: string, nickname: string, name: string, emoji: string): Promise<MyCircle | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   try {
     const id = `circle-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -857,6 +887,7 @@ export async function createCircle(userId: string, nickname: string, name: strin
 }
 
 export async function joinCircleByCode(code: string, userId: string, nickname: string): Promise<{ ok: boolean; reason?: string; circle?: Circle }> {
+  assertLegacyWritable();
   if (!supabase) return { ok: false, reason: '서버 미설정' };
   try {
     const { data: c } = await supabase.from('circles').select('*').eq('invite_code', code.trim().toUpperCase()).maybeSingle();
@@ -876,6 +907,7 @@ export async function joinCircleByCode(code: string, userId: string, nickname: s
 
 // 공개 서클 — 주 시즌제 랜덤 매칭 (콜드스타트 완화: 모르는 사람이지만 소수·고정 멤버)
 export async function joinOpenCircle(userId: string, nickname: string, weekKey: string): Promise<{ ok: boolean; circle?: Circle }> {
+  assertLegacyWritable();
   if (!supabase) return { ok: false };
   try {
     const { data: opens } = await supabase.from('circles').select('*').eq('is_open', true).eq('season_week', weekKey).limit(10);
@@ -902,6 +934,7 @@ export async function joinOpenCircle(userId: string, nickname: string, weekKey: 
 }
 
 export async function leaveCircle(circleId: string, userId: string): Promise<boolean> {
+  assertLegacyWritable();
   if (!supabase) return false;
   try {
     const { error } = await supabase.from('circle_members').delete().eq('circle_id', circleId).eq('user_id', userId);
@@ -939,6 +972,7 @@ export async function sendCheerNotification(
   senderNickname: string,
   message: string,
 ): Promise<boolean> {
+  assertLegacyWritable();
   if (!supabase) return false;
   const { error } = await supabase.from('notifications').insert({
     recipient_id: recipientId,
@@ -963,6 +997,7 @@ export async function fetchMyNotifications(userId: string, limit = 30): Promise<
 }
 
 export async function markNotificationsRead(userId: string): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   await supabase
     .from('notifications')
@@ -1174,6 +1209,7 @@ export async function createStory(input: {
   image?: string | null;
   bg_gradient?: string | null;
 }): Promise<StoryRow | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('stories')
@@ -1192,6 +1228,7 @@ export async function createStory(input: {
 }
 
 export async function deleteStory(storyId: string): Promise<boolean> {
+  assertLegacyWritable();
   if (!supabase) return false;
   const { error } = await supabase.from('stories').delete().eq('id', storyId);
   return !error;
@@ -1263,6 +1300,7 @@ export async function createCommunityPost(input: {
   content: string;
   image?: string | null;
 }): Promise<CommunityPost | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('community_posts')
@@ -1282,6 +1320,7 @@ export async function createCommunityPost(input: {
 }
 
 export async function deleteCommunityPost(postId: string): Promise<boolean> {
+  assertLegacyWritable();
   if (!supabase) return false;
   const { error } = await supabase.from('community_posts').delete().eq('id', postId);
   return !error;
@@ -1292,6 +1331,7 @@ export async function toggleCommunityLike(
   postId: string,
   userId: string,
 ): Promise<{ liked: boolean; like_count: number } | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   const { data: existing } = await supabase
     .from('community_likes')
@@ -1357,6 +1397,7 @@ export async function addCommunityComment(input: {
   persona?: string | null;
   content: string;
 }): Promise<CommunityComment | null> {
+  assertLegacyWritable();
   if (!supabase) return null;
   const { data, error } = await supabase
     .from('community_comments')
@@ -1382,6 +1423,7 @@ export async function addCommunityComment(input: {
 }
 
 export async function deleteCommunityComment(commentId: string, postId: string): Promise<boolean> {
+  assertLegacyWritable();
   if (!supabase) return false;
   const { error } = await supabase.from('community_comments').delete().eq('id', commentId);
   if (error) return false;
@@ -1453,6 +1495,7 @@ const FAIRY_SPEND_LINES = [
   '자백 접수. 짠친들이 곧 판정하러 올 거예요',
 ];
 export async function addFairyResponse(entryId: string, isZero: boolean): Promise<void> {
+  assertLegacyWritable();
   if (!supabase) return;
   const pool = isZero ? FAIRY_ZERO_LINES : FAIRY_SPEND_LINES;
   let h = 0;
@@ -1484,4 +1527,11 @@ export async function fetchFeedbackSince(userId: string, sinceISO: string): Prom
     if (r.error || c.error) return null;
     return { reactions: r.count ?? 0, comments: c.count ?? 0 };
   } catch { return null; }
+}
+
+// Archive lookup: never creates a missing boss. The old fetch-or-create entrypoint is frozen.
+export async function fetchWeeklyBoss(bossKey: string): Promise<WeeklyBoss | null> {
+  if (!supabase) return null;
+  const { data, error } = await supabase.from('weekly_boss').select('*').eq('week_key', bossKey).maybeSingle();
+  return error ? null : data as WeeklyBoss | null;
 }

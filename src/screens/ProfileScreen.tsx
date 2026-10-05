@@ -1,3 +1,4 @@
+import { LEGACY_READONLY } from '../legacyReadonly';
 import React, { useState, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
 
@@ -13,7 +14,7 @@ function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () =
 }
 
 import type { Entry, WeekRankRow } from '../lib/supabase';
-import { fetchMyWeekEntries, fetchMyAllEntries, fetchEntriesByIds, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications, markNotificationsRead } from '../lib/supabase';
+import { fetchMyWeekEntries, fetchMyAllEntries, fetchEntriesByIds, submitEntry, toggleFollowSupabase, fetchFollows, fetchFollowedPersonas, fetchMyNotifications } from '../lib/supabase';
 import { getScrapIds, toggleScrapLocal } from '../lib/scraps';
 import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
@@ -38,14 +39,11 @@ interface Props {
   onShieldEarned?: (count: number) => void;
   weekRank?: WeekRankRow[];
   daily?: DailyState;
-  pendingPoints?: number;
-  pendingClaiming?: boolean;
-  onClaimPending?: () => void;
   onShareToChat?: (entry: any) => void;
   onOpenRanking?: () => void;
 }
 
-export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, weekRank = [], daily, pendingPoints = 0, pendingClaiming = false, onClaimPending, onShareToChat, onOpenRanking }: Props) {
+export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, weekRank = [], daily, onShareToChat, onOpenRanking }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
   
@@ -155,7 +153,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         if (newOnes.length === 0) return prev;
         return [...newOnes, ...prev];
       });
-      markNotificationsRead(userId).catch(() => {});
+      // Notifications stay unread: legacy screens never issue UPDATE requests.
     }).catch(() => {});
 
     return () => { cancelled = true; };
@@ -297,8 +295,8 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
       <MoneyPattern entries={allEntries.length > 0 ? allEntries : myEntries} />
 
       {/* 🐹 내 절약 코쿼핏 (리워드·펫·목표·듀오) — 피드에서 마이로그로 이동 */}
-      {daily && onClaimPending && (
-        <MyCockpit userId={userId} daily={daily} streak={streak} weekRank={weekRank} pendingPoints={pendingPoints} pendingClaiming={pendingClaiming} onClaimPending={onClaimPending} />
+      {daily && (
+        <MyCockpit userId={userId} daily={daily} streak={streak} weekRank={weekRank} />
       )}
 
       {/* 2. Sub-tab Navigation */}
@@ -379,14 +377,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <span><CustomIcon emoji="🛡️" /> 친구 공유하고 스트릭 보호권 받기</span>
               <span className="setting-arrow">›</span>
             </div>
-            <div className="glass-card how-to-card" style={{ marginTop: '12px' }}>
-              <p className="how-to-title">포인트 획득 방법</p>
-              <div className="how-to-rows">
-                <div className="how-to-row"><span><CustomIcon emoji="📝" /> 매일 기록</span><span className="how-to-reward-muted">+3원 대기</span></div>
-                <div className="how-to-row"><span><CustomIcon emoji="🏆" /> 주간 순위 보상</span><span className="how-to-reward-muted">순위별 지급</span></div>
-                <div className="how-to-row how-to-row--note"><span>└ 광고 시청 후 토스포인트 지급</span><span /></div>
-              </div>
-            </div>
+
           </div>
 
           <div className="settings-section">
@@ -429,9 +420,9 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <h4>제 1 조 (목적)</h4>
           <p>본 약관은 "세이브로그"(이하 "회사"라 함)가 제공하는 제반 서비스의 이용조건 및 절차, 회원과 회사 간의 권리, 의무 및 책임사항을 규정함을 목적으로 합니다.</p>
           <h4>제 2 조 (용어의 정의)</h4>
-          <p>1. "서비스"라 함은 이용자가 모바일 기기를 통해 소비 내역을 기록하고, 짠물 미션 및 피드 기능을 제공받는 서비스를 말합니다.<br/>2. "토스포인트"라 함은 서비스 내 미션이나 활동 수행 시 토스 플랫폼을 통해 지급되는 포인트를 의미합니다.</p>
-          <h4>제 3 조 (리워드)</h4>
-          <p>회사는 서비스 활성화를 위해 기록 및 미션 달성 보상으로 토스포인트를 적립해 드리며, 적립 조건은 회사 내부 정책에 따릅니다.</p>
+          <p>"서비스"라 함은 이용자가 모바일 기기를 통해 소비 내역을 기록하고, 짠물 미션 및 피드 기능을 제공받는 서비스를 말합니다.</p>
+          <h4>제 3 조 (앱 내 재화)</h4>
+          <p>젤리는 서비스 내 꾸미기에 사용하는 가상 재화이며, 현금이나 토스포인트로 교환할 수 없습니다. 서비스에서는 토스포인트를 적립하거나 지급하지 않습니다.</p>
         </div>
         <Button display="full" size="large" color="primary" variant="fill" onClick={() => setTermsModalOpen(false)}>확인</Button>
       </SimpleModal>
@@ -484,7 +475,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
         </div>
         <div style={{ display: 'flex', gap: '8px', width: '100%' }}>
           <Button display="full" size="large" color="dark" variant="weak" onClick={() => setReplyModalOpen(false)}>닫기</Button>
-          <Button display="full" size="large" color="primary" variant="fill" onClick={handleSendReply} disabled={!replyText.trim()}>보내기</Button>
+          <Button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" display="full" size="large" color="primary" variant="fill" onClick={handleSendReply} disabled={LEGACY_READONLY || (!replyText.trim())}>보내기</Button>
         </div>
       </SimpleModal>
 
@@ -496,7 +487,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
           <div className="friends-scroll-area" style={{ maxHeight: '280px', overflowY: 'auto', marginTop: '16px', marginBottom: '16px' }}>
             {Object.keys(followedList).length === 0 ? (
               <div className="friends-empty-state" style={{ padding: '24px 0', textAlign: 'center', color: 'var(--text-mute)', fontSize: '13px' }}>
-                아직 팔로우한 친구가 없어요. <br /> 피드에서 마음 맞는 친구를 팔로우해 보세요!
+                보관된 짠친 목록이 없어요. <br /> 피드에서 예전 공개 기록을 볼 수 있어요.
               </div>
             ) : (
               Object.entries(followedList).map(([friendId, friendNickname]) => {
@@ -519,7 +510,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                     </div>
                     
                     <div className="friend-row-actions">
-                      <button 
+                      <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                         className="friend-action-btn friend-action-btn--note" 
                         onClick={() => {
                           setShowFollows(false);
@@ -528,7 +519,7 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                       >
                         <CustomIcon emoji="✉️" /> 쪽지
                       </button>
-                      <button
+                      <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY}
                         className="friend-action-btn friend-action-btn--unfollow"
                         onClick={async () => {
                           // 낙관적 업데이트 — UI에서 즉시 제거
@@ -602,7 +593,7 @@ function RecordsTab({ entries, onShareToChat }: { entries: Entry[]; onShareToCha
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <span className="timeline-day-total">합계: {formatAmount(d.total)}</span>
                 {onShareToChat && entryForDate && (
-                  <button 
+                  <button data-legacy-write="true" disabled={LEGACY_READONLY}
                     className="timeline-share-btn" 
                     title="짠톡방에 공유하기" 
                     onClick={() => onShareToChat(entryForDate)}
@@ -692,7 +683,7 @@ function ScrapbookTab() {
       <div className="mylog-empty">
         아직 담은 게 없어요 <CustomIcon emoji="🔖" />
         <span style={{ display: 'block', marginTop: '6px', fontSize: '12px', color: 'var(--text-mute)', fontWeight: 500 }}>
-          피드에서 책갈피를 누르면 남의 절약이 내 수첩에 모여요
+          예전에 담아 둔 기록을 여기에서 볼 수 있어요
         </span>
       </div>
     );
@@ -871,7 +862,7 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }}>
           <h4 className="stats-card-title" style={{ margin: 0 }}>📅 이번 주 절약 Wrapped</h4>
           <div style={{ display: 'flex', gap: '6px' }}>
-            <button className="mylog-budget-edit" onClick={handleShareWrapped} disabled={wrappedSharing}>피드 공유</button>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" className="mylog-budget-edit" onClick={handleShareWrapped} disabled={LEGACY_READONLY || (wrappedSharing)}>피드 공유</button>
             <button className="mylog-budget-edit" onClick={() => shareExternal(buildWrappedBragMessage(formatAmount(weekSaved), recordedThisWeek, zeroDays, streak.streak))}>친구 자랑</button>
           </div>
         </div>
@@ -977,7 +968,7 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <h4 className="stats-card-title" style={{ margin: 0 }}><CustomIcon emoji="🌡️" /> 절약 온도</h4>
           <div style={{ display: 'flex', gap: '6px' }}>
-            <button className="mylog-budget-edit" onClick={() => handleShareToFeed('temp')} disabled={sharing}>피드 자랑</button>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" className="mylog-budget-edit" onClick={() => handleShareToFeed('temp')} disabled={LEGACY_READONLY || (sharing)}>피드 자랑</button>
             {isRecordedToday && (
               <button className="mylog-budget-edit" onClick={() => shareExternal(buildTempBragMessage(temperature))}>친구 자랑</button>
             )}
@@ -1014,7 +1005,7 @@ function StatsTab({ entries, allEntries = [], lastWeekEntries, streak, personaKe
       <div className="glass-card radar-chart-card">
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <span className="radar-chart-label">소비 오각형 스탯 <CustomIcon emoji="🕸️" /></span>
-          <button className="mylog-budget-edit" onClick={() => handleShareToFeed('radar')} disabled={sharing}>피드 자랑</button>
+          <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" className="mylog-budget-edit" onClick={() => handleShareToFeed('radar')} disabled={LEGACY_READONLY || (sharing)}>피드 자랑</button>
         </div>
         <div className="radar-chart-svg-wrap">
           <svg width="200" height="184" className="radar-svg">
@@ -1083,7 +1074,7 @@ function MailboxTab({ messages, handleClearAllMessages, clearConfirm, handleRepl
                 <p className={isSent ? 'mailbox-msg-text-sent' : 'mailbox-msg-text-received'}>{msg.text}</p>
                 {!isSent && (
                   <div className="mailbox-reply-btn-wrap">
-                    <button className="mailbox-reply-btn" onClick={() => handleReplyClick(msg.senderNickname)}><CustomIcon emoji="✉️" /> 답장하기</button>
+                    <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} className="mailbox-reply-btn" onClick={() => handleReplyClick(msg.senderNickname)}><CustomIcon emoji="✉️" /> 답장하기</button>
                   </div>
                 )}
               </div>

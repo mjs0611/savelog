@@ -7,7 +7,6 @@ const GROUPS: { title: string; items: { emoji: string; title: string; desc: stri
     title: '기본 · 하루 한 줄이면 됩니다',
     items: [
       { emoji: '✍️', title: '매일 한 줄 인증', desc: '쓴 돈은 자백, 안 쓴 날은 무지출 인증, 모은 돈·투자는 물타기 고백까지. 한 줄이면 돼요.' },
-      { emoji: '💰', title: '토스포인트 (진짜 현금)', desc: '인증하면 쌓여요. "광고 보고 받기"를 누르면 실제 토스포인트로 받아요.' },
       { emoji: '🪙', title: '젤리 (앱 안 재화)', desc: '인증·룰렛·배틀로 모이는 가상 재화. 절약 요정을 꾸미는 데 써요.' },
     ],
   },
@@ -28,7 +27,7 @@ const GROUPS: { title: string; items: { emoji: string; title: string; desc: stri
       { emoji: '🤔', title: '살까 고민', desc: '살까 말까 망설일 때 올리면 짠친들이 투표로 말려줘요. 보고 최종 결정해요.' },
       { emoji: '💞', title: '짝꿍 · 머니 듀오 · 배틀', desc: '서로 맞팔하면 짝꿍. 듀오를 맺으면 목표·스트릭을 함께 키우고, "오늘 하루 덜 쓰기 배틀"도 걸 수 있어요.' },
       { emoji: '🗣️', title: '광장', desc: '아낀 자랑, 살까 말까, 텅장 실화, 꿀팁·핫딜까지. 매일 바뀌는 오늘의 질문도 있어요.' },
-      { emoji: '🏆', title: '주간 순위', desc: '절약 점수(기록+절약)로 리그 경쟁. 상위권은 토스포인트 보상을 받아요.' },
+      { emoji: '🏆', title: '주간 순위', desc: '기록과 절약 점수로 이번 주 순위를 확인해요.' },
     ],
   },
 ];

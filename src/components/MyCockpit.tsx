@@ -1,3 +1,4 @@
+import { LEGACY_READONLY } from '../legacyReadonly';
 import React, { useState, useEffect, useRef } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { formatAmount, getTodayStr } from '../lib/utils';
@@ -74,12 +75,9 @@ interface Props {
   daily: DailyState;
   streak: StreakData;
   weekRank: WeekRankRow[];
-  pendingPoints: number;
-  pendingClaiming?: boolean;
-  onClaimPending: () => void;
 }
 
-export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, pendingPoints, pendingClaiming = false, onClaimPending }: Props) {
+export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank }: Props) {
   const [speech, setSpeech] = useState<string | null>(null);
   const speechTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isWobbling, setIsWobbling] = useState(false);
@@ -306,18 +304,8 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
         <button onClick={() => setShowGuide(true)} style={{ fontSize: '12px', fontWeight: 800, color: 'var(--text-sub)', background: 'rgba(0,0,0,0.04)', border: '1px solid var(--divider)', borderRadius: '100px', padding: '5px 12px', cursor: 'pointer' }}>사용법</button>
       </div>
 
-      {/* 💠 통합 리워드 스트립 — 토스포인트(현금) · 젤리(가상) · 목표(절약진행) 한눈에 */}
+      {/* 💠 통합 리워드 스트립 — 젤리(가상) · 목표(절약진행) 한눈에 */}
       <div className="glass-card" style={{ padding: '12px', marginBottom: '16px', display: 'flex', gap: '8px' }}>
-        <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
-          <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="💰" /> 토스포인트</p>
-          <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800, color: pendingPoints > 0 ? 'var(--primary)' : 'var(--text-main)' }}>{pendingPoints}원</p>
-          {pendingPoints > 0 && (
-            <button onClick={onClaimPending} disabled={pendingClaiming}
-              style={{ marginTop: '4px', fontSize: '10px', fontWeight: 800, padding: '3px 8px', borderRadius: '100px', border: 'none', background: 'var(--primary)', color: '#fff', cursor: 'pointer' }}>
-              {pendingClaiming ? '받는 중' : '광고 보고 받기'}
-            </button>
-          )}
-        </div>
         <div style={{ flex: 1, textAlign: 'center', padding: '6px 4px', borderRight: '1px solid var(--divider)' }}>
           <p style={{ margin: 0, fontSize: '10px', color: 'var(--text-mute)', fontWeight: 700 }}><CustomIcon emoji="🪙" /> 젤리</p>
           <p style={{ margin: '3px 0 0', fontSize: '15px', fontWeight: 800 }}>{jellyBalance}</p>
@@ -488,26 +476,26 @@ export default function MyCockpit({ userId, daily, streak, weekRank: _weekRank, 
                 </div>
                 <input className="nickname-input" value={duoGoalName} onChange={e => setDuoGoalName(e.target.value)} maxLength={16} placeholder="공동 목표 (예: 둘이 제주 여행)" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '13px', marginBottom: '8px' }} />
                 <input className="nickname-input" value={duoGoalTarget} onChange={e => setDuoGoalTarget(e.target.value)} inputMode="numeric" placeholder="목표 금액 (원)" style={{ width: '100%', boxSizing: 'border-box', padding: '9px 12px', borderRadius: '10px', background: 'var(--surface-dim)', border: '1px solid var(--divider)', color: 'var(--text-main)', fontSize: '13px', marginBottom: '10px' }} />
-                <button onClick={handleSaveDuoGoal} style={{ width: '100%', padding: '9px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer' }}>공동 목표 저장</button>
+                <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={handleSaveDuoGoal} style={{ width: '100%', padding: '9px', borderRadius: '10px', background: 'var(--primary)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer' }}>공동 목표 저장</button>
               </>
             ) : (
-              <button onClick={() => setDuoGoalForm(true)} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(255, 61, 154,0.12)', color: 'var(--ink-red)', border: '1px solid rgba(255, 61, 154,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}><CustomIcon emoji="🎯" /> 공동 목표 정하기</button>
+              <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={() => setDuoGoalForm(true)} style={{ width: '100%', padding: '10px', borderRadius: '10px', background: 'rgba(255, 61, 154,0.12)', color: 'var(--ink-red)', border: '1px solid rgba(255, 61, 154,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '13px' }}><CustomIcon emoji="🎯" /> 공동 목표 정하기</button>
             )}
-            <button onClick={handleLeaveDuo} style={{ marginTop: '8px', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '10.5px', textDecoration: 'underline', cursor: 'pointer' }}>듀오 해제</button>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={handleLeaveDuo} style={{ marginTop: '8px', background: 'none', border: 'none', color: 'var(--text-mute)', fontSize: '10.5px', textDecoration: 'underline', cursor: 'pointer' }}>듀오 해제</button>
           </div>
         );
       })() : buddyList.length > 0 ? (() => {
         const duoBuddy = buddyList.find(b => b.id === topRel?.userId) || buddyList[0];
         return (
           <div className="glass-card" style={{ padding: '14px 16px', marginBottom: '16px', textAlign: 'left', background: '#FAF0E8', border: '1px solid var(--divider)' }}>
-            <div style={{ cursor: 'pointer' }} onClick={handleMakeDuo}>
+            <div aria-disabled={LEGACY_READONLY} data-legacy-write="true" onClick={LEGACY_READONLY ? undefined : handleMakeDuo}>
               <p style={{ margin: 0, fontSize: '14px', fontWeight: 800 }}><CustomIcon emoji="💞" /> {duoBuddy.nickname}님과 머니 듀오 맺기</p>
               <p style={{ margin: '6px 0 0', fontSize: '11.5px', color: 'var(--text-sub)', lineHeight: 1.5 }}>
                 둘이 함께 <strong>공동 목표·스트릭</strong>을 키워요. 매일 둘 다 기록하면 공동 불꽃이 오르고, 한 명이 빠지면 같이 깨져요.<br />
-                <span style={{ color: 'var(--ink-red)', fontWeight: 800 }}>탭해서 맺기 →</span>
+                <span style={{ color: 'var(--ink-red)', fontWeight: 800 }}>읽기 전용으로 보관 중</span>
               </p>
             </div>
-            <button onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(255, 61, 154,0.12)', color: 'var(--ink-red)', border: '1px solid rgba(255, 61, 154,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}>
+            <button title="읽기 전용으로 보관하고 있어요" data-legacy-write="true" disabled={LEGACY_READONLY} onClick={handleInviteDuo} style={{ marginTop: '10px', width: '100%', padding: '9px', borderRadius: '10px', background: 'rgba(255, 61, 154,0.12)', color: 'var(--ink-red)', border: '1px solid rgba(255, 61, 154,0.3)', fontWeight: 800, cursor: 'pointer', fontSize: '12.5px' }}>
               <CustomIcon emoji="💌" /> 다른 친구를 초대해 듀오 맺기
             </button>
           </div>
