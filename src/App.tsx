@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import type { FormEvent } from 'react';
 import JournalIcon from './components/JournalIcon';
-import { EMPTY_JOURNAL, JOURNAL_KEY, MAX_AMOUNT, mergeJournal, parseJournal, readJournal, saveCheckIn,
+import { EMPTY_JOURNAL, JOURNAL_KEY, MAX_AMOUNT, readJournal, saveCheckIn,
   shiftDate, todayKST, weekDates, weekSummary, type Journal } from './lib/journal';
 import { trackJournal } from './lib/journalAnalytics';
+import MonthlyReflection from './components/MonthlyReflection';
+import { emptyReflection, promiseForDate, readReflection, REFLECTION_KEY,
+  savePromiseCheck, saveWeeklyPromise, type PromiseAnswer, type Reflection } from './lib/reflection';
+import { importPersonalBackup, personalBackup } from './lib/journalBackup';
 
 const won = (amount: number) => `${amount.toLocaleString('ko-KR')}원`;
 const dayLabel = (date: string) => new Intl.DateTimeFormat('ko-KR', {
@@ -16,13 +20,22 @@ export default function App() {
   const [selectedDate, setSelectedDate] = useState(todayKST);
   const [weekAnchor, setWeekAnchor] = useState(todayKST);
   const [reviewExpanded, setReviewExpanded] = useState(false);
-  const [tab, setTab] = useState<'today' | 'history'>(window.location.pathname === '/history' ? 'history' : 'today');
+  const tabFromPath = () => window.location.pathname === '/history' ? 'history' : window.location.pathname === '/review' ? 'review' : 'today';
+  const [tab, setTab] = useState<'today' | 'history' | 'review'>(tabFromPath);
   const [initial] = useState(() => {
     try { return { journal: readJournal(localStorage), error: '' }; }
     catch { return { journal: EMPTY_JOURNAL, error: '이 기기의 기록을 읽을 수 없어요. 저장 공간 설정을 확인한 뒤 다시 열어 주세요. 기존 기록은 덮어쓰지 않아요.' }; }
   });
   const [journal, setJournal] = useState<Journal>(initial.journal);
   const [storageError, setStorageError] = useState(initial.error);
+  const [initialReflection] = useState(() => {
+    try { return { reflection: readReflection(localStorage), error: '' }; }
+    catch { return { reflection: emptyReflection(), error: '이 기기의 회고를 읽을 수 없어요. 기존 회고는 덮어쓰지 않아요. 저장 공간을 확인한 뒤 다시 열어 주세요.' }; }
+  });
+  const [reflection, setReflection] = useState<Reflection>(initialReflection.reflection);
+  const [reflectionError, setReflectionError] = useState(initialReflection.error);
+  const [promiseError, setPromiseError] = useState('');
+  const [activePromiseDraft, setActivePromiseDraft] = useState<string | null>(null);
   const [editing, setEditing] = useState(false);
   const [kind, setKind] = useState<'zero' | 'spend' | null>(null);
   const [amount, setAmount] = useState('');
@@ -32,11 +45,15 @@ export default function App() {
   const [backupText, setBackupText] = useState('');
   const [pendingDate, setPendingDate] = useState<string | null>(null);
   const draftActive = useRef(false);
+  const promiseEditingWeek = useRef<string | null>(null);
   const amountInput = useRef<HTMLInputElement>(null);
   const importInput = useRef<HTMLInputElement>(null);
   const weekHeading = useRef<HTMLHeadingElement>(null);
   const entryHeading = useRef<HTMLHeadingElement>(null);
   const entry = journal.entries.find(e => e.date === selectedDate);
+  const activePromise = promiseForDate(reflection, selectedDate);
+  const promiseCheck = activePromise?.checkIns.find(e => e.date === selectedDate);
+  const answerLabels: Record<PromiseAnswer, string> = { tried: '해봤어요', adjust: '바꿔보고 싶어요', 'not-yet': '아직 못 해봤어요' };
   const summary = weekSummary(journal, weekAnchor, today);
   const dates = weekDates(weekAnchor);
   const currentWeek = dates[0] === weekDates(today)[0];
@@ -68,12 +85,22 @@ export default function App() {
   }, []);
   useEffect(() => {
     function update(e: StorageEvent) {
-      if (e.key !== JOURNAL_KEY && e.key !== null) return;
-      try { setJournal(readJournal(localStorage)); setStorageError(''); }
-      catch { setStorageError('다른 창의 기록을 읽을 수 없어요. 이 화면을 다시 열어 주세요.'); }
+      if (e.key === JOURNAL_KEY || e.key === null) {
+        try { setJournal(readJournal(localStorage)); setStorageError(''); }
+        catch { setStorageError('다른 창의 기록을 읽을 수 없어요. 이 화면을 다시 열어 주세요.'); }
+      }
+      if (e.key === REFLECTION_KEY || e.key === null) {
+        try { setReflection(readReflection(localStorage)); setReflectionError(''); }
+        catch { setReflectionError('다른 창의 회고를 읽을 수 없어요. 기존 회고는 덮어쓰지 않아요.'); }
+      }
     }
     window.addEventListener('storage', update);
     return () => window.removeEventListener('storage', update);
+  }, []);
+  useEffect(() => {
+    const update = () => setTab(tabFromPath());
+    window.addEventListener('popstate', update);
+    return () => window.removeEventListener('popstate', update);
   }, []);
   useEffect(() => {
     if (kind === 'spend' && isForm) amountInput.current?.focus();
@@ -83,12 +110,21 @@ export default function App() {
     const timer = window.setTimeout(() => setMessage(''), 5000);
     return () => clearTimeout(timer);
   }, [message]);
+  useEffect(() => {
+    const protect = (event: BeforeUnloadEvent) => {
+      if (!draftActive.current && activePromiseDraft === null) return;
+      event.preventDefault(); event.returnValue = '';
+    };
+    window.addEventListener('beforeunload', protect);
+    return () => window.removeEventListener('beforeunload', protect);
+  }, [activePromiseDraft]);
 
   function selectDate(date: string, discard = false) {
     if (date === selectedDate) { setWeekAnchor(date); changeTab('today'); focusEntry(); return; }
     if (!discard && date !== selectedDate && draftActive.current) { setPendingDate(date); return; }
     setPendingDate(null);
     setSelectedDate(date); setEditing(false); setKind(null); setAmount(''); setNote(''); setError('');
+    setActivePromiseDraft(null); setPromiseError('');
     setWeekAnchor(date);
     changeTab('today');
     focusEntry();
@@ -111,10 +147,26 @@ export default function App() {
     setWeekAnchor(days === 0 ? today : shiftDate(dates[0], days));
     setReviewExpanded(true);
   }
-  function changeTab(next: 'today' | 'history') {
+  function changeTab(next: 'today' | 'history' | 'review') {
     setTab(next);
-    window.history.replaceState(null, '', next === 'today' ? '/' : '/history');
+    const path = next === 'today' ? '/' : next === 'history' ? '/history' : '/review';
+    if (window.location.pathname !== path) window.history.pushState(null, '', path);
     if (next === 'history') trackJournal('history_open');
+  }
+  function checkPromise(answer: PromiseAnswer) {
+    try {
+      setReflection(savePromiseCheck(localStorage, readJournal(localStorage), selectedDate, answer, new Date().toISOString()));
+      setPromiseError(''); setMessage('약속에 대한 내 생각을 저장했어요.');
+    } catch { setPromiseError('약속 회고를 저장하지 못했어요. 하루 기록은 그대로예요. 저장 공간을 확인한 뒤 다시 눌러 주세요.'); }
+  }
+  function editActivePromise() {
+    if (!activePromise || activePromiseDraft === null) return;
+    if (promiseEditingWeek.current !== activePromise.weekStart) { setPromiseError('기록의 주가 바뀌었어요. 입력은 그대로예요. 수정을 취소한 뒤 이 주의 약속을 다시 열어 주세요.'); return; }
+    if (!activePromiseDraft.trim()) { setPromiseError('약속 하나를 적어 주세요.'); return; }
+    try {
+      setReflection(saveWeeklyPromise(localStorage, { ...activePromise, text: activePromiseDraft.trim(), updatedAt: new Date().toISOString() }));
+      setActivePromiseDraft(null); setPromiseError(''); setMessage('이 주의 약속을 수정했어요. 이전 생각은 당시 약속과 함께 남아요.');
+    } catch { setPromiseError('약속을 수정하지 못했어요. 입력한 내용과 기존 약속은 그대로예요.'); }
   }
   function choose(next: 'zero' | 'spend') {
     setKind(next); setError('');
@@ -145,7 +197,7 @@ export default function App() {
   }
   function exportBackup() {
     try {
-      const contents = JSON.stringify(readJournal(localStorage), null, 2);
+      const contents = personalBackup(localStorage);
       setBackupText(contents);
       const url = URL.createObjectURL(new Blob([contents], { type: 'application/json' }));
       const link = document.createElement('a'); link.href = url; link.download = `savelog-${today}.json`;
@@ -158,10 +210,10 @@ export default function App() {
     if (!file) return;
     try {
       if (file.size > 5_000_000) throw new Error('5MB 이하의 세이브로그 백업 파일을 선택해 주세요.');
-      const imported = parseJournal(await file.text());
-      if (imported.entries.some(e => e.date > todayKST())) throw new Error('미래 날짜가 있는 백업은 가져올 수 없어요.');
-      const result = mergeJournal(localStorage, imported);
+      const result = importPersonalBackup(localStorage, await file.text(), todayKST());
       setJournal(result.journal); setMessage(`${result.added}일의 기록을 가져왔어요. 같은 날짜의 기존 기록은 유지했어요.`);
+      if (result.reflection) { setReflection(result.reflection); setReflectionError(''); setMessage(`${result.added}일의 기록과 회고를 가져왔어요. 기존 날짜·월·주의 내용은 유지했어요.`); }
+      if (result.reflectionFailed) setMessage(`${result.added}일의 기록은 가져왔어요. 회고는 저장하지 못했어요. 기존 회고와 백업 파일은 그대로 두고 저장 공간을 확인해 주세요.`);
       trackJournal('backup_import');
     } catch (e) { setMessage(e instanceof Error ? e.message : '가져오지 못했어요. 백업 파일을 확인해 주세요.'); }
     finally { if (importInput.current) importInput.current.value = ''; }
@@ -219,7 +271,16 @@ export default function App() {
                 <p className="journal-saved-note">{entry.note || (entry.amount === 0 ? '돈을 쓰지 않은 하루였어요.' : '쓴 돈을 확인했어요.')}</p>
                 <p className="journal-return-prompt">내일도 이 칸에서 하루를 남겨보세요.</p>
                 <button className="journal-secondary journal-review-action" onClick={reviewThisWeek}>이번 주 돌아보기 <JournalIcon name="arrow" size={17} /></button>
+                <button className="journal-text-button" onClick={() => changeTab('review')}>한 달 돌아보기 <JournalIcon name="arrow" size={17} /></button>
               </div>}
+              {activePromise && <section className="journal-promise-check" aria-labelledby="active-promise-title"><h2 id="active-promise-title">이 주에 정한 약속</h2><p>{activePromise.text}</p>
+                {activePromiseDraft !== null ? <><label className="journal-note-label" htmlFor="active-weekly-promise">이 주의 약속 수정</label><textarea id="active-weekly-promise" className="journal-reflection-input" maxLength={80} value={activePromiseDraft} onChange={e => setActivePromiseDraft(e.target.value)} disabled={!!reflectionError} /><button className="journal-secondary" disabled={!!reflectionError} onClick={editActivePromise}>수정한 약속 저장</button><button className="journal-text-button" onClick={() => { setActivePromiseDraft(null); setPromiseError(''); }}>약속 수정 취소</button></> : <button className="journal-text-button" disabled={!!reflectionError} onClick={() => { promiseEditingWeek.current = activePromise.weekStart; setActivePromiseDraft(activePromise.text); }}>약속 수정하기</button>}
+                {entry && !editing ? <><p className="journal-month-disclaimer">이날은 어땠나요? 내가 직접 돌아봐요.</p><div className="journal-promise-answers">{(Object.keys(answerLabels) as PromiseAnswer[]).map(answer => <button key={answer} className="journal-secondary" disabled={!!reflectionError} aria-pressed={promiseCheck?.answer === answer && promiseCheck.promiseText === activePromise.text} onClick={() => checkPromise(answer)}>{answerLabels[answer]}</button>)}</div>
+                  {promiseCheck && <p className="journal-month-disclaimer">{promiseCheck.promiseText && promiseCheck.promiseText !== activePromise.text ? `이때 돌아본 약속: ${promiseCheck.promiseText}. ` : ''}내가 남긴 생각: {answerLabels[promiseCheck.answer]}</p>}
+                </> : <p className="journal-month-disclaimer">하루 기록을 저장한 뒤 이 약속을 돌아볼 수 있어요.</p>}
+                {(promiseError || reflectionError) && <p className="journal-error" role="alert">{promiseError || reflectionError}</p>}
+                <button className="journal-text-button" onClick={() => changeTab('review')}>월간 회고 보기 <JournalIcon name="arrow" size={14} /></button>
+              </section>}
               <p className="journal-private"><JournalIcon name="lock" size={14} /> 로그인 없이 이 기기에만 저장해요.</p>
             </section>
             <section className="journal-week" aria-labelledby="week-title">
@@ -251,7 +312,7 @@ export default function App() {
             </section>
           </div>
           <section className="journal-bottom-note"><h2>정확한 가계부가 부담스러운 날에도.</h2><p>금액 하나, 기억하고 싶은 한 줄이면 충분해요.<br />카드·계좌 내역은 연결하지 않아요.</p></section>
-        </> : <>
+        </> : tab === 'history' ? <>
           <section className="journal-intro"><h1>내가 남긴 날들</h1><p>남과 비교하지 않고, 지난 나를 돌아봐요.</p></section>
           {journal.entries.length ? <div className="journal-history">
             <p className="journal-history-count">총 {journal.entries.length}일의 기록</p>
@@ -267,12 +328,15 @@ export default function App() {
             {backupText && <div className="journal-backup-fallback"><label htmlFor="backup-content">파일 저장이 안 되면 아래 내용을 복사해 보관해 주세요.</label><textarea id="backup-content" readOnly value={backupText} onFocus={e => e.target.select()} /><button className="journal-text-button" onClick={() => setBackupText('')}>백업 내용 닫기</button></div>}
           </section>
           <a className="journal-legacy-card" href="/legacy" onClick={() => trackJournal('legacy_open')}><span><strong>예전에 남긴 공개 기록을 찾으세요?</strong><span>예전 공개 기록은 이전 공간에서 확인해요.<br />여기서 쓴 개인 기록은 피드에 올라가지 않아요.</span></span><JournalIcon name="arrow" size={18} /></a>
-        </>}
+        </> : null}
+        <div hidden={tab !== 'review'}><MonthlyReflection journal={journal} today={today} reflection={reflection} storageError={reflectionError || storageError}
+          onSaved={value => { setReflection(value); setReflectionError(''); }} onDate={selectDate} /></div>
       </main>
       <div className="journal-status" role="status" aria-live="polite">{message && <p>{message}</p>}</div>
       <nav className="journal-nav" aria-label="주 메뉴">
         <button className={tab === 'today' ? 'is-active' : ''} aria-current={tab === 'today' ? 'page' : undefined} onClick={() => selectDate(today)}><JournalIcon name="today" /><span>오늘</span></button>
         <button className={tab === 'history' ? 'is-active' : ''} aria-current={tab === 'history' ? 'page' : undefined} onClick={() => changeTab('history')}><JournalIcon name="book" /><span>내 기록</span></button>
+        <button className={tab === 'review' ? 'is-active' : ''} aria-current={tab === 'review' ? 'page' : undefined} onClick={() => changeTab('review')}><JournalIcon name="book" /><span>월간 회고</span></button>
       </nav>
     </div>
   );

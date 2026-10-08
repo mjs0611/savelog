@@ -8,7 +8,7 @@
     "build": "tsc -b && vite build && ait build",
     "build:ait": "tsc -b && vite build --mode ait",
     "preview": "vite preview",
-    "test": "node --experimental-strip-types --test tests/journal.test.mjs tests/journal-analytics.test.mjs tests/legacy-readonly.test.mjs tests/legacy-readonly-ui.test.mjs",
+    "test": "node --experimental-strip-types --test tests/journal.test.mjs tests/reflection.test.mjs tests/journal-analytics.test.mjs tests/legacy-readonly.test.mjs tests/legacy-readonly-ui.test.mjs",
     "test:browser": "node tests/journal.browser.mjs"
   },
   "dependencies": {

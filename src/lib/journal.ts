@@ -1,8 +1,8 @@
 // Personal check-ins never enter the public social tables.
 export const JOURNAL_KEY = 'savelog_personal_journal_v1';
 export const MAX_AMOUNT = 99999999;
-export interface CheckIn { date: string; amount: number; note: string; updatedAt: string }
-export interface Journal { version: 1; entries: CheckIn[] }
+export interface CheckIn { date: string; amount: number; note: string; updatedAt: string; [extension: string]: unknown }
+export interface Journal { version: 1; entries: CheckIn[]; [extension: string]: unknown }
 export const EMPTY_JOURNAL: Journal = { version: 1, entries: [] };
 export type Store = Pick<Storage, 'getItem' | 'setItem'>;
 
@@ -43,9 +43,11 @@ export function parseJournal(raw: string): Journal {
       throw new Error('기록 형식을 확인할 수 없어요. 원본 파일을 그대로 보관해 주세요.');
     }
     dates.add(e.date);
-    return { date: e.date, amount: e.amount, note: e.note, updatedAt: e.updatedAt };
+    // Preserve opaque additions (for example a locally attached photo) on read,
+    // edit, export and import. This screen only interprets the validated fields.
+    return { ...e, date: e.date, amount: e.amount, note: e.note, updatedAt: e.updatedAt };
   });
-  return { version: 1, entries: entries.sort((a, b) => b.date.localeCompare(a.date)) };
+  return { ...input, version: 1, entries: entries.sort((a, b) => b.date.localeCompare(a.date)) };
 }
 export function readJournal(storage: Store): Journal {
   const raw = storage.getItem(JOURNAL_KEY);
@@ -54,7 +56,8 @@ export function readJournal(storage: Store): Journal {
 export function saveCheckIn(storage: Store, entry: CheckIn): Journal {
   // Re-read before writing so an older tab does not replace other dates.
   const current = readJournal(storage);
-  const next = parseJournal(JSON.stringify({ version: 1, entries: [entry, ...current.entries.filter(e => e.date !== entry.date)] }));
+  const previous = current.entries.find(e => e.date === entry.date);
+  const next = parseJournal(JSON.stringify({ ...current, entries: [{ ...previous, ...entry }, ...current.entries.filter(e => e.date !== entry.date)] }));
   storage.setItem(JOURNAL_KEY, JSON.stringify(next));
   return next;
 }
@@ -63,7 +66,7 @@ export function mergeJournal(storage: Store, imported: Journal): { journal: Jour
   const dates = new Set(current.entries.map(e => e.date));
   // Existing days win: importing never silently replaces current work.
   const additions = imported.entries.filter(e => !dates.has(e.date));
-  const journal = parseJournal(JSON.stringify({ version: 1, entries: [...current.entries, ...additions] }));
+  const journal = parseJournal(JSON.stringify({ ...imported, ...current, entries: [...current.entries, ...additions] }));
   storage.setItem(JOURNAL_KEY, JSON.stringify(journal));
   return { journal, added: additions.length };
 }
