@@ -3,9 +3,9 @@ import App from './LegacyApp';
 import './style.css';
 
 /**
- * TDS 프로바이더 + App.
- * main.tsx에서 지연 로드되는 경계 — 이 파일이 TDS(약 870KB)를 시작 번들 밖으로 밀어낸다.
- * 첫 페인트는 main.tsx의 스플래시가 CSS만으로 그리고, 그 다음에 이 청크가 붙는다.
+ * 기존 커뮤니티 화면의 TDS 프로바이더 + App.
+ * Root.tsx가 기존 공간 경로·공유 링크에서만 지연 로드한다. 개인 기록 홈에서는 로드하지 않는다.
+ * main.tsx는 Root를 기다리는 스플래시, Root.tsx는 이 청크를 기다리는 스플래시를 표시한다.
  */
 export default function Root() {
   return (
