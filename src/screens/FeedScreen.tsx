@@ -1,4 +1,5 @@
 import { LEGACY_READONLY } from '../legacyReadonly';
+import useDialogFocus from '../components/useDialogFocus';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { TossAds } from '@apps-in-toss/web-framework';
@@ -208,6 +209,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   // 라이트박스 (이미지 확대 보기)
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const lightboxRef = useDialogFocus(!!lightboxImage, () => setLightboxImage(null));
 
   // 탭 필터 — 기본은 발견(all), 서클 로드 후 서클이 있으면 승격 (신규에게 빈 서클 온보딩 플래시 방지)
   const [feedTab, setFeedTab] = useState<'circle' | 'all'>('all');
@@ -715,6 +717,8 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
   // ── 🐲 서클 주간 보스 — 우리 서클만의 합동 레이드 (HP는 멤버 수 비례) ──
   const [weeklyBoss, setWeeklyBoss] = useState<WeeklyBoss | null>(null);
+  const circleRef = useDialogFocus(showCircleSheet && !!myCircle, () => setShowCircleSheet(false));
+  const bossRef = useDialogFocus(showBossSheet && !!weeklyBoss, () => setShowBossSheet(false));
   const [bossClaimTick, setBossClaimTick] = useState(0);
   const bossClaimKey = myCircle ? `savelog_boss_reward_${getWeekKey()}__${myCircle.circle.id}` : '';
   const bossRewardClaimed = React.useMemo(() => {
@@ -895,7 +899,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
   }
 
   // 더블 탭 시 인스타그램 하트 애니메이션 및 짠내난다(trust) 반응 자동 활성화
-  function handleDoubleTap(entry: EntryWithReactions, e: React.MouseEvent<HTMLDivElement>) {
+  function handleDoubleTap(entry: EntryWithReactions, e: React.MouseEvent<HTMLElement>) {
     if (entry.user_id === userId) return;
     if (togglingRef.current.has(entry.id)) return; // 이 항목 반응 진행 중이면 애니메이션도 생략
 
@@ -1366,12 +1370,12 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
         {/* 인증샷 / 영수증 이미지 */}
         {entry.image && (
-          <div className="feed-card-image-wrap" onClick={() => setLightboxImage(entry.image || null)} onDoubleClick={LEGACY_READONLY ? undefined : (e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
-            <img src={entry.image} alt="Spending Proof" className="feed-card-img" />
+          <button type="button" className="feed-card-image-wrap" aria-label="기록 사진 크게 보기" onClick={() => setLightboxImage(entry.image || null)} onDoubleClick={LEGACY_READONLY ? undefined : (e) => handleDoubleTap(entry, e)} style={{ position: 'relative' }}>
+            <img src={entry.image} alt="기록에 첨부한 사진" className="feed-card-img" />
             {doubleTappedHearts[entry.id] && (
-              <div className="heart-double-tap-overlay"><CustomIcon emoji="❤️" /></div>
+              <span className="heart-double-tap-overlay"><CustomIcon emoji="❤️" /></span>
             )}
-          </div>
+          </button>
         )}
 
         {/* 지출 항목 */}
@@ -2095,10 +2099,10 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 
       {/* 🖼️ 라이트박스 이미지 확대 보기 모달 */}
       {lightboxImage && (
-        <div className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
-          <button className="lightbox-close-btn" onClick={() => setLightboxImage(null)}>✕</button>
+        <div ref={lightboxRef} role="dialog" aria-modal="true" aria-label="기록 사진 크게 보기" tabIndex={-1} className="lightbox-overlay" onClick={() => setLightboxImage(null)}>
+          <button className="lightbox-close-btn" aria-label="사진 닫기" onClick={() => setLightboxImage(null)}>✕</button>
           <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
-            <img src={lightboxImage} alt="Expanded Preview" className="lightbox-img" />
+            <img src={lightboxImage} alt="크게 보는 기록 사진" className="lightbox-img" />
           </div>
         </div>
       )}
@@ -2111,7 +2115,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         const circleZero = rows.filter(r => r.total === 0).length;
         return (
           <div className="modal-overlay" onClick={() => setShowCircleSheet(false)}>
-            <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div ref={circleRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet" onClick={e => e.stopPropagation()}>
               <div style={{ padding: '20px 16px', textAlign: 'left' }}>
                 <h3 style={{ margin: '0 0 2px', fontSize: '17px', fontWeight: 800 }}>{myCircle.circle.name}</h3>
                 <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>
@@ -2152,7 +2156,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
         const pct = Math.max(0, Math.round((weeklyBoss.hp / weeklyBoss.max_hp) * 100));
         return (
           <div className="modal-overlay" onClick={() => setShowBossSheet(false)}>
-            <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+            <div ref={bossRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet" onClick={e => e.stopPropagation()}>
               <div style={{ padding: '20px 16px', textAlign: 'left' }}>
                 <h3 style={{ margin: '0 0 2px', fontSize: '17px', fontWeight: 800 }}><CustomIcon emoji={weeklyBoss.boss_emoji || '🐲'} /> {weeklyBoss.boss_name}</h3>
                 <p style={{ margin: '0 0 14px', fontSize: '12px', color: 'var(--text-sub)' }}>우리 서클의 주간 보스</p>
@@ -2293,10 +2297,11 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
 }
 
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const panelRef = useDialogFocus(open, onClose);
   if (!open) return null;
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()}>{children}</div>
+      <div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet" onClick={e => e.stopPropagation()}>{children}</div>
     </div>
   );
 }

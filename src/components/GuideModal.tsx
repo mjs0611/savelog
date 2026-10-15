@@ -1,5 +1,6 @@
 import { Button } from '@toss/tds-mobile';
 import { renderTextWithEmoji } from './CustomIcon';
+import useDialogFocus from './useDialogFocus';
 
 // savelog 사용법 — 개념이 많아 3그룹으로 위계화 (기본 루프 → 오늘의 재미 → 짠친과 함께)
 const GROUPS: { title: string; items: { emoji: string; title: string; desc: string }[] }[] = [
@@ -33,24 +34,25 @@ const GROUPS: { title: string; items: { emoji: string; title: string; desc: stri
 ];
 
 export default function GuideModal({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const panelRef = useDialogFocus(open, onClose);
   if (!open) return null;
   return (
     <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
+      <div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet" onClick={e => e.stopPropagation()} style={{ maxHeight: '80vh', display: 'flex', flexDirection: 'column' }}>
         <div style={{ padding: '20px 16px 12px', textAlign: 'left' }}>
           <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 800 }}>{'savelog 사용법'}</h3>
-          <p style={{ margin: '4px 0 0', fontSize: '12px', color: 'var(--text-sub)' }}>하루 한 줄 인증하면, 나머지는 전부 따라와요.</p>
+          <p style={{ margin: '4px 0 0', fontSize: '14px', color: 'var(--text-sub)' }}>하루 한 줄 인증하면, 나머지는 전부 따라와요.</p>
         </div>
         <div style={{ overflowY: 'auto', padding: '0 16px', flex: 1 }}>
           {GROUPS.map((g) => (
             <div key={g.title} style={{ marginBottom: '6px' }}>
-              <p style={{ margin: '14px 0 4px', fontSize: '13px', fontWeight: 800, color: 'var(--primary)', textAlign: 'left' }}>{renderTextWithEmoji(g.title)}</p>
+              <p style={{ margin: '14px 0 4px', fontSize: '14px', fontWeight: 800, color: 'var(--primary)', textAlign: 'left' }}>{renderTextWithEmoji(g.title)}</p>
               {g.items.map((s) => (
                 <div key={s.title} style={{ display: 'flex', gap: '12px', padding: '10px 0', borderBottom: '1px solid rgba(0,0,0,0.05)', textAlign: 'left' }}>
                   <span style={{ fontSize: '20px', flexShrink: 0, lineHeight: 1.2 }}>{renderTextWithEmoji(s.emoji)}</span>
                   <div>
-                    <p style={{ margin: 0, fontSize: '13.5px', fontWeight: 800, color: 'var(--text-main)' }}>{s.title}</p>
-                    <p style={{ margin: '3px 0 0', fontSize: '12px', color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.desc}</p>
+                    <p style={{ margin: 0, fontSize: '14px', fontWeight: 800, color: 'var(--text-main)' }}>{s.title}</p>
+                    <p style={{ margin: '3px 0 0', fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.5 }}>{s.desc}</p>
                   </div>
                 </div>
               ))}

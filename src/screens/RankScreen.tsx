@@ -204,7 +204,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, dail
       ) : weekRank.length === 0 ? (
         <div className="empty-state">
           <p>이번 주 기록이 아직 없어요</p>
-          <p className="empty-sub">오늘 하루를 남기면 페이스가 보여요</p>
+          <p className="empty-sub">{LEGACY_READONLY ? '이 주에 보관된 공개 기록이 없어요.' : '오늘 하루를 남기면 페이스가 보여요'}</p>
         </div>
       ) : (
         <div className="rank-list">
@@ -233,7 +233,7 @@ export default function RankScreen({ userId, weekRank, loading, loadFailed, dail
 
                   </span>
                   <span className="rank-row-days" style={{ display: 'flex', alignItems: 'center', gap: '4px', marginTop: '2px' }}>
-                    <span style={{ fontSize: '11px', fontWeight: 800, color: row.total === 0 ? 'var(--ink-blue)' : 'var(--brass)' }}>{row.total === 0 ? <><CustomIcon emoji="🌿" /> 무지출</> : <><CustomIcon emoji="💸" /> 유지출</>}</span>
+                    <span style={{ fontSize: '14px', fontWeight: 800, color: row.total === 0 ? 'var(--ink-blue-strong)' : 'var(--brass-strong)' }}>{row.total === 0 ? <><CustomIcon emoji="🌿" /> 무지출</> : <><CustomIcon emoji="💸" /> 유지출</>}</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>·</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>{row.days}일 기록</span>
                     <span style={{ fontSize: '11px', color: 'var(--text-sub)' }}>·</span>

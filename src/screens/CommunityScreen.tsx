@@ -1,4 +1,5 @@
 import { LEGACY_READONLY } from '../legacyReadonly';
+import useDialogFocus from '../components/useDialogFocus';
 import React, { useEffect, useRef, useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import {
@@ -113,6 +114,7 @@ export default function CommunityScreen({ userId }: Props) {
   const [submitting, setSubmitting] = useState(false);
 
   const [detailPost, setDetailPost] = useState<CommunityPostWithMyLike | null>(null);
+  const detailRef = useDialogFocus(!!detailPost, () => closeDetail());
   const [detailComments, setDetailComments] = useState<CommunityComment[]>([]);
   const [detailLoading, setDetailLoading] = useState(false);
   const [commentDraft, setCommentDraft] = useState('');
@@ -383,7 +385,7 @@ export default function CommunityScreen({ userId }: Props) {
         ) : posts.length === 0 ? (
           <div className="empty-state">
             <p>아직 글이 없어요</p>
-            <p className="empty-sub">첫 번째 글을 남겨 보세요!</p>
+            <p className="empty-sub">{LEGACY_READONLY ? '보관된 공개 글이 없어요.' : '첫 번째 글을 남겨 보세요!'}</p>
           </div>
         ) : (
           posts.map(post => {
@@ -401,8 +403,8 @@ export default function CommunityScreen({ userId }: Props) {
                   </span>
                   <span className="community-post-time" style={{ fontSize: '11.5px', color: 'var(--text-mute)' }}>{timeAgo(post.created_at)}</span>
                 </div>
-                <h3 className="community-post-title" style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.4 }}>{post.title}</h3>
-                <p className="community-post-content" style={{ margin: '0 0 10px', fontSize: '13px', color: 'var(--text-sub)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.content}</p>
+                <h3 className="community-post-title" style={{ margin: '0 0 6px', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)', lineHeight: 1.4 }}><button type="button" className="community-thread-open" onClick={event => { event.stopPropagation(); openDetail(post); }}>{post.title}</button></h3>
+                <p className="community-post-content" style={{ margin: '0 0 10px', fontSize: '14px', color: 'var(--text-sub)', lineHeight: 1.5, display: '-webkit-box', WebkitLineClamp: 3, WebkitBoxOrient: 'vertical', overflow: 'hidden' }}>{post.content}</p>
                 {post.image && (
                   <div className="community-post-image-wrap" style={{ borderRadius: '12px', overflow: 'hidden', marginBottom: '10px' }}>
                     <img src={post.image} alt="" className="community-post-image" style={{ width: '100%', maxHeight: '200px', objectFit: 'cover' }} />
@@ -508,12 +510,12 @@ export default function CommunityScreen({ userId }: Props) {
       {/* 상세 모달 */}
       {detailPost && (
         <div className="modal-overlay" onClick={closeDetail}>
-          <div className="modal-sheet" onClick={e => e.stopPropagation()}>
+          <div ref={detailRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="modal-header">
               <span className="community-post-cat" style={{ background: '#3182F61F', color: 'var(--ink-blue-strong)', padding: '4px 8px', borderRadius: '4px', fontSize: '12px', fontWeight: 700, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
                 <CustomIcon emoji={categoryMeta(detailPost.category).emoji} /> {categoryMeta(detailPost.category).label}
               </span>
-              <button className="modal-close-btn" onClick={closeDetail}>✕</button>
+              <button className="modal-close-btn" aria-label="공개 글 닫기" onClick={closeDetail}>✕</button>
             </div>
 
             <div className="modal-body community-detail-body">

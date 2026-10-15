@@ -36,6 +36,7 @@ try {
   await page.getByRole('button', { name: '소비 기록하기', exact: true }).click();
   await page.getByRole('heading', { name: '오늘을 남겼어요.' }).waitFor();
   assert.equal((await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key)).entries[0].amount, 12000);
+  assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), '기록 완료');
   results.push('fresh arrival → spend → validation → local save');
   await page.getByRole('button', { name: '수정하기' }).click();
   await page.getByLabel('오늘 쓴 총액').fill('15000');
@@ -79,12 +80,57 @@ try {
   assert.equal(page.auditRequests.length, 0);
   results.push('personal flow sends no Supabase reads or writes');
 
+  await page.getByRole('button', { name: '월간 회고', exact: true }).click();
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'month-review-title');
+  await page.getByLabel('이달에 기억할 한 줄').fill('다시 돌아보고 싶은 한 달');
+  await page.getByRole('button', { name: '지난 달' }).click();
+  assert.match(await page.evaluate(() => document.activeElement?.textContent), /저장하지 않은 회고/);
+  await page.getByRole('button', { name: '계속 회고하기' }).click();
+  assert.equal(await page.getByLabel('이달에 기억할 한 줄').inputValue(), '다시 돌아보고 싶은 한 달');
+  await page.getByRole('button', { name: '회고 저장하기', exact: true }).click();
+  await page.getByRole('status').filter({ hasText: '이달의 회고를 이 기기에 저장했어요' }).waitFor();
+  assert.match(await page.evaluate(() => document.activeElement?.textContent), /이달의 회고를 이 기기에 저장했어요/);
+  assert.equal(await page.getByLabel('내가 정한 약속').count(), 0);
+  await page.getByRole('button', { name: '다음 주 약속 정하기' }).click();
+  assert.equal(await page.evaluate(() => document.activeElement?.id), 'weekly-promise');
+  await page.getByRole('button', { name: '다음 주 약속 저장하기' }).click();
+  await page.getByRole('alert').filter({ hasText: '약속 하나를 적어 주세요' }).waitFor();
+  await page.getByText('약속 예시 보기', { exact: true }).click();
+  await page.getByRole('button', { name: '결제 전에 한 번 더 생각하기', exact: true }).click();
+  await page.getByRole('button', { name: '다음 주 약속 저장하기' }).click();
+  await page.getByRole('status').filter({ hasText: '다음 주 약속을 저장했어요' }).waitFor();
+  assert.match(await page.evaluate(() => document.activeElement?.textContent), /결제 전에 한 번 더 생각하기/);
+  await page.clock.fastForward(900);
+  await page.getByRole('button', { name: '내 기록', exact: true }).click();
+  await page.getByRole('button', { name: '월간 회고', exact: true }).click();
+  assert.equal(await page.locator('.journal-month-review .is-just-saved').count(), 0);
+  results.push('monthly draft guard / local success focus / optional promise / no repeated completion motion');
+
+  const reflectionQuota = await newPage(320, JSON.stringify({ version: 1, entries: [
+    { date: '2026-09-07', amount: 99999999, note: '기억하고 싶은 소비', updatedAt: '2026-09-08T00:00:00Z' },
+  ] }));
+  await reflectionQuota.getByRole('button', { name: '월간 회고', exact: true }).click();
+  await reflectionQuota.getByLabel('이달에 기억할 한 줄').fill('저장 실패 뒤에도 남아야 하는 메모');
+  await reflectionQuota.evaluate(() => { Storage.prototype.setItem = function() { throw new DOMException('Full', 'QuotaExceededError'); }; });
+  await reflectionQuota.getByRole('button', { name: '회고 저장하기', exact: true }).click();
+  await reflectionQuota.locator('.journal-memory').getByRole('alert').filter({ hasText: '회고를 저장하지 못했어요' }).waitFor();
+  assert.equal(await reflectionQuota.getByLabel('이달에 기억할 한 줄').inputValue(), '저장 실패 뒤에도 남아야 하는 메모');
+  await reflectionQuota.getByRole('button', { name: '다음 주 약속 정하기' }).click();
+  await reflectionQuota.getByLabel('내가 정한 약속').fill('필요한 것 적기');
+  await reflectionQuota.getByRole('button', { name: '다음 주 약속 저장하기' }).click();
+  await reflectionQuota.locator('.journal-next-promise').getByRole('alert').filter({ hasText: '약속을 저장하지 못했어요' }).waitFor();
+  assert.equal(await reflectionQuota.getByLabel('내가 정한 약속').inputValue(), '필요한 것 적기');
+  assert.equal(await reflectionQuota.locator('.is-just-saved').count(), 0);
+  assert.equal((await reflectionQuota.evaluate(key => JSON.parse(localStorage.getItem(key)), key)).entries[0].amount, 99999999);
+  results.push('monthly and promise quota failures stay next to their action, preserve drafts and daily records');
+
   const quota = await newPage();
   await quota.evaluate(() => { Storage.prototype.setItem = function() { throw new DOMException('Full', 'QuotaExceededError'); }; });
   await quota.getByRole('button', { name: '안 썼어요' }).click();
   await quota.getByRole('button', { name: '0원으로 기록하기' }).click();
   await quota.getByRole('alert').filter({ hasText: '저장하지 못했어요' }).waitFor();
   assert.equal(await quota.evaluate(key => localStorage.getItem(key), key), null);
+  assert.equal(await quota.locator('.is-just-saved').count(), 0);
   results.push('quota failure keeps editor and reports failure');
 
   const corrupt = await newPage(390, '{broken');
@@ -107,11 +153,20 @@ try {
   assert.equal((await midnight.evaluate(key => JSON.parse(localStorage.getItem(key)), key)).entries[0].date, '2026-09-08');
   results.push('date switch guards unsaved input; midnight preserves original draft date');
 
-  for (const [width, name] of [[320, 'small'], [390, 'mobile'], [1440, 'desktop']]) {
+  for (const [width, name] of [[320, 'small'], [390, 'mobile'], [720, 'tablet'], [1440, 'desktop']]) {
     const capture = await newPage(width);
     if (width === 1440) await capture.setViewportSize({ width, height: 1000 });
     await capture.screenshot({ path: captures + name + '.png', fullPage: true });
     assert.ok(await capture.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${width}px horizontal overflow`);
+    const smallTargets = await capture.locator('.journal-app button:enabled, .journal-header a').evaluateAll(nodes => nodes.filter(node => {
+      const rect = node.getBoundingClientRect();
+      return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44);
+    }).map(node => node.textContent.trim()));
+    assert.deepEqual(smallTargets, [], `${width}px targets smaller than 44px`);
+    const zero = capture.getByRole('button', { name: '안 썼어요' });
+    await zero.hover(); await capture.mouse.down();
+    assert.equal(await zero.evaluate(node => getComputedStyle(node).transform), 'none');
+    await capture.mouse.up();
     if (width === 390) {
       await capture.getByRole('button', { name: '안 썼어요' }).click();
       await capture.getByRole('button', { name: '0원으로 기록하기' }).click();
@@ -120,8 +175,20 @@ try {
       await capture.getByRole('button', { name: '내 기록', exact: true }).click();
       await capture.screenshot({ path: captures + 'history.png', fullPage: true });
     }
+    await capture.evaluate(key => localStorage.setItem(key, JSON.stringify({ version: 1, entries: Array.from({ length: 6 }, (_, index) => ({
+      date: `2026-09-0${index + 1}`, amount: index % 2 ? 99999999 : 0,
+      note: '기억하고 싶은 하루의 메모를 길게 남겨요. '.repeat(4), updatedAt: '2026-09-08T00:00:00Z',
+    })) })), key);
+    await capture.reload();
+    await capture.getByRole('button', { name: '월간 회고', exact: true }).click();
+    await capture.getByRole('button', { name: '전체 6일 펼치기' }).click();
+    await capture.getByLabel('이달에 기억할 한 줄').fill('이달에 남기고 싶은 기억');
+    await capture.getByRole('button', { name: '다음 주 약속 정하기' }).click();
+    await capture.getByText('약속 예시 보기', { exact: true }).click();
+    assert.ok(await capture.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${width}px monthly horizontal overflow`);
+    await capture.screenshot({ path: captures + `review-${name}.png`, fullPage: true });
   }
-  results.push('320 / 390 / 1440px screenshots and overflow checks');
+  results.push('320 / 390 / 720 / 1440px screenshots, 44px targets, reduced-motion press and overflow checks');
 
   const legacy = await newPage();
   await legacy.getByRole('link', { name: '기존 공개 기록' }).click();
@@ -150,9 +217,18 @@ try {
   assert.equal(await former.getByText('토스포인트', { exact: true }).count(), 0);
   await former.getByRole('button', { name: '주간 랭킹', exact: true }).click();
   await former.getByText('savelog 하이브리드 점수제', { exact: false }).waitFor();
+  const ranking = former.getByRole('dialog', { name: /이번 주 절약 랭킹/ });
+  assert.equal(await ranking.evaluate(node => node.contains(document.activeElement)), true);
+  await former.keyboard.press('Shift+Tab');
+  assert.equal(await ranking.evaluate(node => node.contains(document.activeElement)), true);
+  await former.keyboard.press('Tab');
+  assert.equal(await ranking.evaluate(node => node.contains(document.activeElement)), true);
   assert.equal(await former.locator('.rank-reward-btn, .reward-info-card').count(), 0);
   assert.equal(await former.getByText(/원 리워드|광고 보고.*원|전원 보상이/).count(), 0);
   assert.deepEqual(await former.evaluate(() => [localStorage.getItem('savelog_pending_points'), localStorage.getItem('savelog_rank_claimed_2026-W36')]), ['47', 'true']);
+  await former.keyboard.press('Escape');
+  assert.equal(await ranking.count(), 0);
+  assert.equal(await former.evaluate(() => document.activeElement?.getAttribute('aria-label')), '주간 랭킹');
   results.push('legacy feed/profile/rank retain records and jelly access without payout; historical balance untouched');
   console.log(JSON.stringify({ passed: results.length, checks: results, captures }, null, 2));
 } finally { await Promise.all(contexts.map(c => c.close())); await browser.close(); }

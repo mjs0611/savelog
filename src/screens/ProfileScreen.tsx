@@ -1,12 +1,14 @@
 import { LEGACY_READONLY } from '../legacyReadonly';
 import React, { useState, useEffect } from 'react';
 import { Badge, Button } from '@toss/tds-mobile';
+import useDialogFocus from '../components/useDialogFocus';
 
 function SimpleModal({ open, onClose, children }: { open: boolean; onClose: () => void; children: React.ReactNode }) {
+  const panelRef = useDialogFocus(open, onClose);
   if (!open) return null;
   return (
     <div className="modal-overlay simple-modal-overlay" onClick={onClose}>
-      <div className="modal-sheet simple-modal-sheet" onClick={e => e.stopPropagation()}>
+      <div ref={panelRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet simple-modal-sheet" onClick={e => e.stopPropagation()}>
         {children}
       </div>
     </div>
@@ -356,33 +358,33 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
                 <Button size="small" color="dark" variant="weak" onClick={() => { setDraft(nickname); setEditing(false); }}>취소</Button>
               </div>
             ) : (
-              <div className="setting-menu-item" onClick={() => setEditing(true)}>
+              <button type="button" className="setting-menu-item" onClick={() => setEditing(true)}>
                 <span>닉네임 수정</span>
                 <span className="setting-value">{nickname} ›</span>
-              </div>
+              </button>
             )}
-            <div className="setting-menu-item" onClick={() => { setShowSettings(false); onStartTest(); }}>
+            <button type="button" className="setting-menu-item" onClick={() => { setShowSettings(false); onStartTest(); }}>
               <span>소비 성향 재분석</span>
               <span className="setting-arrow">›</span>
-            </div>
-            <div className="setting-menu-item" onClick={() => { setShowSettings(false); setShowGuide(true); }}>
+            </button>
+            <button type="button" className="setting-menu-item" onClick={() => { setShowSettings(false); setShowGuide(true); }}>
               <span>❓ savelog 사용법</span>
               <span className="setting-arrow">›</span>
-            </div>
+            </button>
           </div>
 
           <div className="settings-section">
             <h4 className="settings-section-title">혜택 및 보호권</h4>
-            <div className="setting-menu-item" onClick={() => { setShowSettings(false); handleShare(); }}>
+            <button type="button" className="setting-menu-item" onClick={() => { setShowSettings(false); handleShare(); }}>
               <span><CustomIcon emoji="🛡️" /> 친구 공유하고 스트릭 보호권 받기</span>
               <span className="setting-arrow">›</span>
-            </div>
+            </button>
 
           </div>
 
           <div className="settings-section">
             <h4 className="settings-section-title">서비스 정보</h4>
-            <div
+            <button type="button"
               className="setting-menu-item"
               onClick={() => {
                 localStorage.removeItem('savelog_tutorial_completed');
@@ -391,15 +393,15 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             >
               <span><CustomIcon emoji="🎓" /> 가이드 튜토리얼 다시 보기</span>
               <span className="setting-arrow">›</span>
-            </div>
-            <div className="setting-menu-item" onClick={() => setTermsModalOpen(true)}>
+            </button>
+            <button type="button" className="setting-menu-item" onClick={() => setTermsModalOpen(true)}>
               <span>서비스 이용약관</span>
               <span className="setting-arrow">›</span>
-            </div>
-            <div className="setting-menu-item" onClick={() => setMarketingModalOpen(true)}>
+            </button>
+            <button type="button" className="setting-menu-item" onClick={() => setMarketingModalOpen(true)}>
               <span>마케팅 정보 수신 동의</span>
               <span className="setting-arrow">›</span>
-            </div>
+            </button>
           </div>
 
           <Button display="full" size="large" color="dark" variant="weak" onClick={() => setShowSettings(false)} style={{ marginTop: '16px' }}>

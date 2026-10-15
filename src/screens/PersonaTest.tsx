@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { PERSONAS, setPersona } from '../lib/storage';
+import useDialogFocus from '../components/useDialogFocus';
 
 interface Question {
   id: number;
@@ -59,6 +60,7 @@ interface Props {
 }
 
 export default function PersonaTest({ onClose }: Props) {
+  const panelRef = useDialogFocus(true, () => onClose());
   const [qIdx, setQIdx] = useState(0);
   const [answers, setAnswers] = useState<string[]>([]);
   const [result, setResult] = useState<string | null>(null);
@@ -93,9 +95,9 @@ export default function PersonaTest({ onClose }: Props) {
     const p = PERSONAS[result];
     return (
       <div className="modal-overlay">
-        <div className="modal-sheet persona-result-sheet">
+        <div ref={panelRef} role="dialog" aria-modal="true" aria-label="소비 성향 분석 결과" tabIndex={-1} className="modal-sheet persona-result-sheet">
           <div className="modal-header">
-            <button className="modal-close-btn" onClick={() => onClose()}>✕</button>
+            <button className="modal-close-btn" aria-label="소비 성향 분석 닫기" onClick={() => onClose()}>✕</button>
             <h2 className="modal-title">소비 MBTI 결과</h2>
             <div className="modal-header-spacer" />
           </div>
@@ -144,9 +146,9 @@ export default function PersonaTest({ onClose }: Props) {
 
   return (
     <div className="modal-overlay">
-      <div className="modal-sheet persona-sheet">
+      <div ref={panelRef} role="dialog" aria-modal="true" aria-label="소비 성향 분석" tabIndex={-1} className="modal-sheet persona-sheet">
         <div className="modal-header">
-          <button className="modal-close-btn" onClick={() => onClose()}>✕</button>
+          <button className="modal-close-btn" aria-label="소비 성향 분석 닫기" onClick={() => onClose()}>✕</button>
           <h2 className="modal-title">나의 소비 MBTI 분석</h2>
           <div style={{ width: 32 }} />
         </div>
@@ -158,7 +160,7 @@ export default function PersonaTest({ onClose }: Props) {
           </div>
 
           <div className="question-section">
-            <span className="question-num">Q. {currentQ.id} / {QUESTIONS.length}</span>
+            <span className="question-num">{qIdx + 1} / {QUESTIONS.length}</span>
             <h3 className="question-text">{currentQ.text}</h3>
           </div>
 

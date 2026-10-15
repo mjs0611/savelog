@@ -1,4 +1,5 @@
 import { LEGACY_READONLY } from './legacyReadonly';
+import useDialogFocus from './components/useDialogFocus';
 import React, { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { Button } from '@toss/tds-mobile';
 import { appLogin, getAnonymousKey } from '@apps-in-toss/web-framework';
@@ -129,6 +130,7 @@ export default function App() {
   const [toastMessage, setToastMessage] = useState<string | null>(null);
   const [showPersonaTest, setShowPersonaTest] = useState(false);
   const [showRankingModal, setShowRankingModal] = useState(false);
+  const rankingRef = useDialogFocus(showRankingModal, () => setShowRankingModal(false));
   const [feedRefreshToken, setFeedRefreshToken] = useState(0);
   const [profileRefreshToken, setProfileRefreshToken] = useState(0);
   const [streakShields, setStreakShields] = useState<number>(() => getStreakShields());
@@ -652,10 +654,10 @@ export default function App() {
       {/* 주간 랭킹 모달 */}
       {showRankingModal && (
         <div className="modal-overlay" onClick={() => setShowRankingModal(false)}>
-          <div className="modal-sheet ranking-modal-sheet" onClick={e => e.stopPropagation()}>
+          <div ref={rankingRef} role="dialog" aria-modal="true" tabIndex={-1} className="modal-sheet ranking-modal-sheet" onClick={e => e.stopPropagation()}>
             <div className="ranking-modal-header">
               <h3 className="ranking-modal-title"><CustomIcon emoji="🏆" /> 이번 주 절약 랭킹</h3>
-              <button className="ranking-modal-close" onClick={() => setShowRankingModal(false)}>✕</button>
+              <button className="ranking-modal-close" aria-label="주간 랭킹 닫기" onClick={() => setShowRankingModal(false)}>✕</button>
             </div>
             <Suspense fallback={null}>
             <RankScreen

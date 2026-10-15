@@ -42,6 +42,7 @@ export default function App() {
   const [note, setNote] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
+  const [savedDate, setSavedDate] = useState<string | null>(null);
   const [backupText, setBackupText] = useState('');
   const [pendingDate, setPendingDate] = useState<string | null>(null);
   const draftActive = useRef(false);
@@ -50,6 +51,9 @@ export default function App() {
   const importInput = useRef<HTMLInputElement>(null);
   const weekHeading = useRef<HTMLHeadingElement>(null);
   const entryHeading = useRef<HTMLHeadingElement>(null);
+  const savedHeading = useRef<HTMLHeadingElement>(null);
+  const dateWarning = useRef<HTMLDivElement>(null);
+  const previousTab = useRef(tab);
   const entry = journal.entries.find(e => e.date === selectedDate);
   const activePromise = promiseForDate(reflection, selectedDate);
   const promiseCheck = activePromise?.checkIns.find(e => e.date === selectedDate);
@@ -111,6 +115,22 @@ export default function App() {
     return () => clearTimeout(timer);
   }, [message]);
   useEffect(() => {
+    if (!savedDate) return;
+    savedHeading.current?.focus({ preventScroll: true });
+    const timer = window.setTimeout(() => setSavedDate(null), 800);
+    return () => clearTimeout(timer);
+  }, [savedDate]);
+  useEffect(() => {
+    if (pendingDate) dateWarning.current?.focus();
+  }, [pendingDate]);
+  useEffect(() => {
+    if (previousTab.current === tab) return;
+    previousTab.current = tab;
+    const heading = document.querySelector<HTMLHeadingElement>(tab === 'review' ? '#month-review-title' : '#journal-main .journal-intro h1');
+    heading?.focus({ preventScroll: true });
+    heading?.scrollIntoView({ block: 'start' });
+  }, [tab]);
+  useEffect(() => {
     const protect = (event: BeforeUnloadEvent) => {
       if (!draftActive.current && activePromiseDraft === null) return;
       event.preventDefault(); event.returnValue = '';
@@ -120,6 +140,7 @@ export default function App() {
   }, [activePromiseDraft]);
 
   function selectDate(date: string, discard = false) {
+    setSavedDate(null);
     if (date === selectedDate) { setWeekAnchor(date); changeTab('today'); focusEntry(); return; }
     if (!discard && date !== selectedDate && draftActive.current) { setPendingDate(date); return; }
     setPendingDate(null);
@@ -148,6 +169,7 @@ export default function App() {
     setReviewExpanded(true);
   }
   function changeTab(next: 'today' | 'history' | 'review') {
+    setSavedDate(null);
     setTab(next);
     const path = next === 'today' ? '/' : next === 'history' ? '/history' : '/review';
     if (window.location.pathname !== path) window.history.pushState(null, '', path);
@@ -174,6 +196,7 @@ export default function App() {
   }
   function edit() {
     if (!entry) return;
+    setSavedDate(null);
     setKind(entry.amount === 0 ? 'zero' : 'spend'); setAmount(entry.amount ? String(entry.amount) : '');
     setNote(entry.note); setEditing(true); setError('');
   }
@@ -188,6 +211,7 @@ export default function App() {
     try {
       const next = saveCheckIn(localStorage, { date: selectedDate, amount: total, note: note.trim(), updatedAt: new Date().toISOString() });
       setJournal(next); setEditing(false); setError(''); setStorageError('');
+      setSavedDate(selectedDate);
       setMessage(entry ? '기록을 수정했어요.' : '이 기기에 기록했어요.');
       trackJournal('record_saved', { kind, action: entry ? 'edit' : 'create', has_history: journal.entries.length > 0 });
     } catch {
@@ -228,7 +252,7 @@ export default function App() {
       </header>
       <main id="journal-main">
         {storageError && <div className="journal-error" role="alert">{storageError}<button className="journal-text-button" onClick={() => window.location.reload()}>다시 열기</button></div>}
-        {pendingDate && <div className="journal-date-warning" role="alert"><p>아직 저장하지 않은 내용이 있어요.</p><div><button className="journal-text-button" onClick={() => setPendingDate(null)}>계속 작성하기</button><button className="journal-text-button" onClick={() => selectDate(pendingDate, true)}>저장하지 않고 날짜 이동</button></div></div>}
+        {pendingDate && <div ref={dateWarning} className="journal-date-warning" role="alert" tabIndex={-1}><p>아직 저장하지 않은 내용이 있어요.</p><div><button className="journal-text-button" onClick={() => { setPendingDate(null); changeTab('today'); window.requestAnimationFrame(() => (kind === 'spend' ? amountInput.current : document.getElementById('daily-note'))?.focus()); }}>계속 작성하기</button><button className="journal-text-button" onClick={() => selectDate(pendingDate, true)}>저장하지 않고 날짜 이동</button></div></div>}
         {tab === 'today' ? <>
           <section className="journal-intro">
             <div className="journal-date-line"><time dateTime={selectedDate}>{dayLabel(selectedDate)}</time></div>
@@ -265,8 +289,8 @@ export default function App() {
                   {editing && <button className="journal-text-button journal-cancel" type="button" onClick={() => { setEditing(false); setKind(null); setError(''); }}>수정 취소</button>}
                 </div>}
                 {!kind && <p className="journal-entry-hint">둘 중 하나를 고르면 기록을 시작할 수 있어요.</p>}
-              </form> : <div className="journal-saved">
-                <div className="journal-saved-heading"><span><JournalIcon name="check" size={18} /> 기록 완료</span><button className="journal-text-button" onClick={edit}>수정하기</button></div>
+              </form> : <div className={`journal-saved ${savedDate === selectedDate ? 'is-just-saved' : ''}`}>
+                <div className="journal-saved-heading"><h2 ref={savedHeading} tabIndex={-1}><span className="journal-saved-mark"><JournalIcon name="check" size={24} /></span>기록 완료</h2><button className="journal-text-button" onClick={edit}>수정하기</button></div>
                 <p className="journal-saved-amount">{won(entry.amount)}</p>
                 <p className="journal-saved-note">{entry.note || (entry.amount === 0 ? '돈을 쓰지 않은 하루였어요.' : '쓴 돈을 확인했어요.')}</p>
                 <p className="journal-return-prompt">내일도 이 칸에서 하루를 남겨보세요.</p>
@@ -293,7 +317,7 @@ export default function App() {
               <div className="journal-week-grid">
                 {dates.map((date, i) => {
                   const item = journal.entries.find(e => e.date === date);
-                  return <button key={date} className={`journal-day ${item ? 'is-recorded' : ''} ${date === selectedDate ? 'is-current' : ''}`}
+                  return <button key={date} className={`journal-day ${item ? 'is-recorded' : ''} ${date === selectedDate ? 'is-current' : ''} ${date === savedDate ? 'is-just-saved' : ''}`}
                     aria-label={`${dayLabel(date)}, ${item ? won(item.amount) : '기록 없음'}`} aria-pressed={date === selectedDate} disabled={date > today} onClick={() => selectDate(date)}>
                     <span>{weekdays[i]}</span><span className="journal-day-cell">{item ? <JournalIcon name="check" size={20} /> : Number(date.slice(8))}</span><span className="journal-day-state">{item ? item.amount === 0 ? '0원' : '지출' : date === today ? '오늘' : '—'}</span>
                   </button>;
@@ -313,7 +337,7 @@ export default function App() {
           </div>
           <section className="journal-bottom-note"><h2>정확한 가계부가 부담스러운 날에도.</h2><p>금액 하나, 기억하고 싶은 한 줄이면 충분해요.<br />카드·계좌 내역은 연결하지 않아요.</p></section>
         </> : tab === 'history' ? <>
-          <section className="journal-intro"><h1>내가 남긴 날들</h1><p>남과 비교하지 않고, 지난 나를 돌아봐요.</p></section>
+          <section className="journal-intro"><h1 tabIndex={-1}>내가 남긴 날들</h1><p>남과 비교하지 않고, 지난 나를 돌아봐요.</p></section>
           {journal.entries.length ? <div className="journal-history">
             <p className="journal-history-count">총 {journal.entries.length}일의 기록</p>
             {journal.entries.map(item => <button className="journal-history-row" key={item.date} onClick={() => selectDate(item.date)}>
@@ -329,7 +353,7 @@ export default function App() {
           </section>
           <a className="journal-legacy-card" href="/legacy" onClick={() => trackJournal('legacy_open')}><span><strong>예전에 남긴 공개 기록을 찾으세요?</strong><span>예전 공개 기록은 이전 공간에서 확인해요.<br />여기서 쓴 개인 기록은 피드에 올라가지 않아요.</span></span><JournalIcon name="arrow" size={18} /></a>
         </> : null}
-        <div hidden={tab !== 'review'}><MonthlyReflection journal={journal} today={today} reflection={reflection} storageError={reflectionError || storageError}
+        <div hidden={tab !== 'review'}><MonthlyReflection journal={journal} today={today} reflection={reflection} storageError={reflectionError || storageError} active={tab === 'review'}
           onSaved={value => { setReflection(value); setReflectionError(''); }} onDate={selectDate} /></div>
       </main>
       <div className="journal-status" role="status" aria-live="polite">{message && <p>{message}</p>}</div>

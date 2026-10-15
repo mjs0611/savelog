@@ -34,6 +34,7 @@
 
   /* 크롬 골드 — 꿀팁·마일스톤·트로피 */
   --brass: #DDA92F;
+  --brass-strong: #876018;
   --brass-bg: rgba(221, 169, 47, 0.12);
 
   --font-mono: ui-monospace, 'SF Mono', 'Menlo', monospace;
@@ -52,7 +53,7 @@
   --manila: #DDD8EE;
   --text-main: #1A1533; /* 바이올렛 잉크 */
   --text-sub: #514A73;
-  --text-mute: #8B84AC;
+  --text-mute: #686080;
 
   --glass: rgba(253, 253, 255, 0.90);
   --glass-border: rgba(90, 75, 150, 0.14);
@@ -94,7 +95,7 @@ body {
 .no-scrollbar::-webkit-scrollbar { display: none; }
 button { cursor: pointer; border: none; background: none; font: inherit; transition: transform 0.15s ease, opacity 0.15s ease, background-color 0.15s ease, color 0.15s ease, border-color 0.15s ease; -webkit-tap-highlight-color: transparent; }
 button:active { transform: scale(0.97); transition-duration: 0.06s; } /* §1 press-down 즉각 반응 — 릴리즈가 아니라 누르는 순간 */
-button:active:not(:disabled) { transform: scale(0.94); }
+button:active:not(:disabled) { transform: scale(0.97); }
 button:disabled { cursor: default; }
 input { font: inherit; outline: none; border: none; }
 
@@ -7117,9 +7118,9 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 /* 접근성 — 모션 민감 사용자: 슬라이드·스프링 → 크로스페이드 (§reduced-motion) */
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    transition-duration: 0.01ms !important;
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
   }
 }
 
@@ -8420,4 +8421,27 @@ h1, h2, h3, .feed-appbar-logo, .setup-title, .rank-title {
 [data-legacy-write="true"][aria-disabled="true"] {
   opacity: 0.45 !important;
   cursor: not-allowed !important;
+}
+
+/* Archive accessibility: retain its chrome surfaces and existing data boundaries. */
+:focus-visible { outline: 3px solid var(--violet-deep); outline-offset: 3px; }
+.community-thread-open { display: block; width: 100%; min-height: 44px; color: inherit; font: inherit; text-align: left; overflow-wrap: anywhere; }
+.feed-card-image-wrap { display: block; width: 100%; }
+.setting-menu-item { width: 100%; min-height: 44px; color: var(--text-main); font: inherit; text-align: left; gap: 12px; }
+.ranking-modal-close, .modal-close-btn, .mylog-edit-btn, .rank-stale-retry-btn,
+.rank-empty-retry-btn, .discover-sort { min-width: 44px; min-height: 44px; }
+.mylog-nickname-row, .mylog-header-actions { flex-wrap: wrap; gap: 8px; }
+.mylog-nickname, .mylog-profile-info, .rank-row-info, .timeline-item-info { min-width: 0; overflow-wrap: anywhere; }
+.rank-row { flex-wrap: wrap; }
+.rank-row-info { min-width: min(120px, 100%); }
+.rank-row-nickname, .rank-row-days { flex-wrap: wrap; }
+.rank-row-right { max-width: 100%; margin-left: auto; flex-wrap: wrap; }
+.rank-row-amount, .timeline-item-amount { overflow-wrap: anywhere; max-width: 100%; }
+.feed-item-comment, .feed-comment-text, .community-comment-text, .community-detail-content,
+.timeline-item-comment, .legacy-readonly-notice, .empty-sub, .rank-stale-text,
+.rank-stale-retry-btn, .rank-empty-retry-btn, .discover-sort { font-size: 14px; }
+.rank-stale-text, .rank-stale-retry-btn { color: var(--brass-strong); }
+@media (prefers-reduced-motion: reduce) {
+  button:active:not(:disabled), button:active, a:active, [role='button']:active,
+  .community-thread-card:active, .story-item:active .story-avatar { transform: none !important; }
 }
