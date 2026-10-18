@@ -1,6 +1,10 @@
 import React, { lazy, Suspense } from 'react';
 import { createRoot } from 'react-dom/client';
 import './journal.css';
+import { installCardTilt } from './lib/cardTilt';
+
+// 홈 카드를 누르면 손가락 쪽으로 기운다.
+installCardTilt('.journal-entry');
 
 // First paint stays small; Root separates personal and legacy surfaces.
 const Root = lazy(() => import('./Root'));
