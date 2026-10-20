@@ -56,7 +56,7 @@ export function loadStreak(): StreakData {
   }
 }
 
-// ── Streak Shields (공유 리워드로 받는 스트릭 보호권) ──────────────────────────
+// ── Streak Shields (이미 적립된 스트릭 보호권 — 공유 리워드 종료로 신규 적립 없음) ──
 const SHIELD_KEY = 'savelog_streak_shields';
 
 export function getStreakShields(): number {
@@ -64,12 +64,6 @@ export function getStreakShields(): number {
     const n = Number(localStorage.getItem(SHIELD_KEY) ?? '0');
     return isNaN(n) ? 0 : Math.max(0, n);
   } catch { return 0; }
-}
-
-export function addStreakShield(count = 1): number {
-  const next = getStreakShields() + count;
-  try { localStorage.setItem(SHIELD_KEY, String(next)); } catch {}
-  return next;
 }
 
 function consumeStreakShield(): boolean {

@@ -93,7 +93,6 @@ interface Props {
   onQuickZeroSpend: () => void;
   onNavigateToMyLog?: () => void;
   onShareToChat?: (entry: any) => void;
-  onShieldEarned?: (count: number) => void;
 }
 
 
