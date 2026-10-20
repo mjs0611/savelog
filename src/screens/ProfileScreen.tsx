@@ -22,7 +22,7 @@ import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
-import { shareExternal, buildTempBragMessage, buildWrappedBragMessage, openContactsInvite } from '../lib/share';
+import { shareExternal, buildTempBragMessage, buildWrappedBragMessage } from '../lib/share';
 import { IconFriends, IconTrophy, IconGear, IconBookmark } from '../components/Icons';
 import MoneyPattern from '../components/MoneyPattern';
 import BenefitLedger from '../components/BenefitLedger';
@@ -38,14 +38,13 @@ interface Props {
   onNicknameChange: (name: string) => void;
   onStartTest: () => void;
   refreshToken?: number;
-  onShieldEarned?: (count: number) => void;
   weekRank?: WeekRankRow[];
   daily?: DailyState;
   onShareToChat?: (entry: any) => void;
   onOpenRanking?: () => void;
 }
 
-export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, onShieldEarned, weekRank = [], daily, onShareToChat, onOpenRanking }: Props) {
+export default function ProfileScreen({ userId, nickname, streak, onNicknameChange, onStartTest, refreshToken = 0, weekRank = [], daily, onShareToChat, onOpenRanking }: Props) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(nickname);
   
@@ -104,11 +103,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
   const [subTab, setSubTab] = useState<'records' | 'scrapbook' | 'stats' | 'mailbox'>('records');
 
 
-
-  function handleShare() {
-    // 실제 발송 완료 수만큼 모달 close 시점에 보상 (오픈 직후 재생 이벤트는 무시)
-    openContactsInvite(onShieldEarned);
-  }
 
   useEffect(() => {
     let cancelled = false;
@@ -371,15 +365,6 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
               <span>❓ savelog 사용법</span>
               <span className="setting-arrow">›</span>
             </button>
-          </div>
-
-          <div className="settings-section">
-            <h4 className="settings-section-title">혜택 및 보호권</h4>
-            <button type="button" className="setting-menu-item" onClick={() => { setShowSettings(false); handleShare(); }}>
-              <span><CustomIcon emoji="🛡️" /> 친구 공유하고 스트릭 보호권 받기</span>
-              <span className="setting-arrow">›</span>
-            </button>
-
           </div>
 
           <div className="settings-section">

@@ -21,7 +21,6 @@ import {
   setRecordedDate,
   cleanupStaleKeys,
   getStreakShields,
-  addStreakShield,
   getMilestonePosted,
   setMilestonePosted,
   type StreakData,
@@ -580,13 +579,6 @@ export default function App() {
     }
   }
 
-  // 연락처 초대 발송 완료 시 보상 — openContactsInvite가 모달 close 시점에 실제 발송 수를 전달
-  function handleFriendsInvited(count: number) {
-    addStreakShield(count);
-    setStreakShields(getStreakShields());
-    showToast(`🛡️ 친구 ${count}명 초대 완료! 스트릭 보호권 +${count} 적립`);
-  }
-
   function showToast(msg: string) {
     if (toastTimerRef.current !== null) clearTimeout(toastTimerRef.current);
     setToastMessage(msg);
@@ -622,7 +614,6 @@ export default function App() {
             onQuickRecord={handleSubmitRecord}
             onQuickZeroSpend={() => { setZeroNoteText(''); setShowZeroNote(true); }}
             onNavigateToMyLog={() => navigateTo('mylog')}
-            onShieldEarned={handleFriendsInvited}
           />
         </div>
         <div className={tab !== 'community' ? 'tab-panel--hidden' : ''}>
@@ -643,7 +634,6 @@ export default function App() {
             refreshToken={profileRefreshToken}
             onNicknameChange={setNicknameState}
             onStartTest={() => setShowPersonaTest(true)}
-            onShieldEarned={handleFriendsInvited}
             onOpenRanking={() => { loadRank(); setShowRankingModal(true); }}
           />
           </Suspense>

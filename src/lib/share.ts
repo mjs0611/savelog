@@ -1,7 +1,7 @@
 // ── 외부 공유 (바이럴 루프) ──────────────────────────────────────────────────
 // 네이티브 공유 시트(share)로 앱 딥링크를 함께 내보내, 받은 사람이 한 번에
 // savelog로 진입하게 한다. 링크 생성/공유 실패 시 클립보드 복사로 폴백.
-import { share, getTossShareLink, contactsViral } from '@apps-in-toss/web-framework';
+import { share, getTossShareLink } from '@apps-in-toss/web-framework';
 
 const APP_SCHEME = 'intoss://savelog';
 
@@ -23,43 +23,6 @@ export async function shareExternal(message: string, deepLinkQuery?: string): Pr
     } catch {
       return false;
     }
-  }
-}
-
-// ── 토스 연락처 초대 (contactsViral) ─────────────────────────────────────────
-// 실제로 발송된 초대 수만큼 모달이 닫힐 때 onInvited(count) 콜백(보상 지급 지점).
-// 모듈 오픈 직후 브릿지가 과거 sendViral 이벤트를 재생하는 경우가 있어(모달이 뜨기도
-// 전에 "초대 완료" 토스트가 뜨는 문제), 오픈 후 유예 시간 내 이벤트는 무시한다.
-// 모달이 떠 있는 동안 토스트는 가려져 보이지 않으므로 보상 통지도 close 시점으로 미룬다.
-const CONTACTS_VIRAL_MODULE_ID = 'f92f08bb-0044-4762-bbdd-25d8458a1a07';
-const SEND_VIRAL_GRACE_MS = 1200;
-let contactsInviteActive = false;
-
-export function openContactsInvite(onInvited?: (count: number) => void): void {
-  if (contactsInviteActive) return;
-  contactsInviteActive = true;
-  const openedAt = Date.now();
-  let sentCount = 0;
-  let cleanup: (() => void) | null = null;
-  const done = () => { contactsInviteActive = false; cleanup?.(); cleanup = null; };
-  try {
-    cleanup = contactsViral({
-      options: { moduleId: CONTACTS_VIRAL_MODULE_ID },
-      onEvent: (event) => {
-        if (event.type === 'sendViral') {
-          if (Date.now() - openedAt > SEND_VIRAL_GRACE_MS) sentCount += 1;
-        } else if (event.type === 'close') {
-          if (sentCount > 0) onInvited?.(sentCount);
-          done();
-        }
-      },
-      onError: () => {
-        if (sentCount > 0) onInvited?.(sentCount);
-        done();
-      },
-    });
-  } catch {
-    done();
   }
 }
 
