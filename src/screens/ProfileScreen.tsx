@@ -22,7 +22,7 @@ import type { StreakData, CheeringMessage, DailyState } from '../lib/storage';
 import { setNickname, getPersona, PERSONAS, getCheeringMessages, sendCheeringMessage, getWeeklyBudget, getFollowedUsers, saveFollowedUsers } from '../lib/storage';
 import { formatAmount, getWeekKey, timeAgo, getTodayStr } from '../lib/utils';
 import { getPrevWeekKey } from '../lib/benchmark';
-import { shareExternal, buildTempBragMessage, buildWrappedBragMessage } from '../lib/share';
+import { shareExternal, shareApp, buildTempBragMessage, buildWrappedBragMessage } from '../lib/share';
 import { IconFriends, IconTrophy, IconGear, IconBookmark } from '../components/Icons';
 import MoneyPattern from '../components/MoneyPattern';
 import BenefitLedger from '../components/BenefitLedger';
@@ -363,6 +363,14 @@ export default function ProfileScreen({ userId, nickname, streak, onNicknameChan
             </button>
             <button type="button" className="setting-menu-item" onClick={() => { setShowSettings(false); setShowGuide(true); }}>
               <span>❓ savelog 사용법</span>
+              <span className="setting-arrow">›</span>
+            </button>
+          </div>
+
+          <div className="settings-section">
+            <h4 className="settings-section-title">친구에게 알리기</h4>
+            <button type="button" className="setting-menu-item" onClick={() => { setShowSettings(false); void shareApp('legacy_settings'); }}>
+              <span><CustomIcon emoji="💌" /> 친구에게 세이브로그 알려주기</span>
               <span className="setting-arrow">›</span>
             </button>
           </div>
