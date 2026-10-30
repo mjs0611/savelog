@@ -2209,7 +2209,7 @@ export default function FeedScreen({ userId, refreshToken = 0, weekRank = [], da
               <div style={{ display: 'flex', gap: '8px', marginBottom: '14px' }}>
                 <div style={{ flex: 1, background: 'rgba(251,191,36,0.12)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                   <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>교류 스트릭</p>
-                  <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: '#96701F' }}><CustomIcon emoji="🔥" /> {relStreak}일</p>
+                  <p style={{ margin: '2px 0 0', fontSize: '15px', fontWeight: 800, color: 'var(--text-main)' }}><CustomIcon emoji="🔥" /> {relStreak}일</p>
                 </div>
                 <div style={{ flex: 1, background: 'var(--primary-light)', borderRadius: '12px', padding: '10px', textAlign: 'center' }}>
                   <p style={{ margin: 0, fontSize: '10.5px', color: 'var(--text-sub)', fontWeight: 700 }}>누적 교류</p>
