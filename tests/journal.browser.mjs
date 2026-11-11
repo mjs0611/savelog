@@ -34,7 +34,7 @@ try {
   await page.getByLabel('오늘 쓴 총액').fill('12000');
   await page.getByLabel('한 줄 메모').fill('브라우저 테스트용 점심');
   await page.getByRole('button', { name: '소비 기록하기', exact: true }).click();
-  await page.getByRole('heading', { name: '오늘을 남겼어요.' }).waitFor();
+  await page.getByRole('heading', { name: '오늘 소비를 기록했어요' }).waitFor();
   assert.equal((await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key)).entries[0].amount, 12000);
   assert.equal(await page.evaluate(() => document.activeElement?.textContent.trim()), '기록 완료');
   results.push('fresh arrival → spend → validation → local save');
@@ -42,7 +42,7 @@ try {
   await page.getByLabel('오늘 쓴 총액').fill('15000');
   await page.getByRole('button', { name: '수정한 내용 저장' }).click();
   await page.reload();
-  await page.getByRole('heading', { name: '오늘을 남겼어요.' }).waitFor();
+  await page.getByRole('heading', { name: '오늘 소비를 기록했어요' }).waitFor();
   const saved = await page.evaluate(key => JSON.parse(localStorage.getItem(key)), key);
   assert.equal(saved.entries.length, 1); assert.equal(saved.entries[0].amount, 15000);
   results.push('edit replaces total; refresh restores without login');
@@ -57,7 +57,7 @@ try {
   assert.match(await page.locator('.journal-week-summary').innerText(), /무지출은 1일/);
   results.push('0원 and missing dates remain distinct; real weekly sum');
   await page.getByRole('button', { name: '오늘', exact: true }).click();
-  await page.getByRole('heading', { name: '오늘을 남겼어요.' }).waitFor();
+  await page.getByRole('heading', { name: '오늘 소비를 기록했어요' }).waitFor();
   assert.match(await page.locator('.journal-date-line').innerText(), /9월 8일/);
   results.push('Today navigation returns from a historical day to current KST date');
   await page.getByRole('button', { name: '내 기록', exact: true }).click();
@@ -158,7 +158,7 @@ try {
     if (width === 1440) await capture.setViewportSize({ width, height: 1000 });
     await capture.screenshot({ path: captures + name + '.png', fullPage: true });
     assert.ok(await capture.evaluate(() => document.documentElement.scrollWidth <= innerWidth), `${width}px horizontal overflow`);
-    const smallTargets = await capture.locator('.journal-app button:enabled, .journal-header a').evaluateAll(nodes => nodes.filter(node => {
+    const smallTargets = await capture.locator('.journal-app button:enabled, .journal-app a').evaluateAll(nodes => nodes.filter(node => {
       const rect = node.getBoundingClientRect();
       return rect.width > 0 && rect.height > 0 && (rect.width < 44 || rect.height < 44);
     }).map(node => node.textContent.trim()));

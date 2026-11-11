@@ -1,16 +1,17 @@
 // ── 외부 공유 (바이럴 루프) ──────────────────────────────────────────────────
 // 네이티브 공유 시트(share)로 앱 딥링크를 함께 내보내, 받은 사람이 한 번에
 // savelog로 진입하게 한다. 링크 생성/공유 실패 시 클립보드 복사로 폴백.
-import { share, getTossShareLink } from '@apps-in-toss/web-framework';
+import { share, getTossShareLink, Analytics } from '@apps-in-toss/web-framework';
 
 const APP_SCHEME = 'intoss://savelog';
 
 // deepLinkQuery 예: 'room=AB12CD&rn=우리집짠테크' (인코딩된 쿼리스트링)
-export async function shareExternal(message: string, deepLinkQuery?: string): Promise<boolean> {
+// ogImageUrl: 링크 미리보기 이미지(https, 1200×600). 없으면 토스 기본 미리보기.
+export async function shareExternal(message: string, deepLinkQuery?: string, ogImageUrl?: string): Promise<boolean> {
   const rawLink = deepLinkQuery ? `${APP_SCHEME}?${deepLinkQuery}` : APP_SCHEME;
   let link = rawLink;
   try {
-    link = await getTossShareLink(rawLink);
+    link = ogImageUrl ? await getTossShareLink(rawLink, ogImageUrl) : await getTossShareLink(rawLink);
   } catch { /* 공유 링크 발급 실패 시 raw 딥링크 사용 */ }
   const full = `${message}\n${link}`;
   try {
@@ -24,6 +25,27 @@ export async function shareExternal(message: string, deepLinkQuery?: string): Pr
       return false;
     }
   }
+}
+
+// ── 앱 소개 공유 (보상 없음) ─────────────────────────────────────────────────
+// 공유 리워드 종료 후 같은 자리를 채우는 일반 공유. 개인 기록 홈(intoss://savelog)으로 연다.
+// OG 이미지는 og/share-1200x600.png를 공개 og 버킷에 올린 주소 (형제 앱과 같은 호스트)
+export const APP_SHARE_OG_IMAGE = 'https://api.ditoaxis.com/storage/v1/object/public/og/savelog/20261020/share.png';
+export const APP_SHARE_MESSAGE = '쓴 돈만 짧게 남기는 나만의 소비 기록, 세이브로그예요. 평가 없이 가볍게 적어 봐요 🌿';
+export type AppShareSurface = 'legacy_settings';
+
+// 공유 계측 — 이벤트 이름과 위치만 남긴다. 실패해도 공유에 영향 없음.
+function logShare(name: 'share_click' | 'share_complete' | 'share_failed', surface: AppShareSurface) {
+  if (!import.meta.env.PROD) return;
+  Promise.resolve().then(() => Analytics.log({ log_type: 'event', log_name: name, params: { surface } })).catch(() => {});
+}
+
+// share_complete는 공유 시트(또는 클립보드 복사)가 끝났다는 뜻이지 실제 발송 확인은 아니다.
+export async function shareApp(surface: AppShareSurface): Promise<boolean> {
+  logShare('share_click', surface);
+  const ok = await shareExternal(APP_SHARE_MESSAGE, undefined, APP_SHARE_OG_IMAGE);
+  logShare(ok ? 'share_complete' : 'share_failed', surface);
+  return ok;
 }
 
 // ── 메시지 빌더 ──────────────────────────────────────────────────────────────

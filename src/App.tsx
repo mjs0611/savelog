@@ -246,18 +246,14 @@ export default function App() {
   return (
     <div className="journal-app">
       <a className="journal-skip" href="#journal-main">본문으로 이동</a>
-      <header className="journal-header">
-        <a href="/" className="journal-wordmark" aria-label="세이브로그 홈">savelog<span /></a>
-        <a href="/legacy" className="journal-legacy-link" onClick={() => trackJournal('legacy_open')}>기존 공개 기록 <JournalIcon name="arrow" size={14} /></a>
-      </header>
       <main id="journal-main">
         {storageError && <div className="journal-error" role="alert">{storageError}<button className="journal-text-button" onClick={() => window.location.reload()}>다시 열기</button></div>}
         {pendingDate && <div ref={dateWarning} className="journal-date-warning" role="alert" tabIndex={-1}><p>아직 저장하지 않은 내용이 있어요.</p><div><button className="journal-text-button" onClick={() => { setPendingDate(null); changeTab('today'); window.requestAnimationFrame(() => (kind === 'spend' ? amountInput.current : document.getElementById('daily-note'))?.focus()); }}>계속 작성하기</button><button className="journal-text-button" onClick={() => selectDate(pendingDate, true)}>저장하지 않고 날짜 이동</button></div></div>}
         {tab === 'today' ? <>
           <section className="journal-intro">
             <div className="journal-date-line"><time dateTime={selectedDate}>{dayLabel(selectedDate)}</time></div>
-            <h1 ref={entryHeading} tabIndex={-1}>{entry && !editing ? selectedDate === today ? '오늘을 남겼어요.' : '이날을 남겼어요.' : selectedDate === today ? '오늘, 어떻게 썼나요?' : '이날, 어떻게 썼나요?'}</h1>
-            <p>{entry && !editing ? '잘 쓴 날도, 안 쓴 날도. 내 일주일이 보여요.' : '쓴 돈만 짧게. 평가는 하지 않아요.'}</p>
+            <h1 ref={entryHeading} tabIndex={-1}>{entry && !editing ? selectedDate === today ? '오늘 소비를 기록했어요' : '이날 소비를 기록했어요' : selectedDate === today ? '오늘, 어떻게 썼나요?' : '이날, 어떻게 썼나요?'}</h1>
+            <p>{entry && !editing ? '아래에서 이번 주 기록을 볼 수 있어요.' : '쓴 돈만 짧게. 평가는 하지 않아요.'}</p>
           </section>
           <div className="journal-workspace">
             <section className="journal-entry" aria-label="소비 기록">
@@ -335,7 +331,7 @@ export default function App() {
               {selectedDate !== today && <button className="journal-text-button" onClick={() => selectDate(today)}>오늘로 돌아오기 <JournalIcon name="arrow" size={14} /></button>}
             </section>
           </div>
-          <section className="journal-bottom-note"><h2>정확한 가계부가 부담스러운 날에도.</h2><p>금액 하나, 기억하고 싶은 한 줄이면 충분해요.<br />카드·계좌 내역은 연결하지 않아요.</p></section>
+          <section className="journal-bottom-note"><h2>정확한 가계부가 부담스러운 날에도</h2><p>금액 하나, 기억하고 싶은 한 줄이면 충분해요.<br />카드·계좌 내역은 연결하지 않아요.</p></section>
         </> : tab === 'history' ? <>
           <section className="journal-intro"><h1 tabIndex={-1}>내가 남긴 날들</h1><p>남과 비교하지 않고, 지난 나를 돌아봐요.</p></section>
           {journal.entries.length ? <div className="journal-history">
