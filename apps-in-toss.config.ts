@@ -4,7 +4,7 @@ export default defineConfig({
   appName: 'savelog',
 
   brand: {
-    primaryColor: '#E14B3B'
+    primaryColor: '#216554'
   },
 
   navigationBar: {
